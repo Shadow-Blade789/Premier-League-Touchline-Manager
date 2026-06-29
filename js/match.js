@@ -66,17 +66,27 @@
       return players.reduce((s, p) => s + p.rating, 0) / players.length;
     },
   
+    // Converts a rating gap into a goal-rate multiplier. Exponential rather
+    // than linear/ratio-based, so a big quality gap (10+ rating points,
+    // roughly a top-half side vs a relegation-threatened one) produces a
+    // genuinely dominant favorite instead of a near coin-flip, while small
+    // gaps stay close to fair. Clamped so even huge mismatches keep a small
+    // chance of an upset rather than becoming a foregone conclusion.
+    goalRatio(att, def) {
+      return clamp(Math.pow(1.05, att - def), 0.2, 4.5);
+    },
+  
     // Fast result for AI-vs-AI matches: no commentary, just a scoreline.
     simulateQuick(home, away) {
       const hStarters = Lineup.starters(home);
       const aStarters = Lineup.starters(away);
-      const hAtt = this.attackRating(hStarters) * 1.06;
+      const hAtt = this.attackRating(hStarters) * 1.04;
       const hDef = this.defenseRating(hStarters);
       const aAtt = this.attackRating(aStarters);
       const aDef = this.defenseRating(aStarters);
   
-      const hxg = clamp(1.4 + (hAtt - aDef) / 18, 0.3, 4.0);
-      const axg = clamp(1.15 + (aAtt - hDef) / 18, 0.25, 3.6);
+      const hxg = clamp(1.28 * this.goalRatio(hAtt, aDef), 0.15, 6.5);
+      const axg = clamp(1.05 * this.goalRatio(aAtt, hDef), 0.12, 6.0);
   
       const hg = poisson(hxg);
       const ag = poisson(axg);
@@ -87,13 +97,13 @@
     simulateFull(home, away) {
       const hStarters = Lineup.starters(home);
       const aStarters = Lineup.starters(away);
-      const hAtt = this.attackRating(hStarters) * 1.06;
+      const hAtt = this.attackRating(hStarters) * 1.04;
       const hDef = this.defenseRating(hStarters);
       const aAtt = this.attackRating(aStarters);
       const aDef = this.defenseRating(aStarters);
   
-      const pHomeGoal = clamp(0.0145 * clamp(hAtt / aDef, 0.5, 2.3), 0.004, 0.055);
-      const pAwayGoal = clamp(0.0123 * clamp(aAtt / hDef, 0.5, 2.3), 0.004, 0.05);
+      const pHomeGoal = clamp(0.0130 * this.goalRatio(hAtt, aDef), 0.003, 0.075);
+      const pAwayGoal = clamp(0.0110 * this.goalRatio(aAtt, hDef), 0.003, 0.07);
   
       const timeline = [];
       let hg = 0, ag = 0;
