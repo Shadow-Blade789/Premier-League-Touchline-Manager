@@ -28,9 +28,12 @@
      const baseRating = Math.max(58, 60 + club.tier * 2);
      for (const pos of POSITIONS) {
        while (have[pos] < need[pos]) {
-         const age = 18 + Math.floor(Math.random() * 14);
-         const rating = baseRating - 6 + Math.floor(Math.random() * 10);
-         const p = P(randomName(), pos, age, rating);
+         // Skew young: most fill-ins are academy-aged depth, with a handful of
+         // older journeymen for squad balance.
+         const age = Math.random() < 0.65 ? 17 + Math.floor(Math.random() * 6) : 24 + Math.floor(Math.random() * 10);
+         const rating = baseRating - 6 + Math.floor(Math.random() * 10) - (age < 21 ? 4 : 0);
+         const { name, nat } = randomProspect();
+         const p = P(name, pos, age, rating, { nat });
          p.club = club.id;
          club.squad.push(p);
          have[pos]++;
@@ -71,8 +74,77 @@
        titles: 0,
        pendingMatch: null,    // result payload waiting to be viewed live
        feederPool: [...FEEDER_CLUBS_POOL],
+       windowWasOpen: false,
      };
    }
+   
+   const Aging = {
+     retirementChance(age, pos) {
+       const effAge = pos === "GK" ? age - 2 : age;
+       if (effAge < 33) return 0;
+       if (effAge >= 39) return 1;
+       return clamp01((effAge - 32) * 0.15);
+     },
+   
+     growthStep(age) {
+       if (age <= 20) return 2 + Math.round(Math.random() * 4); // +2..6
+       if (age <= 23) return 1 + Math.round(Math.random() * 3); // +1..4
+       if (age <= 26) return Math.round(Math.random() * 2);     // +0..2
+       if (age <= 29) return Math.random() < 0.5 ? 1 : 0;
+       return 0;
+     },
+     declineStep(age) {
+       if (age < 30) return 0;
+       if (age < 33) return Math.random() < 0.4 ? 1 : 0;
+       if (age < 36) return 1 + Math.round(Math.random() * 2);  // +1..3
+       return 2 + Math.round(Math.random() * 3);                // +2..5
+     },
+   
+     // Ages every player across the league by one year, grows or declines
+     // ratings, retires the oldest, and tops squads back up. Returns a news
+     // digest for the season-end screen.
+     advanceSeason(state) {
+       const news = { retirements: [], breakouts: [], totalRetired: 0 };
+   
+       state.clubs.forEach(club => {
+         const survivors = [];
+         club.squad.forEach(p => {
+           p.age += 1;
+           const retireChance = this.retirementChance(p.age, p.pos);
+           if (p.age >= 43 || Math.random() < retireChance) {
+             news.totalRetired++;
+             if (club.id === state.clubId) news.retirements.push({ name: p.name, age: p.age, pos: p.pos });
+             return; // not pushed to survivors — retires
+           }
+           const before = p.rating;
+           if (p.rating < p.potential && p.age < 30) {
+             p.rating = Math.min(p.potential, p.rating + this.growthStep(p.age));
+           } else if (p.age >= 30) {
+             p.rating = Math.max(40, p.rating - this.declineStep(p.age));
+           }
+           p.rating = clamp(p.rating, 40, 99);
+           if (club.id === state.clubId && p.rating - before >= 4) {
+             news.breakouts.push({ name: p.name, age: p.age, from: before, to: p.rating });
+           }
+           survivors.push(p);
+         });
+         club.squad = survivors;
+         ensureSquadDepth(club);
+         // Ratings/values/wages drift, so keep them consistent with the new numbers.
+         club.squad.forEach(p => {
+           const rf = Math.max(0, p.rating - 55);
+           const ageMult = p.age < 21 ? 1.35 : p.age < 24 ? 1.2 : p.age < 29 ? 1.0 : p.age < 32 ? 0.7 : p.age < 35 ? 0.45 : 0.25;
+           p.value = Math.max(0.3, Math.round(Math.pow(rf, 1.7) * ageMult * 0.16 * 10) / 10);
+           p.wage = Math.max(3, Math.round(Math.pow(rf, 1.45) * 2.6 + 4));
+         });
+         club.lineup = null; // force a fresh auto-pick against the new squad
+       });
+   
+       return news;
+     },
+   };
+   
+   function clamp01(v) { return Math.max(0, Math.min(1, v)); }
    
    const Game = {
      state: null,
@@ -106,7 +178,7 @@
      start(managerName, clubId) {
        this.state = newCareerState(managerName, clubId);
        Season.buildFixtures(this.state);
-       Market.reroll(this.state);
+       Market.weeklyUpdate(this.state);
        this.save();
      },
      myClub() {

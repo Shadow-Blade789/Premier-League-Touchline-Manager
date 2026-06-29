@@ -71,7 +71,7 @@
   
     advanceWeek(state) {
       state.week++;
-      Market.reroll(state);
+      return Market.weeklyUpdate(state);
     },
   
     isSeasonOver(state) {
@@ -143,6 +143,10 @@
         return { champion, relegated, userRelegated, myFinalPos, table };
       }
   
+      // Off-season development: every player in the league ages a year, grows
+      // toward (or declines from) potential, and the oldest retire.
+      const ageingNews = Aging.advanceSeason(state);
+  
       // Remove relegated clubs, return their names to the feeder pool, pull in
       // three fresh promoted sides.
       relegated.forEach(id => {
@@ -169,9 +173,10 @@
       state.week = 0;
       state.results = [];
       this.buildFixtures(state);
-      Market.reroll(state);
+      state.windowWasOpen = false; // force the season-opening "window just opened" transition
+      Market.weeklyUpdate(state);
   
-      return { champion, relegated, userRelegated, myFinalPos, table };
+      return { champion, relegated, userRelegated, myFinalPos, table, ageingNews };
     },
   };
   

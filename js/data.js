@@ -7,7 +7,14 @@
    ========================================================================= */
 
    let _pid = 1;
-   function P(name, pos, age, rating) {
+   function growthRoom(age) {
+     if (age <= 20) return 10 + Math.round(Math.random() * 8);   // +10..18
+     if (age <= 23) return 5 + Math.round(Math.random() * 5);    // +5..10
+     if (age <= 26) return 1 + Math.round(Math.random() * 4);    // +1..5
+     if (age <= 29) return Math.round(Math.random() * 2);        // +0..2
+     return 0;
+   }
+   function P(name, pos, age, rating, opts = {}) {
      const id = "p" + (_pid++);
      const rf = Math.max(0, rating - 55);
      const ageMult =
@@ -18,14 +25,58 @@
        age < 35 ? 0.45 : 0.25;
      const value = Math.max(0.3, Math.round(Math.pow(rf, 1.7) * ageMult * 0.16 * 10) / 10);
      const wage = Math.max(3, Math.round(Math.pow(rf, 1.45) * 2.6 + 4));
+   
+     let potential = Math.min(96, rating + growthRoom(age));
+     let wonderkid = false;
+     if (age <= 21 && Math.random() < 0.08) {
+       potential = Math.min(97, potential + 7 + Math.round(Math.random() * 8));
+       wonderkid = true;
+     }
+     if (opts.potential != null) potential = opts.potential;
+     if (opts.wonderkid != null) wonderkid = opts.wonderkid;
+   
      return {
        id, name, pos, age, rating,
+       potential, wonderkid,
+       nat: opts.nat || "ENG",
        value, wage,
        morale: 70 + Math.round(Math.random() * 15),
        fitness: 100,
        form: 0,
        club: null,
      };
+   }
+   
+   // Nationality-flavoured name pools, weighted roughly like a real Premier
+   // League squad sheet, used for generated free agents, academy fillers and
+   // transfer-market youth prospects.
+   const NATION_POOLS = {
+     ENG: { first: ["Jack","Tom","Harry","Luke","Sam","Josh","Connor","Liam","Ryan","Callum","Marcus","Lewis","Owen","Ethan","Mason","Jamie","Aaron","Kyle","Reece","Bradley","Theo","Charlie","Dylan","Ben","Will","Adam","Joe","Max","Nathan","Dan"],
+               last:  ["Walker","Hughes","Foster","Bennett","Sutton","Marshall","Hayes","Pearce","Russell","Bishop","Carter","Wells","Holloway","Mercer","Doyle","Kerr","Fletcher","Lowe","Whitfield","Sharpe","Donnelly","Bartley","Quinn","Hartley","Stokes","Vine","Crouch","Dunne","Mabey","Sinclair"] },
+     IRL: { first: ["Conor","Aidan","Sean","Cian","Darragh","Eoin","Liam","Cormac"], last: ["Brennan","Kelly","Doyle","Walsh","Byrne","McGrath","Hogan","Nolan"] },
+     FRA: { first: ["Hugo","Mathis","Lucas","Théo","Enzo","Yanis","Noah","Rayan"], last: ["Moreau","Lemaire","Girard","Caron","Rousseau","Fontaine","Bertrand","Lemoine"] },
+     BRA: { first: ["Gabriel","Lucas","Matheus","Bruno","Rafael","Caio","Wesley","Igor"], last: ["Souza","Oliveira","Pereira","Costa","Almeida","Barbosa","Ribeiro","Fernandes"] },
+     ESP: { first: ["Marc","Pol","Iker","Álvaro","Hugo","Mateo","Nico","Sergio"], last: ["Serrano","Navarro","Cano","Vidal","Marín","Castro","Soler","Reyes"] },
+     NED: { first: ["Daan","Sem","Luuk","Bram","Finn","Milan","Noud","Stijn"], last: ["Visser","Bakker","Janssen","Smit","De Boer","Mulder","Dekker","Hendriks"] },
+     NGA: { first: ["Chidi","Emeka","Tunde","Femi","Segun","Uche","Bayo","Ifeanyi"], last: ["Okafor","Adeyemi","Okoro","Eze","Balogun","Nwosu","Olawale","Chukwu"] },
+     ARG: { first: ["Joaquín","Santiago","Tomás","Agustín","Nicolás","Lautaro","Mateo","Bautista"], last: ["Acosta","Romero","Cabrera","Ferreyra","Aguirre","Ledesma","Quiroga","Sosa"] },
+     GER: { first: ["Finn","Luca","Jonas","Elias","Niklas","Tim","Leon","Maximilian"], last: ["Wagner","Becker","Hoffmann","Schreiber","Krüger","Lang","Vogel","Brandt"] },
+     POR: { first: ["Rui","Tiago","Gonçalo","Diogo","Bernardo","André","Vasco","Nuno"], last: ["Carvalho","Pinto","Teixeira","Cardoso","Lopes","Mendes","Faria","Esteves"] },
+     NOR: { first: ["Erik","Magnus","Sander","Jonas","Kristian","Markus","Henrik","Oskar"], last: ["Haugen","Berg","Larsen","Solberg","Andersen","Strand","Nilsen","Kristiansen"] },
+     SEN: { first: ["Mamadou","Ibrahima","Cheikh","Pape","Ousmane","Lamine","Abdou","Moussa"], last: ["Diallo","Ndiaye","Cissé","Faye","Diop","Sow","Toure","Mbaye"] },
+     JPN: { first: ["Ren","Sota","Haruto","Yuto","Kaito","Riku","Sho","Hayato"], last: ["Saito","Suzuki","Takahashi","Kobayashi","Yamamoto","Watanabe","Nakamura","Ito"] },
+     USA: { first: ["Tyler","Jackson","Cole","Bryce","Mason","Dylan","Cameron","Hunter"], last: ["Brooks","Reilly","Walsh","Pulisic","Anderson","Reyna","Carter","Howard"] },
+     COL: { first: ["Santiago","Andrés","Camilo","Esteban","Mateo","Juan","Sebastián","Cristian"], last: ["Quintero","Salazar","Restrepo","Mosquera","Valencia","Cuesta","Hinestroza","Mina"] },
+     HRV: { first: ["Luka","Marko","Ivan","Petar","Josip","Filip","Ante","Karlo"], last: ["Horvat","Kovačić","Babić","Vuković","Jurić","Maric","Pavić","Knežević"] },
+   };
+   const NATION_WEIGHTS = ["ENG","ENG","ENG","ENG","ENG","FRA","FRA","BRA","BRA","NED","POR","NGA","ARG","ESP","GER","IRL","SEN","HRV","NOR","JPN","USA","COL"];
+   
+   function randomProspect() {
+     const nat = NATION_WEIGHTS[Math.floor(Math.random() * NATION_WEIGHTS.length)];
+     const pool = NATION_POOLS[nat];
+     const first = pool.first[Math.floor(Math.random() * pool.first.length)];
+     const last = pool.last[Math.floor(Math.random() * pool.last.length)];
+     return { name: first + " " + last, nat };
    }
    
    // Position groups: GK, DF, MF, FW
@@ -189,16 +240,6 @@
      "West Ham United", "Burnley", "Wolverhampton Wanderers", "Preston North End",
      "Blackburn Rovers", "Swansea City", "Cardiff City", "Millwall",
    ];
-   
-   // Free-agent / fringe-player name pool for the rolling transfer market.
-   const FIRST_NAMES = ["Jack","Tom","Harry","Luke","Sam","Josh","Connor","Liam","Ryan","Callum","Marcus","Lewis","Owen","Ethan","Mason","Jamie","Aaron","Kyle","Reece","Bradley","Theo","Charlie","Dylan","Ben","Will","Adam","Joe","Max","Nathan","Dan"];
-   const LAST_NAMES = ["Walker","Hughes","Foster","Bennett","Sutton","Marshall","Hayes","Pearce","Russell","Bishop","Carter","Wells","Holloway","Mercer","Doyle","Kerr","Fletcher","Lowe","Whitfield","Sharpe","Donnelly","Bartley","Quinn","Hartley","Stokes","Vine","Crouch","Dunne","Mabey","Sinclair"];
-   
-   function randomName() {
-     const f = FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)];
-     const l = LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)];
-     return f + " " + l;
-   }
    
    const POSITIONS = ["GK", "DF", "MF", "FW"];
    

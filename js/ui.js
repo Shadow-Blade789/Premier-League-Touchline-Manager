@@ -43,6 +43,7 @@
   
     renderHub(state) {
       const club = Game.myClub();
+      document.getElementById("hubWindowBanner").innerHTML = this.windowBanner(state);
       const match = Season.userMatchThisRound(state);
       const nf = document.getElementById("nextFixtureText");
       if (!match) {
@@ -81,7 +82,7 @@
         <div class="player-row">
           <div class="pos-chip ${p.pos}">${p.pos}</div>
           <div>
-            <div class="name">${p.name}</div>
+            <div class="name">${p.wonderkid ? "⭐ " : ""}${p.name} <span class="nat-tag">${p.nat || "ENG"}</span></div>
             <div class="sub">${opts.subLabel || (p.club ? clubShortLookup(p.club) : "Free agent")}</div>
           </div>
           <div class="mono">${p.age}</div>
@@ -92,25 +93,43 @@
       `;
     },
   
+    windowBanner(state) {
+      const status = TransferWindow.status(state);
+      if (status.open) {
+        return `<div class="window-banner open"><strong>${status.name} transfer window OPEN</strong> — closes in ${status.closesIn === 0 ? "this matchweek" : status.closesIn + " matchweek" + (status.closesIn === 1 ? "" : "s")}.</div>`;
+      }
+      const when = status.wraps ? "next season" : "in " + status.opensIn + " matchweek" + (status.opensIn === 1 ? "" : "s");
+      return `<div class="window-banner closed"><strong>Transfer window closed</strong> — reopens ${when}.</div>`;
+    },
+  
     renderSquad(state) {
       const club = Game.myClub();
+      const open = TransferWindow.isOpen(state.week);
+      document.getElementById("squadWindowBanner").innerHTML = this.windowBanner(state);
       const sorted = club.squad.slice().sort((a, b) => POSITIONS.indexOf(a.pos) - POSITIONS.indexOf(b.pos) || b.rating - a.rating);
       document.getElementById("squadList").innerHTML = sorted.map(p => this.renderPlayerRow(p, {
         subLabel: this.wage(p.wage),
-        action: `<button class="small danger" data-sell="${p.id}">Sell</button>`,
+        action: `<button class="small danger" data-sell="${p.id}" ${open ? "" : "disabled"}>Sell</button>`,
       })).join("");
     },
   
     renderMarket(state) {
       const club = Game.myClub();
+      document.getElementById("marketWindowBanner").innerHTML = this.windowBanner(state);
       document.getElementById("marketBudgetLabel").textContent = "Budget: " + this.money(club.budget);
+      const open = TransferWindow.isOpen(state.week);
+      document.getElementById("btnReroll").disabled = !open;
       const list = document.getElementById("marketList");
+      if (!open) {
+        list.innerHTML = `<p class="muted">The market is closed until the next transfer window opens.</p>`;
+        return;
+      }
       if (!state.market.length) {
         list.innerHTML = `<p class="muted">No players available — try rerolling the market.</p>`;
         return;
       }
       list.innerHTML = state.market.map(l => this.renderPlayerRow(l.player, {
-        subLabel: "Available now",
+        subLabel: l.origin ? "Listed by " + l.originName : l.originName,
         priceLabel: this.money(l.price),
         action: `<button class="small primary" data-buy="${l.listingId}" ${club.budget < l.price ? "disabled" : ""}>Sign</button>`,
       })).join("");

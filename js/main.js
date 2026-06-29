@@ -102,7 +102,7 @@
         if (!btn) return;
         const res = Market.sell(Game.state, btn.dataset.sell);
         if (!res.ok) { UI.toast(res.reason); return; }
-        UI.toast("Sold for " + UI.money(res.fee));
+        UI.toast(`Sold to ${res.buyerName} for ${UI.money(res.fee)}`);
         Game.save();
         UI.renderSquad(Game.state);
         this.refreshChrome();
@@ -121,7 +121,7 @@
         if (!btn) return;
         const res = Market.buy(Game.state, btn.dataset.buy);
         if (!res.ok) { UI.toast(res.reason); return; }
-        UI.toast("Signed!");
+        UI.toast(`Signed ${res.name} (from ${res.origin})`);
         Game.save();
         UI.renderMarket(Game.state);
         this.refreshChrome();
@@ -205,7 +205,7 @@
       const state = Game.state;
       const { home, away, finalHg, finalAg } = MatchPlayer;
       Season.recordResult(state, home.id, away.id, finalHg, finalAg);
-      Season.advanceWeek(state);
+      const transition = Season.advanceWeek(state);
       Game.save();
   
       if (Season.isSeasonOver(state)) {
@@ -214,6 +214,8 @@
         this.renderSeasonEnd(result);
       } else {
         this.showTab("hub");
+        if (transition.transition === "opened") UI.toast(`🔁 ${transition.name} transfer window is now open!`);
+        else if (transition.transition === "closed") UI.toast("🔒 Transfer window has closed.");
       }
     },
   
@@ -221,6 +223,7 @@
     renderSeasonEnd(result) {
       const state = Game.state;
       const club = Game.myClub();
+      ["hub", "squad", "market", "lineup", "table"].forEach(t => document.getElementById("screen-" + t).classList.add("hidden"));
       document.getElementById("tabs").classList.add("hidden");
       document.getElementById("screen-match").classList.add("hidden");
       const screen = document.getElementById("screen-seasonend");
@@ -251,6 +254,18 @@
   
       const isChampion = result.champion.id === club.id;
       const zone = Season.zoneFor(result.myFinalPos);
+      const news = result.ageingNews;
+      let newsHTML = "";
+      if (news && (news.retirements.length || news.breakouts.length)) {
+        newsHTML = `<div class="panel" style="text-align:left; margin-top:1.2rem;"><h3>Off-season news — ${club.name}</h3>`;
+        if (news.retirements.length) {
+          newsHTML += `<p class="muted">Retired: ${news.retirements.map(r => `${r.name} (${r.age})`).join(", ")}</p>`;
+        }
+        if (news.breakouts.length) {
+          newsHTML += `<p>Breakout development: ${news.breakouts.map(b => `${b.name} ${b.from}→${b.to}`).join(", ")}</p>`;
+        }
+        newsHTML += `<p class="muted" style="font-size:0.78rem;">${news.totalRetired} players retired across the league this off-season.</p></div>`;
+      }
       screen.innerHTML = `
         <div class="trophy-screen">
           <p class="eyebrow">Season ${state.season - 1}/${String(state.season).slice(2)} complete</p>
@@ -258,6 +273,7 @@
           <p>${club.name} finished <strong>${ordinal(result.myFinalPos)}</strong>${zone ? " — " + zoneLabel(zone) : ""}.</p>
           <p class="muted">Champions: ${result.champion.name} · New budget: ${UI.money(club.budget)}</p>
           <button class="primary" id="btnSeasonContinue">Continue to Next Season</button>
+          ${newsHTML}
         </div>
       `;
       document.getElementById("btnSeasonContinue").addEventListener("click", () => {

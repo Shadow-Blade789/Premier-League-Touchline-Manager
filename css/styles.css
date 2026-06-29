@@ -184,6 +184,16 @@
    .pos-chip.FW { color: #ff7a6b; border-color: #ff7a6b; }
    .player-row .name { font-weight: 600; }
    .player-row .sub { color: var(--muted); font-size: 0.78rem; }
+   .nat-tag {
+     font-family: var(--font-mono); font-size: 0.6rem; color: var(--muted);
+     border: 1px solid var(--hairline); padding: 0.1em 0.35em; margin-left: 0.3em;
+     letter-spacing: 0.04em; vertical-align: middle;
+   }
+   .window-banner {
+     padding: 0.6em 0.9em; margin-bottom: 0.9rem; font-size: 0.82rem;
+     border-left: 3px solid var(--amber); background: rgba(255,200,87,0.07);
+   }
+   .window-banner.closed { border-left-color: var(--muted); background: rgba(159,179,172,0.08); color: var(--muted); }
    .rating-pill {
      font-family: var(--font-mono); font-size: 0.78rem;
      padding: 0.15em 0.5em; border: 1px solid var(--hairline); text-align: center; min-width: 2.2em;
