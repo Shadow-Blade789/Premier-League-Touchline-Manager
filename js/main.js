@@ -10,6 +10,7 @@
       UI.renderClubGrid(null);
       this.wireStartScreen();
       this.wireTabs();
+      this.wireHub();
       this.wireSquad();
       this.wireMarket();
       this.wireLineup();
@@ -76,12 +77,19 @@
     },
   
     showTab(name) {
+      // If navigating away while a match has ended but user hasn't clicked
+      // Continue, commit the result now so it isn't lost.
+      const matchScreen = document.getElementById("screen-match");
+      if (!matchScreen.classList.contains("hidden") && MatchPlayer.matchEnded && !MatchPlayer.committed) {
+        MatchPlayer.commit();
+      }
+  
       ["hub", "squad", "market", "lineup", "table"].forEach(t => {
         document.getElementById("screen-" + t).classList.toggle("hidden", t !== name);
         const tabBtn = document.getElementById("tab" + t[0].toUpperCase() + t.slice(1));
         if (tabBtn) tabBtn.classList.toggle("active", t === name);
       });
-      document.getElementById("screen-match").classList.add("hidden");
+      matchScreen.classList.add("hidden");
       document.getElementById("screen-seasonend").classList.add("hidden");
       this.refreshChrome();
       if (name === "hub") UI.renderHub(Game.state);
@@ -93,6 +101,13 @@
   
     refreshChrome() {
       if (Game.state) UI.renderTopbar(Game.state);
+    },
+  
+    // ---------------- Hub ----------------
+    wireHub() {
+      // "Set Lineup & Play" on the hub navigates to the Lineup tab so the
+      // manager can review/adjust before kicking off.
+      document.getElementById("btnGoToLineup").addEventListener("click", () => this.showTab("lineup"));
     },
   
     // ---------------- Squad ----------------
@@ -164,6 +179,11 @@
   
     startMatch() {
       const club = Game.myClub();
+      if (!club.lineup || !Lineup.isComplete(club.lineup)) {
+        // Auto-pick first so the error message is a last resort, not the first
+        // thing the manager sees if they haven't touched lineup yet.
+        Lineup.autoPick(club, club.formation || "4-4-2");
+      }
       if (!Lineup.isComplete(club.lineup)) {
         document.getElementById("lineupError").textContent = "Fill every starting slot before kicking off.";
         return;
@@ -176,8 +196,13 @@
   
       const home = state.clubs.find(c => c.id === fixture.home);
       const away = state.clubs.find(c => c.id === fixture.away);
-      if (!home.lineup) Lineup.autoPick(home);
-      if (!away.lineup) Lineup.autoPick(away);
+  
+      // Always force a fresh auto-pick for AI opponents so they field a valid
+      // full XI. Stale lineups from transfers, aging, or promotion can have
+      // null slots that badly distort the simulation.
+      const ai = home.id === club.id ? away : home;
+      Lineup.autoPick(ai, ai.formation || "4-4-2");
+  
       const full = MatchEngine.simulateFull(home, away);
   
       MatchPlayer.load(home, away, full);
@@ -202,20 +227,15 @@
     },
   
     finishMatch() {
-      const state = Game.state;
-      const { home, away, finalHg, finalAg } = MatchPlayer;
-      Season.recordResult(state, home.id, away.id, finalHg, finalAg);
-      const transition = Season.advanceWeek(state);
-      Game.save();
-  
-      if (Season.isSeasonOver(state)) {
-        const result = Season.endOfSeason(state);
-        Game.save();
-        this.renderSeasonEnd(result);
+      // The result was already committed by MatchPlayer.commit() when the match
+      // ended (endMatch). All we need to do here is navigate.
+      if (MatchPlayer.seasonOver) {
+        this.renderSeasonEnd(MatchPlayer.seasonResult);
       } else {
+        const t = MatchPlayer.windowTransition;
         this.showTab("hub");
-        if (transition.transition === "opened") UI.toast(`🔁 ${transition.name} transfer window is now open!`);
-        else if (transition.transition === "closed") UI.toast("🔒 Transfer window has closed.");
+        if (t && t.transition === "opened") UI.toast(`🔁 ${t.name} transfer window is now open!`);
+        else if (t && t.transition === "closed") UI.toast("🔒 Transfer window has closed.");
       }
     },
   
@@ -289,12 +309,17 @@
   const MatchPlayer = {
     home: null, away: null, timeline: [], idx: 0, speed: 1, timer: null, running: false,
     finalHg: 0, finalAg: 0,
+    // Post-match state (populated by commit()):
+    committed: false, matchEnded: false,
+    seasonOver: false, seasonResult: null, windowTransition: null,
   
     load(home, away, full) {
       this.home = home; this.away = away;
       this.timeline = full.timeline; this.idx = 0;
       this.finalHg = full.hg; this.finalAg = full.ag;
       this.speed = 1; this.running = false;
+      this.committed = false; this.matchEnded = false;
+      this.seasonOver = false; this.seasonResult = null; this.windowTransition = null;
       clearInterval(this.timer);
   
       document.getElementById("matchHomeCrest").outerHTML = UI.crestHTML(home).replace('class="crest "', 'class="crest" id="matchHomeCrest"');
@@ -371,13 +396,32 @@
       this.endMatch();
     },
   
+    // Called the moment the last event is revealed. Commits the result to
+    // game state immediately — so navigating away via a tab never loses it.
     endMatch() {
       clearInterval(this.timer);
       this.running = false;
+      this.matchEnded = true;
       document.getElementById("matchStatus").textContent = "Full Time";
       document.getElementById("btnMatchStart").disabled = true;
       document.getElementById("btnMatchPause").disabled = true;
       document.getElementById("btnMatchContinue").classList.remove("hidden");
+      this.commit();
+    },
+  
+    // Idempotent: safe to call multiple times (e.g. from showTab guard).
+    commit() {
+      if (this.committed || !this.matchEnded) return;
+      this.committed = true;
+      const state = Game.state;
+      Season.recordResult(state, this.home.id, this.away.id, this.finalHg, this.finalAg);
+      this.windowTransition = Season.advanceWeek(state);
+      Game.save();
+      if (Season.isSeasonOver(state)) {
+        this.seasonOver = true;
+        this.seasonResult = Season.endOfSeason(state);
+        Game.save();
+      }
     },
   };
   
