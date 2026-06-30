@@ -56,6 +56,7 @@
   function goalBoost(p) { return (p.bonus && p.bonus.goal) || 0; }
   function assistBoost(p) { return (p.bonus && p.bonus.assist) || 0; }
   function keeperBoost(p) { return (p.bonus && p.bonus.keeper) || 0; }
+  function defenseBoost(p) { return (p.bonus && p.bonus.defense) || 0; }
 
   const MatchEngine = {
     attackRating(players) {
@@ -68,7 +69,7 @@
     defenseRating(players) {
       const df = players.filter(p => p.pos === "DF");
       const gk = players.filter(p => p.pos === "GK");
-      const avgDf = df.length ? df.reduce((s, p) => s + p.rating, 0) / df.length : 60;
+      const avgDf = df.length ? df.reduce((s, p) => s + p.rating * (1 + defenseBoost(p)), 0) / df.length : 60;
       const avgGk = gk.length ? gk.reduce((s, p) => s + p.rating * (1 + keeperBoost(p)), 0) / gk.length : 60;
       return avgDf * 0.72 + avgGk * 0.28;
     },

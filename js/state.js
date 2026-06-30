@@ -107,7 +107,12 @@
      // digest for the season-end screen.
      advanceSeason(state) {
        const news = { retirements: [], breakouts: [], totalRetired: 0 };
-   
+
+       // Judge everyone's season BEFORE ratings move, then let it reshape both
+       // potential and rating — relative to the player's own level, for every
+       // club in the division.
+       const perfIndex = Stats.performanceIndex(state, Season.table(state));
+
        state.clubs.forEach(club => {
          const survivors = [];
          club.squad.forEach(p => {
@@ -119,12 +124,27 @@
              return; // not pushed to survivors — retires
            }
            const before = p.rating;
-           if (p.rating < p.potential && p.age < 30) {
-             p.rating = Math.min(p.potential, p.rating + this.growthStep(p.age));
-           } else if (p.age >= 30) {
-             p.rating = Math.max(40, p.rating - this.declineStep(p.age));
+           const perf = perfIndex[p.id] || 0;
+
+           // Performance reshapes the ceiling — a strong year raises potential,
+           // a poor one trims it (bounded so a single season can't swing wildly).
+           const potDelta = clamp(Math.round(perf * 6), -5, 5);
+           p.potential = clamp(p.potential + potDelta, 40, 99);
+
+           // Rating drift = age trajectory + the season's verdict. A good season
+           // accelerates a young player's growth or cushions an old one's
+           // decline; a poor season can pull anyone's overall down.
+           let delta = 0;
+           if (p.age < 30) {
+             if (p.rating < p.potential) delta += this.growthStep(p.age);
+           } else {
+             delta -= this.declineStep(p.age);
            }
-           p.rating = clamp(p.rating, 40, 99);
+           delta += clamp(Math.round(perf * 3), -3, 3);
+           p.rating = clamp(p.rating + delta, 40, 99);
+           // A storming season can push a player past their old ceiling.
+           if (p.rating > p.potential) p.potential = p.rating;
+
            if (club.id === state.clubId && p.rating - before >= 4) {
              news.breakouts.push({ name: p.name, age: p.age, from: before, to: p.rating });
            }

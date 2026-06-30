@@ -168,11 +168,12 @@
    
    /* ---------- Squad & market lists ---------- */
    .player-row {
-     display: grid; grid-template-columns: 2.6em 1fr auto auto auto auto;
+     display: grid; grid-template-columns: 2.6em 1fr auto auto auto auto auto;
      align-items: center; gap: 0.7rem;
      padding: 0.55rem 0.3rem; border-bottom: 1px solid var(--hairline);
      font-size: 0.88rem;
    }
+   .pot-cell { color: var(--muted); font-size: 0.8rem; }
    .player-row:last-child { border-bottom: none; }
    .pos-chip {
      font-family: var(--font-display); font-size: 0.62rem; text-align: center;
@@ -198,7 +199,7 @@
      font-family: var(--font-mono); font-size: 0.78rem;
      padding: 0.15em 0.5em; border: 1px solid var(--hairline); text-align: center; min-width: 2.2em;
    }
-   .list-head { display:grid; grid-template-columns: 2.6em 1fr auto auto auto auto; gap:0.7rem; padding: 0 0.3rem 0.4rem; font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--hairline); }
+   .list-head { display:grid; grid-template-columns: 2.6em 1fr auto auto auto auto auto; gap:0.7rem; padding: 0 0.3rem 0.4rem; font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--hairline); }
    
    .market-toolbar { display:flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; flex-wrap: wrap; gap: 0.6rem; }
    
@@ -308,9 +309,10 @@
    .scope-toggle .scope-btn:last-child { border-right: none; }
    .scope-toggle .scope-btn.active { background: var(--amber); color: var(--amber-ink); }
 
-   .stat-columns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
-   @media (max-width: 860px) { .stat-columns { grid-template-columns: 1fr 1fr; } }
-   @media (max-width: 460px) { .stat-columns { grid-template-columns: 1fr; } }
+   .stat-columns { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.8rem; }
+   @media (max-width: 920px) { .stat-columns { grid-template-columns: 1fr 1fr 1fr; } }
+   @media (max-width: 620px) { .stat-columns { grid-template-columns: 1fr 1fr; } }
+   @media (max-width: 420px) { .stat-columns { grid-template-columns: 1fr; } }
 
    .stat-col { border: 1px solid var(--hairline); background: var(--navy-panel-2); }
    .stat-col-head {
@@ -334,9 +336,10 @@
    .stat-row.appended { border-top: 1px dashed var(--hairline); }
    .stat-empty { padding: 0.7rem 0.6rem; font-size: 0.78rem; margin: 0; }
 
-   .award-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.8rem; margin-bottom: 1rem; }
-   @media (max-width: 860px) { .award-grid { grid-template-columns: 1fr 1fr; } }
-   @media (max-width: 460px) { .award-grid { grid-template-columns: 1fr; } }
+   .award-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.8rem; margin-bottom: 1rem; }
+   @media (max-width: 920px) { .award-grid { grid-template-columns: 1fr 1fr 1fr; } }
+   @media (max-width: 620px) { .award-grid { grid-template-columns: 1fr 1fr; } }
+   @media (max-width: 420px) { .award-grid { grid-template-columns: 1fr; } }
    .award-card {
      border: 1px solid var(--hairline); background: var(--navy-panel-2);
      padding: 0.9rem 0.7rem; text-align: center;

@@ -10,6 +10,11 @@
     wage(w) {
       return "£" + w + "k/wk";
     },
+    // Scouting reveals only a 5-wide band around a player's true potential.
+    potentialRange(pot) {
+      const lo = Math.floor(pot / 5) * 5;
+      return `${lo}-${lo + 5}`;
+    },
   
     crestHTML(club, size = "") {
       const [c1, c2] = club.colors;
@@ -88,6 +93,7 @@
           </div>
           <div class="mono">${p.age}</div>
           <div class="rating-pill">${p.rating}</div>
+          <div class="mono pot-cell" title="Potential">${opts.potentialLabel ?? "—"}</div>
           <div class="mono">${opts.priceLabel ?? this.money(p.value)}</div>
           ${actionHTML}
         </div>
@@ -110,6 +116,7 @@
       const sorted = club.squad.slice().sort((a, b) => POSITIONS.indexOf(a.pos) - POSITIONS.indexOf(b.pos) || b.rating - a.rating);
       document.getElementById("squadList").innerHTML = sorted.map(p => this.renderPlayerRow(p, {
         subLabel: this.wage(p.wage),
+        potentialLabel: String(p.potential), // your own players: exact potential
         action: `<button class="small danger" data-sell="${p.id}" ${open ? "" : "disabled"}>Sell</button>`,
       })).join("");
     },
@@ -132,6 +139,7 @@
       list.innerHTML = state.market.map(l => this.renderPlayerRow(l.player, {
         subLabel: l.origin ? "Listed by " + l.originName : l.originName,
         priceLabel: this.money(l.price),
+        potentialLabel: this.potentialRange(l.player.potential), // scouted: 5-wide range
         action: `<button class="small primary" data-buy="${l.listingId}" ${club.budget < l.price ? "disabled" : ""}>Sign</button>`,
       })).join("");
     },
@@ -258,8 +266,8 @@
 
     renderHubStats(state, scope) {
       const cols = STAT_DEFS.map(def => {
-        if (scope === "team") return this.teamColumnHTML(def, Stats.teamLeaders(state, def.key, 5));
-        return this.statColumnHTML(def, Stats.leaderboard(state, def.key, 5));
+        if (scope === "team") return this.teamColumnHTML(def, Stats.teamLeaders(state, def.key, 5, def.pos));
+        return this.statColumnHTML(def, Stats.leaderboard(state, def.key, 5, def.pos));
       }).join("");
       const wrap = document.getElementById("hubStatColumns");
       wrap.innerHTML = cols;
@@ -291,11 +299,13 @@
 
     bonusCalloutHTML(granted) {
       if (!granted || !granted.length) return "";
+      const labels = { goal: "goals", assist: "assists", keeper: "keeping", defense: "defending" };
       const items = granted.map(g => {
         const tags = Object.entries(g.def.bonus)
-          .map(([k, v]) => `+${Math.round(v * 100)}% ${({ goal: "goals", assist: "assists", keeper: "keeping" })[k]}`)
+          .map(([k, v]) => `+${Math.round(v * g.scale * 100)}% ${labels[k]}`)
           .join(", ");
-        return `<li>${g.def.icon} <strong>${g.name}</strong> wins the ${g.def.award} — <span class="amber">${tags}</span> next season.</li>`;
+        const verb = g.rank === 1 ? `wins the ${g.def.award}` : `makes the ${g.def.award} top five (#${g.rank})`;
+        return `<li>${g.def.icon} <strong>${g.name}</strong> ${verb} — <span class="amber">${tags}</span> next season.</li>`;
       }).join("");
       return `<div class="bonus-callout"><div class="eyebrow">Form bonuses earned</div><ul>${items}</ul></div>`;
     },

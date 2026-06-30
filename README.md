@@ -72,13 +72,26 @@ js/main.js           App controller, event wiring, live match player
   commentary. The hub's **Season Stat Leaders** panel toggles between the
   league top five (your players highlighted, your best appended with their
   rank if they miss the cut) and a **My Squad** view ranked within your team.
-- **Season awards** crown a Golden Boot (goals), Playmaker (assists), Golden
-  Glove (clean sheets) and Shot Stopper (saves) at season's end, with full
-  top-five boards. Any of *your* players who win carry a small, bounded
-  **form bonus** into the next season — +12% goal/assist weighting or +4–6%
-  goalkeeping — folded into the match engine. Bonuses last one season and
-  must be re-won to keep. Tune the categories, bonuses and the `BONUS_CAP`
-  in `js/stats.js`.
+- **Season awards** crown a Golden Boot (goals), Playmaker (assists), Best
+  Defender (defender clean sheets), Golden Glove (keeper clean sheets) and
+  Shot Stopper (saves) at season's end, with full top-five boards. A clean
+  sheet is credited to the keeper *and* every starting defender, so it feeds
+  both keeper and defender races.
+- **Form bonuses** go to the top five of every category at *every* club —
+  the winner gets the full boost (+12% goal/assist weighting, +6% defending
+  or keeping, +4% keeping for saves), ranks 2–5 a 40% share. They fold into
+  the match engine, last one season, must be re-won, and are capped at +25%
+  per track (`BONUS_CAP`/`TOP5_BONUS_SCALE` in `js/stats.js`).
+- **Performance-based development**: at season's end every player in the
+  league has their potential and overall nudged by how they did — judged
+  *relative to their own level* (a 64-rated regular surviving the Prem is an
+  achievement; an 88 is expected to dominate) and lifted or dragged by how
+  their club finished versus its tier. Strong seasons grow players and raise
+  ceilings; poor ones trim both. Tune the model in `Stats.performanceIndex`
+  (`js/stats.js`) and `Aging.advanceSeason` (`js/state.js`).
+- **Scouted potential**: the transfer market reveals a player's potential
+  only as a 5-wide band (an 83 shows as `80-85`); your own squad list shows
+  each player's exact potential.
 
 ## Customizing
 

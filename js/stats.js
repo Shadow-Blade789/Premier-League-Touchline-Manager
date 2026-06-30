@@ -11,15 +11,20 @@
 // Award categories. `key` matches the per-player stat field; `bonus` is the
 // boost handed to a user-club winner for the next season (consumed by the
 // match engine). Order here is the order shown on the hub and season-end.
+// `pos` (optional) scopes a category to a position group, so Golden Glove
+// ranks goalkeepers and Best Defender ranks defenders even though both read
+// the shared cleanSheets tally.
 const STAT_DEFS = [
   { key: "goals",       label: "Goals",        short: "G",  award: "Golden Boot",  icon: "🥇", bonus: { goal: 0.12 } },
   { key: "assists",     label: "Assists",      short: "A",  award: "Playmaker",    icon: "🎯", bonus: { assist: 0.12 } },
-  { key: "cleanSheets", label: "Clean Sheets", short: "CS", award: "Golden Glove", icon: "🧤", bonus: { keeper: 0.06 } },
-  { key: "saves",       label: "Saves",        short: "SV", award: "Shot Stopper", icon: "🧱", bonus: { keeper: 0.04 } },
+  { key: "cleanSheets", label: "Clean Sheets", short: "CS", award: "Best Defender", icon: "🛡️", pos: "DF", bonus: { defense: 0.06 } },
+  { key: "cleanSheets", label: "Clean Sheets", short: "CS", award: "Golden Glove", icon: "🧤", pos: "GK", bonus: { keeper: 0.06 } },
+  { key: "saves",       label: "Saves",        short: "SV", award: "Shot Stopper", icon: "🧱", pos: "GK", bonus: { keeper: 0.04 } },
 ];
 const STAT_KEYS = ["goals", "assists", "cleanSheets", "saves", "apps"];
-const BONUS_KEYS = ["goal", "assist", "keeper"];
+const BONUS_KEYS = ["goal", "assist", "keeper", "defense"];
 const BONUS_CAP = 0.25; // a single player can never carry more than +25% in any track
+const TOP5_BONUS_SCALE = 0.4; // ranks 2–5 earn this fraction of the winner's boost
 
 const Stats = {
   blank() { return { goals: 0, assists: 0, cleanSheets: 0, saves: 0, apps: 0 }; },
@@ -63,10 +68,12 @@ const Stats = {
   recordSide(starters, oppStarters, goalsFor, goalsAgainst, scorers) {
     starters.forEach(p => { this.ensure(p); p.stats.apps++; });
     const gk = starters.find(p => p.pos === "GK");
-    if (gk) {
-      this.ensure(gk);
-      if (goalsAgainst === 0) gk.stats.cleanSheets++;
-      this.recordSaves(gk, starters, oppStarters, goalsAgainst);
+    if (gk) { this.ensure(gk); this.recordSaves(gk, starters, oppStarters, goalsAgainst); }
+    // A clean sheet is shared by the keeper and every starting defender — it
+    // anchors both the Golden Glove (GK) and Best Defender (DF) races.
+    if (goalsAgainst === 0) {
+      if (gk) gk.stats.cleanSheets++;
+      starters.filter(p => p.pos === "DF").forEach(d => { this.ensure(d); d.stats.cleanSheets++; });
     }
 
     const attackers = starters.filter(p => p.pos === "FW" || p.pos === "MF");
@@ -115,9 +122,9 @@ const Stats = {
   // Ranked list for one stat. Returns the top `n`, plus — when none of the
   // user's players made that cut — their single best performer with the
   // league rank they actually sit at.
-  leaderboard(state, key, n = 5) {
+  leaderboard(state, key, n = 5, pos = null) {
     const ranked = this.allEntries(state)
-      .filter(e => e.stats[key] > 0)
+      .filter(e => (!pos || e.pos === pos) && e.stats[key] > 0)
       .map(e => ({ id: e.id, name: e.name, pos: e.pos, clubShort: e.clubShort, mine: e.mine, value: e.stats[key] }));
     ranked.sort((a, b) => b.value - a.value || a.name.localeCompare(b.name));
     ranked.forEach((e, i) => { e.rank = i + 1; });
@@ -127,34 +134,37 @@ const Stats = {
   },
 
   // The user's own squad ranked within a stat, each tagged with league rank.
-  teamLeaders(state, key, n = 5) {
-    return this.leaderboard(state, key, Infinity).all.filter(e => e.mine).slice(0, n);
+  teamLeaders(state, key, n = 5, pos = null) {
+    return this.leaderboard(state, key, Infinity, pos).all.filter(e => e.mine).slice(0, n);
   },
 
   // One bundle per award category, including the winner and the display board.
   awards(state) {
     return STAT_DEFS.map(def => {
-      const lb = this.leaderboard(state, def.key, 5);
+      const lb = this.leaderboard(state, def.key, 5, def.pos);
       return { def, winner: lb.all[0] || null, top: lb.top, yourBest: lb.yourBest };
     });
   },
 
-  // Clear last season's boosts, then hand fresh ones to any user-club players
-  // who topped a category. Returns a digest for the season-end screen.
+  // Clear last season's boosts, then hand fresh ones to the top five of every
+  // category at EVERY club — the winner gets the full boost, ranks 2–5 a
+  // scaled-down share. Returns the user's own players' boosts for the digest.
   assignSeasonBonuses(state, awards) {
     this.clearBonuses(state);
-    const myClub = state.clubs.find(c => c.id === state.clubId);
-    if (!myClub) return [];
+    const byId = {};
+    state.clubs.forEach(c => c.squad.forEach(p => { byId[p.id] = p; }));
     const granted = [];
     awards.forEach(a => {
-      if (!a.winner || !a.winner.mine) return;
-      const player = myClub.squad.find(p => p.id === a.winner.id);
-      if (!player) return; // winner may have retired in the off-season
-      this.ensure(player);
-      Object.entries(a.def.bonus).forEach(([k, v]) => {
-        player.bonus[k] = Math.min((player.bonus[k] || 0) + v, BONUS_CAP);
+      a.top.forEach(e => {
+        const player = byId[e.id];
+        if (!player) return; // may have retired in the off-season
+        this.ensure(player);
+        const scale = e.rank === 1 ? 1 : TOP5_BONUS_SCALE;
+        Object.entries(a.def.bonus).forEach(([k, v]) => {
+          player.bonus[k] = Math.min((player.bonus[k] || 0) + v * scale, BONUS_CAP);
+        });
+        if (e.mine) granted.push({ name: player.name, award: a.def.award, icon: a.def.icon, rank: e.rank, value: e.value, def: a.def, scale });
       });
-      granted.push({ name: player.name, award: a.def.award, icon: a.def.icon, value: a.winner.value, def: a.def });
     });
     return granted;
   },
@@ -162,10 +172,62 @@ const Stats = {
   // Human-readable summary of a player's active boosts, e.g. "+12% goals".
   bonusTags(p) {
     if (!p.bonus) return [];
-    const tags = [];
-    if (p.bonus.goal) tags.push(`+${Math.round(p.bonus.goal * 100)}% goals`);
-    if (p.bonus.assist) tags.push(`+${Math.round(p.bonus.assist * 100)}% assists`);
-    if (p.bonus.keeper) tags.push(`+${Math.round(p.bonus.keeper * 100)}% keeping`);
-    return tags;
+    const labels = { goal: "goals", assist: "assists", keeper: "keeping", defense: "defending" };
+    return BONUS_KEYS.filter(k => p.bonus[k]).map(k => `+${Math.round(p.bonus[k] * 100)}% ${labels[k]}`);
+  },
+
+  // ---- end-of-season performance, for player growth -------------------------
+
+  // A per-game contribution score, weighted by what each position is there to
+  // do. Keepers and defenders live off clean sheets (and a keeper's saves),
+  // attackers off goals and assists.
+  contribution(p) {
+    const s = p.stats;
+    switch (p.pos) {
+      case "FW": return s.goals * 1.0 + s.assists * 0.6;
+      case "MF": return s.goals * 0.7 + s.assists * 1.0;
+      case "DF": return s.cleanSheets * 0.8 + (s.goals + s.assists) * 0.5;
+      case "GK": return s.cleanSheets * 1.0 + s.saves * 0.04;
+    }
+    return 0;
+  },
+
+  // Scores every player's season in [-~1.5, ~2], judged RELATIVE to what's
+  // expected of a player at their rating (so a 64 holding his own is a win,
+  // while an 88 is expected to dominate) and lifted/dragged by how their club
+  // did versus its tier. Drives potential/rating drift in Aging.advanceSeason.
+  performanceIndex(state, table) {
+    const posByClub = {};
+    table.forEach(r => { posByClub[r.id] = r.pos; });
+    const expectedPosByTier = { 5: 3, 4: 7, 3: 11, 2: 15, 1: 18 };
+
+    // League-wide average contribution rate per position, among regulars.
+    const sums = { GK: [0, 0], DF: [0, 0], MF: [0, 0], FW: [0, 0] };
+    state.clubs.forEach(c => c.squad.forEach(p => {
+      this.ensure(p);
+      if (p.stats.apps >= 8) { sums[p.pos][0] += this.contribution(p) / p.stats.apps; sums[p.pos][1] += 1; }
+    }));
+    const posAvg = {};
+    ["GK", "DF", "MF", "FW"].forEach(k => { posAvg[k] = sums[k][1] ? sums[k][0] / sums[k][1] : 0.0001; });
+
+    const index = {};
+    state.clubs.forEach(c => {
+      const teamScore = clamp(((expectedPosByTier[c.tier] || 14) - (posByClub[c.id] || 14)) / 12, -1, 1);
+      c.squad.forEach(p => {
+        const apps = p.stats.apps;
+        const played = clamp(apps / 26, 0, 1);
+        const rate = apps ? this.contribution(p) / apps : 0;
+        const rel = rate / (posAvg[p.pos] || 0.0001);
+        // The bar rises with rating: ~0.6x the positional average at 60 OVR,
+        // ~1.0x at 80, ~1.2x at 90.
+        const expectedRel = 0.6 + (p.rating - 60) / 40 * 0.8;
+        const individual = clamp(rel - expectedRel, -1.5, 2);
+        // Establishment credit: a low-rated regular simply holding a place is
+        // an achievement worth a nudge upward.
+        const establish = clamp((72 - p.rating) / 50, 0, 0.25) * played;
+        index[p.id] = played * 0.7 * individual + 0.5 * teamScore + establish;
+      });
+    });
+    return index;
   },
 };
