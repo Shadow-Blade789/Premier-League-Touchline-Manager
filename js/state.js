@@ -167,6 +167,18 @@
    };
    
    function clamp01(v) { return Math.max(0, Math.min(1, v)); }
+
+   // Saves made before potentials existed have players with no `potential`
+   // field, which renders as "undefined"/"NaN-NaN". Give each a sensible
+   // ceiling from their rating and age (older players cap at their rating).
+   function ensurePotentials(state) {
+     state.clubs.forEach(club => club.squad.forEach(p => {
+       if (p.potential == null || isNaN(p.potential)) {
+         p.potential = Math.max(p.rating, Math.min(96, p.rating + growthRoom(p.age)));
+       }
+       if (p.wonderkid == null) p.wonderkid = false;
+     }));
+   }
    
    const Game = {
      state: null,
@@ -185,7 +197,8 @@
          const raw = localStorage.getItem(SAVE_KEY);
          if (!raw) return false;
          this.state = JSON.parse(raw);
-         Stats.ensureAll(this.state); // backfill stats/bonus on saves predating them
+         Stats.ensureAll(this.state);   // backfill stats/bonus on saves predating them
+         ensurePotentials(this.state);  // backfill potential on saves predating it
          return true;
        } catch (e) {
          console.error("Load failed", e);
