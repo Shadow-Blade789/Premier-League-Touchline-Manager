@@ -301,6 +301,60 @@
    .relegation-screen { text-align: center; padding: 3rem 1rem; }
    .relegation-screen .big { font-size: clamp(2rem, 6vw, 3rem); color: var(--alert-red); margin-bottom: 0.3rem; }
    
+   /* ---------- Season stats: leaderboards & awards ---------- */
+   .stats-toolbar { display:flex; justify-content: space-between; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.9rem; }
+   .scope-toggle { display:flex; border: 1px solid var(--hairline); }
+   .scope-toggle .scope-btn { border: none; border-right: 1px solid var(--hairline); }
+   .scope-toggle .scope-btn:last-child { border-right: none; }
+   .scope-toggle .scope-btn.active { background: var(--amber); color: var(--amber-ink); }
+
+   .stat-columns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+   @media (max-width: 860px) { .stat-columns { grid-template-columns: 1fr 1fr; } }
+   @media (max-width: 460px) { .stat-columns { grid-template-columns: 1fr; } }
+
+   .stat-col { border: 1px solid var(--hairline); background: var(--navy-panel-2); }
+   .stat-col-head {
+     font-family: var(--font-display); font-size: 0.72rem; letter-spacing: 0.04em;
+     text-transform: uppercase; padding: 0.5em 0.6em; border-bottom: 1px solid var(--hairline);
+     background: rgba(0,0,0,0.18);
+   }
+   .stat-col-head .ic { margin-right: 0.2em; }
+   .stat-col-head .muted { text-transform: none; letter-spacing: 0; font-size: 0.66rem; }
+   .stat-list { list-style: none; margin: 0; padding: 0.2rem 0; }
+   .stat-row {
+     display: grid; grid-template-columns: 1.8em 1fr auto; align-items: center; gap: 0.4rem;
+     padding: 0.34em 0.6em; font-size: 0.82rem; border-bottom: 1px solid rgba(244,247,242,0.06);
+   }
+   .stat-row:last-child { border-bottom: none; }
+   .stat-row .rk { color: var(--muted); font-size: 0.74rem; text-align: right; }
+   .stat-row .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+   .stat-row .nm .cl { color: var(--muted); font-size: 0.66rem; margin-left: 0.2em; }
+   .stat-row .vl { font-weight: 600; color: var(--amber); }
+   .stat-row.me { background: rgba(255,200,87,0.1); }
+   .stat-row.appended { border-top: 1px dashed var(--hairline); }
+   .stat-empty { padding: 0.7rem 0.6rem; font-size: 0.78rem; margin: 0; }
+
+   .award-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.8rem; margin-bottom: 1rem; }
+   @media (max-width: 860px) { .award-grid { grid-template-columns: 1fr 1fr; } }
+   @media (max-width: 460px) { .award-grid { grid-template-columns: 1fr; } }
+   .award-card {
+     border: 1px solid var(--hairline); background: var(--navy-panel-2);
+     padding: 0.9rem 0.7rem; text-align: center;
+   }
+   .award-card.mine { border-color: var(--amber); background: rgba(255,200,87,0.08); }
+   .award-card .aw-icon { font-size: 1.6rem; line-height: 1; }
+   .award-card .aw-name { font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.86rem; margin-top: 0.3rem; }
+   .award-card .aw-cat { margin: 0.1rem 0 0.5rem; }
+   .award-card .aw-winner { font-size: 0.86rem; font-weight: 600; }
+   .award-card .aw-winner .cl { color: var(--muted); font-size: 0.68rem; margin-left: 0.2em; font-weight: 400; }
+   .award-card .aw-value { color: var(--amber); font-size: 0.82rem; margin-top: 0.1rem; }
+   .award-card .aw-flag { margin-top: 0.4rem; font-family: var(--font-display); font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--amber-ink); background: var(--amber); padding: 0.15em 0.4em; display: inline-block; }
+
+   .bonus-callout { border-left: 3px solid var(--amber); background: rgba(255,200,87,0.07); padding: 0.7rem 0.9rem; margin-bottom: 1rem; }
+   .bonus-callout ul { margin: 0.4rem 0 0; padding-left: 1.1rem; font-size: 0.84rem; }
+   .bonus-callout li { margin-bottom: 0.25rem; }
+   .amber { color: var(--amber); }
+
    .nextfix { display:flex; align-items:center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
    .toast {
      position: fixed; bottom: 1.2rem; left: 50%; transform: translateX(-50%);

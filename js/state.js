@@ -45,7 +45,9 @@
      // Deep-ish copy so a new career never mutates the shared template data.
      const copy = CLUBS.map(c => ({
        ...c,
-       squad: c.squad.map(p => ({ ...p })),
+       // Clone stats/bonus too — a shallow {...p} would otherwise share those
+       // objects with the shared CLUBS template and leak across careers.
+       squad: c.squad.map(p => ({ ...p, stats: Stats.blank(), bonus: Stats.blankBonus() })),
      }));
      copy.forEach(ensureSquadDepth);
      return copy;
@@ -163,6 +165,7 @@
          const raw = localStorage.getItem(SAVE_KEY);
          if (!raw) return false;
          this.state = JSON.parse(raw);
+         Stats.ensureAll(this.state); // backfill stats/bonus on saves predating them
          return true;
        } catch (e) {
          console.error("Load failed", e);

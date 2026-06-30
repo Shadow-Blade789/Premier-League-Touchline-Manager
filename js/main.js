@@ -5,7 +5,8 @@
 
    const App = {
     selectedClubId: null,
-  
+    hubStatScope: "league", // "league" | "team" toggle on the hub stats panel
+
     init() {
       UI.renderClubGrid(null);
       this.wireStartScreen();
@@ -108,6 +109,13 @@
       // "Set Lineup & Play" on the hub navigates to the Lineup tab so the
       // manager can review/adjust before kicking off.
       document.getElementById("btnGoToLineup").addEventListener("click", () => this.showTab("lineup"));
+      // League / My Squad toggle on the season-stats panel.
+      document.querySelector("#hubStatsPanel .scope-toggle").addEventListener("click", e => {
+        const btn = e.target.closest("button[data-scope]");
+        if (!btn) return;
+        this.hubStatScope = btn.dataset.scope;
+        UI.renderHubStats(Game.state, this.hubStatScope);
+      });
     },
   
     // ---------------- Squad ----------------
@@ -257,6 +265,7 @@
             <p>${club.name} finish ${ordinal(result.myFinalPos)} and drop out of the Premier League. Your top-flight career ends here.</p>
             <button class="primary" id="btnSeasonNewCareer">Start New Career</button>
           </div>
+          ${result.awards ? `<div class="panel"><h3>Final Season Awards</h3>${UI.awardsGridHTML(result.awards)}${UI.seasonStatBoardsHTML(result.awards)}</div>` : ""}
         `;
         document.getElementById("btnSeasonNewCareer").addEventListener("click", () => {
           Game.clearSave();
@@ -286,6 +295,15 @@
         }
         newsHTML += `<p class="muted" style="font-size:0.78rem;">${news.totalRetired} players retired across the league this off-season.</p></div>`;
       }
+      const awardsHTML = result.awards
+        ? `<div class="panel" style="text-align:left; margin-top:1.2rem;">
+             <h3>Season Awards</h3>
+             ${UI.awardsGridHTML(result.awards)}
+             ${UI.bonusCalloutHTML(result.bonusesGranted)}
+             <h4 style="margin-top:1.2rem;">Final Leaderboards</h4>
+             ${UI.seasonStatBoardsHTML(result.awards)}
+           </div>`
+        : "";
       screen.innerHTML = `
         <div class="trophy-screen">
           <p class="eyebrow">Season ${state.season - 1}/${String(state.season).slice(2)} complete</p>
@@ -293,6 +311,7 @@
           <p>${club.name} finished <strong>${ordinal(result.myFinalPos)}</strong>${zone ? " — " + zoneLabel(zone) : ""}.</p>
           <p class="muted">Champions: ${result.champion.name} · New budget: ${UI.money(club.budget)}</p>
           <button class="primary" id="btnSeasonContinue">Continue to Next Season</button>
+          ${awardsHTML}
           ${newsHTML}
         </div>
       `;
@@ -317,6 +336,9 @@
       this.home = home; this.away = away;
       this.timeline = full.timeline; this.idx = 0;
       this.finalHg = full.hg; this.finalAg = full.ag;
+      // Stat attribution inputs, applied once at commit().
+      this.hStarters = full.hStarters; this.aStarters = full.aStarters;
+      this.homeScorers = full.homeScorers; this.awayScorers = full.awayScorers;
       this.speed = 1; this.running = false;
       this.committed = false; this.matchEnded = false;
       this.seasonOver = false; this.seasonResult = null; this.windowTransition = null;
@@ -415,6 +437,9 @@
       this.committed = true;
       const state = Game.state;
       Season.recordResult(state, this.home.id, this.away.id, this.finalHg, this.finalAg);
+      // Credit goals to the exact scorers shown in the commentary; apps, clean
+      // sheets, saves and assists round out the stat sheet for this fixture.
+      Stats.recordUserMatch(this.hStarters, this.aStarters, this.finalHg, this.finalAg, this.homeScorers, this.awayScorers);
       this.windowTransition = Season.advanceWeek(state);
       Game.save();
       if (Season.isSeasonOver(state)) {

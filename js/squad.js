@@ -178,7 +178,8 @@ const Market = {
       // Remove any other listing referencing the same now-departed player.
       state.market = state.market.filter(l => l.player.id !== listing.player.id);
     }
-    const player = { ...listing.player, club: club.id };
+    Stats.ensure(listing.player);
+    const player = { ...listing.player, club: club.id, stats: { ...listing.player.stats }, bonus: { ...listing.player.bonus } };
     club.squad.push(player);
     club.lineup = null;
     return { ok: true, name: listing.player.name, origin: listing.originName };
@@ -214,7 +215,8 @@ const Market = {
       POSITIONS.forEach(pos => { club.lineup.slots[pos] = club.lineup.slots[pos].map(id => id === playerId ? null : id); });
       club.lineup.bench = club.lineup.bench.filter(id => id !== playerId);
     }
-    buyer.squad.push({ ...player, club: buyer.id });
+    Stats.ensure(player);
+    buyer.squad.push({ ...player, club: buyer.id, stats: { ...player.stats }, bonus: { ...player.bonus } });
     buyer.lineup = null;
 
     return { ok: true, fee, buyerName: buyer.name };

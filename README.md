@@ -39,6 +39,7 @@ js/data.js           Club & player data, formations, name pools
 js/state.js          Career state, save/load, squad-depth helper
 js/lineup.js         Formation handling, best-XI auto-pick
 js/match.js          Match engine: quick AI sim + full live commentary timeline
+js/stats.js          Player stats, league leaderboards, season awards & bonuses
 js/season.js         Fixture generation, league table, promotion/relegation
 js/squad.js          Transfer market (buy/sell)
 js/ui.js             Rendering functions
@@ -64,6 +65,20 @@ js/main.js           App controller, event wiring, live match player
 - **Live matches** are a precomputed minute-by-minute event timeline
   (goals, chances, cards, subs, half/full time) revealed at your chosen
   speed (1x/2x/4x), with a momentum bar driven by the same model.
+- **Player stats** (goals, assists, clean sheets, saves, appearances) are
+  tracked for *every* player in the league — your own live matches and the
+  AI-vs-AI quick sims alike — so the leaderboards are division-wide. Your
+  live match's goals are credited to the exact scorers named in the
+  commentary. The hub's **Season Stat Leaders** panel toggles between the
+  league top five (your players highlighted, your best appended with their
+  rank if they miss the cut) and a **My Squad** view ranked within your team.
+- **Season awards** crown a Golden Boot (goals), Playmaker (assists), Golden
+  Glove (clean sheets) and Shot Stopper (saves) at season's end, with full
+  top-five boards. Any of *your* players who win carry a small, bounded
+  **form bonus** into the next season — +12% goal/assist weighting or +4–6%
+  goalkeeping — folded into the match engine. Bonuses last one season and
+  must be re-won to keep. Tune the categories, bonuses and the `BONUS_CAP`
+  in `js/stats.js`.
 
 ## Customizing
 

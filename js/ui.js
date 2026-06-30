@@ -74,6 +74,7 @@
           `${h.season}/${String(h.season + 1).slice(2)} — ${h.champion ? "🏆 Champions" : "Finished " + ordinal(h.position)}`
         ).join("<br>");
       }
+      this.renderHubStats(state, App.hubStatScope);
     },
   
     renderPlayerRow(p, opts = {}) {
@@ -216,6 +217,89 @@
       }).join("");
     },
   
+    // ---------- Season stats: leaderboards & awards ----------
+    statRowHTML(e, isMine) {
+      return `<li class="stat-row ${isMine ? "me" : ""}">
+        <span class="rk mono">${e.rank}</span>
+        <span class="nm">${e.name} <span class="cl mono">${e.clubShort}</span></span>
+        <span class="vl mono">${e.value}</span>
+      </li>`;
+    },
+
+    // League column: top 5, with the user's best appended below a divider when
+    // none of their players made the cut.
+    statColumnHTML(def, board) {
+      if (!board.top.length) {
+        return `<div class="stat-col">${this.statColHeadHTML(def)}<p class="stat-empty muted">No ${def.label.toLowerCase()} yet.</p></div>`;
+      }
+      const rows = board.top.map(e => this.statRowHTML(e, e.mine)).join("");
+      const appended = board.yourBest
+        ? `<li class="stat-row me appended" title="Your best in this category">
+             <span class="rk mono">${board.yourBest.rank}</span>
+             <span class="nm">${board.yourBest.name} <span class="cl mono">${board.yourBest.clubShort}</span></span>
+             <span class="vl mono">${board.yourBest.value}</span>
+           </li>`
+        : "";
+      return `<div class="stat-col">${this.statColHeadHTML(def)}<ol class="stat-list">${rows}${appended}</ol></div>`;
+    },
+
+    // My-Squad column: the user's own players ranked, tagged with league rank.
+    teamColumnHTML(def, entries) {
+      if (!entries.length) {
+        return `<div class="stat-col">${this.statColHeadHTML(def)}<p class="stat-empty muted">No ${def.label.toLowerCase()} yet.</p></div>`;
+      }
+      const rows = entries.map(e => this.statRowHTML(e, false)).join("");
+      return `<div class="stat-col">${this.statColHeadHTML(def)}<ol class="stat-list">${rows}</ol></div>`;
+    },
+
+    statColHeadHTML(def) {
+      return `<div class="stat-col-head"><span class="ic">${def.icon}</span> ${def.award} <span class="muted">· ${def.label}</span></div>`;
+    },
+
+    renderHubStats(state, scope) {
+      const cols = STAT_DEFS.map(def => {
+        if (scope === "team") return this.teamColumnHTML(def, Stats.teamLeaders(state, def.key, 5));
+        return this.statColumnHTML(def, Stats.leaderboard(state, def.key, 5));
+      }).join("");
+      const wrap = document.getElementById("hubStatColumns");
+      wrap.innerHTML = cols;
+      document.querySelectorAll(".scope-btn").forEach(b => b.classList.toggle("active", b.dataset.scope === scope));
+    },
+
+    awardCardHTML(a) {
+      const w = a.winner;
+      const mine = !!(w && w.mine);
+      const winLine = w
+        ? `<div class="aw-winner">${w.name} <span class="cl mono">${w.clubShort}</span></div><div class="aw-value mono">${w.value} ${a.def.short}</div>`
+        : `<div class="aw-winner muted">Not awarded</div>`;
+      return `<div class="award-card ${mine ? "mine" : ""}">
+        <div class="aw-icon">${a.def.icon}</div>
+        <div class="aw-name">${a.def.award}</div>
+        <div class="aw-cat eyebrow">${a.def.label}</div>
+        ${winLine}
+        ${mine ? `<div class="aw-flag">Your player</div>` : ""}
+      </div>`;
+    },
+
+    awardsGridHTML(awards) {
+      return `<div class="award-grid">${awards.map(a => this.awardCardHTML(a)).join("")}</div>`;
+    },
+
+    seasonStatBoardsHTML(awards) {
+      return `<div class="stat-columns">${awards.map(a => this.statColumnHTML(a.def, { top: a.top, yourBest: a.yourBest })).join("")}</div>`;
+    },
+
+    bonusCalloutHTML(granted) {
+      if (!granted || !granted.length) return "";
+      const items = granted.map(g => {
+        const tags = Object.entries(g.def.bonus)
+          .map(([k, v]) => `+${Math.round(v * 100)}% ${({ goal: "goals", assist: "assists", keeper: "keeping" })[k]}`)
+          .join(", ");
+        return `<li>${g.def.icon} <strong>${g.name}</strong> wins the ${g.def.award} — <span class="amber">${tags}</span> next season.</li>`;
+      }).join("");
+      return `<div class="bonus-callout"><div class="eyebrow">Form bonuses earned</div><ul>${items}</ul></div>`;
+    },
+
     toast(msg) {
       const el = document.createElement("div");
       el.className = "toast";

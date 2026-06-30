@@ -44,6 +44,8 @@
        fitness: 100,
        form: 0,
        club: null,
+       stats: { goals: 0, assists: 0, cleanSheets: 0, saves: 0, apps: 0 },
+       bonus: { goal: 0, assist: 0, keeper: 0 },
      };
    }
    

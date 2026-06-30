@@ -87,6 +87,16 @@
         <div id="hubHistory" class="muted">No completed seasons yet.</div>
       </div>
     </div>
+    <div class="panel" id="hubStatsPanel">
+      <div class="stats-toolbar">
+        <h3 style="margin:0;">Season Stat Leaders</h3>
+        <div class="scope-toggle">
+          <button class="scope-btn active" data-scope="league" type="button">League</button>
+          <button class="scope-btn" data-scope="team" type="button">My Squad</button>
+        </div>
+      </div>
+      <div class="stat-columns" id="hubStatColumns"></div>
+    </div>
   </section>
 
   <!-- ============ SQUAD ============ -->
@@ -206,6 +216,7 @@
 <script src="js/state.js"></script>
 <script src="js/lineup.js"></script>
 <script src="js/match.js"></script>
+<script src="js/stats.js"></script>
 <script src="js/season.js"></script>
 <script src="js/squad.js"></script>
 <script src="js/ui.js"></script>

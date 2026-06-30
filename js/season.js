@@ -66,6 +66,9 @@
         const away = state.clubs.find(c => c.id === m.away);
         const { hg, ag } = MatchEngine.simulateQuick(home, away);
         this.recordResult(state, m.home, m.away, hg, ag);
+        // Attribute the scoreline to individual players so the league-wide
+        // leaderboards aren't just the user's club. Same starters the sim used.
+        Stats.recordMatch(Lineup.starters(home), Lineup.starters(away), hg, ag);
       });
     },
   
@@ -124,6 +127,10 @@
       const relegated = table.slice(17, 20).map(r => r.id);
       const myFinalPos = table.find(r => r.id === state.clubId).pos;
   
+      // Snapshot the awards/leaderboards from the season just played, before
+      // aging or the stat reset touches anything.
+      const awards = Stats.awards(state);
+
       state.history.push({
         season: state.season, position: myFinalPos,
         champion: champion.id === state.clubId,
@@ -140,7 +147,8 @@
       const userRelegated = relegated.includes(state.clubId);
       if (userRelegated) {
         // Career ends here — relegation from the Premier League is a hard stop.
-        return { champion, relegated, userRelegated, myFinalPos, table };
+        // No bonuses to carry, but the awards make for a final recap.
+        return { champion, relegated, userRelegated, myFinalPos, table, awards, bonusesGranted: [] };
       }
   
       // Off-season development: every player in the league ages a year, grows
@@ -164,11 +172,16 @@
         state.clubs.push(this.makePromotedClub(state, name));
       });
   
+      // Hand next season's boosts to any of our players who topped a category,
+      // then wipe every player's tallies for the fresh campaign.
+      const bonusesGranted = Stats.assignSeasonBonuses(state, awards);
+      Stats.resetSeason(state);
+
       // Reset season-long stats for every surviving/joining club.
       state.clubs.forEach(c => {
         c.points = 0; c.played = 0; c.won = 0; c.drawn = 0; c.lost = 0; c.gf = 0; c.ga = 0;
       });
-  
+
       state.season++;
       state.week = 0;
       state.results = [];
@@ -176,7 +189,7 @@
       state.windowWasOpen = false; // force the season-opening "window just opened" transition
       Market.weeklyUpdate(state);
   
-      return { champion, relegated, userRelegated, myFinalPos, table, ageingNews };
+      return { champion, relegated, userRelegated, myFinalPos, table, ageingNews, awards, bonusesGranted };
     },
   };
   

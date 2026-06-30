@@ -48,22 +48,56 @@
   function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
   function fmt(tpl, vars) { return tpl.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? ""); }
   
+  // Award boosts (carried by a user-club winner into the next season) nudge a
+  // player's effective contribution. Team-level effects are deliberately half
+  // the headline number so a "+12% goals" striker lifts the whole attack only
+  // modestly, while their personal share of the goals gets the full boost in
+  // weightedScorer below.
+  function goalBoost(p) { return (p.bonus && p.bonus.goal) || 0; }
+  function assistBoost(p) { return (p.bonus && p.bonus.assist) || 0; }
+  function keeperBoost(p) { return (p.bonus && p.bonus.keeper) || 0; }
+
   const MatchEngine = {
     attackRating(players) {
+      const eff = p => p.rating * (1 + 0.5 * goalBoost(p) + 0.3 * assistBoost(p));
       const fw = players.filter(p => p.pos === "FW");
       const mf = players.filter(p => p.pos === "MF");
-      const avg = arr => arr.length ? arr.reduce((s, p) => s + p.rating, 0) / arr.length : 60;
+      const avg = arr => arr.length ? arr.reduce((s, p) => s + eff(p), 0) / arr.length : 60;
       return avg(fw) * 0.6 + avg(mf) * 0.4;
     },
     defenseRating(players) {
       const df = players.filter(p => p.pos === "DF");
       const gk = players.filter(p => p.pos === "GK");
-      const avg = arr => arr.length ? arr.reduce((s, p) => s + p.rating, 0) / arr.length : 60;
-      return avg(df) * 0.72 + avg(gk) * 0.28;
+      const avgDf = df.length ? df.reduce((s, p) => s + p.rating, 0) / df.length : 60;
+      const avgGk = gk.length ? gk.reduce((s, p) => s + p.rating * (1 + keeperBoost(p)), 0) / gk.length : 60;
+      return avgDf * 0.72 + avgGk * 0.28;
     },
     overallRating(players) {
       if (!players.length) return 60;
       return players.reduce((s, p) => s + p.rating, 0) / players.length;
+    },
+
+    // Picks a goalscorer, weighted toward forwards and toward anyone carrying a
+    // goalscoring boost. Promoted to the engine so the stat attributor and the
+    // live commentary draw scorers from the exact same model.
+    weightedScorer(list) {
+      if (!list.length) return null;
+      const weights = list.map(p => p.rating * (p.pos === "FW" ? 1.9 : 1.0) * (1 + goalBoost(p)));
+      const total = weights.reduce((s, w) => s + w, 0);
+      let r = Math.random() * total;
+      for (let i = 0; i < list.length; i++) { r -= weights[i]; if (r <= 0) return list[i]; }
+      return list[list.length - 1];
+    },
+    // Picks an assister (midfield-weighted, boost-aware), never the scorer.
+    weightedAssister(list, scorer) {
+      const pool = scorer ? list.filter(p => p.id !== scorer.id) : list.slice();
+      const src = pool.length ? pool : list;
+      if (!src.length) return null;
+      const weights = src.map(p => p.rating * (p.pos === "MF" ? 1.6 : 1.0) * (1 + assistBoost(p)));
+      const total = weights.reduce((s, w) => s + w, 0);
+      let r = Math.random() * total;
+      for (let i = 0; i < src.length; i++) { r -= weights[i]; if (r <= 0) return src[i]; }
+      return src[src.length - 1];
     },
   
     // Converts a rating gap into a goal-rate multiplier. Exponential rather
@@ -107,6 +141,7 @@
   
       const timeline = [];
       let hg = 0, ag = 0;
+      const homeScorers = [], awayScorers = []; // ordered scorer ids, fed to the stat sheet
       let momentum = 50;
       const push = obj => { timeline.push({ ...obj, mom: Math.round(momentum), seq: timeline.length }); };
   
@@ -122,14 +157,8 @@
         for (const p of list) { r -= p.rating; if (r <= 0) return p; }
         return list[list.length - 1];
       };
-      const weightedScorer = list => {
-        const weights = list.map(p => p.rating * (p.pos === "FW" ? 1.9 : 1.0));
-        const total = weights.reduce((s, w) => s + w, 0);
-        let r = Math.random() * total;
-        for (let i = 0; i < list.length; i++) { r -= weights[i]; if (r <= 0) return list[i]; }
-        return list[list.length - 1];
-      };
-  
+      const weightedScorer = list => MatchEngine.weightedScorer(list);
+
       push({ minute: 0, type: "kickoff", text: fmt(pick(Commentary.kickoff), { home: home.name, away: away.name, stadium: home.stadium }), hg, ag });
   
       let hSubsUsed = 0, aSubsUsed = 0;
@@ -150,10 +179,10 @@
   
         const roll = Math.random();
         if (roll < pHomeGoal) {
-          hg++; const scorer = weightedScorer(hAttackers);
+          hg++; const scorer = weightedScorer(hAttackers); homeScorers.push(scorer.id);
           push({ minute: minuteLabel, stoppage: isStoppage, type: "goal", side: "home", text: fmt(pick(Commentary.goal), { player: scorer.name, team: home.name }), hg, ag });
         } else if (roll < pHomeGoal + pAwayGoal) {
-          ag++; const scorer = weightedScorer(aAttackers);
+          ag++; const scorer = weightedScorer(aAttackers); awayScorers.push(scorer.id);
           push({ minute: minuteLabel, stoppage: isStoppage, type: "goal", side: "away", text: fmt(pick(Commentary.goal), { player: scorer.name, team: away.name }), hg, ag });
         } else if (roll < pHomeGoal + pAwayGoal + 0.05) {
           const homeChance = Math.random() * 100 < momentum;
@@ -187,7 +216,7 @@
   
       push({ minute: 90, stoppage: stoppage2 > 0, type: "full", text: fmt(pick(Commentary.full), {}), hg, ag });
   
-      return { timeline, hg, ag };
+      return { timeline, hg, ag, hStarters, aStarters, homeScorers, awayScorers };
     },
   };
   
