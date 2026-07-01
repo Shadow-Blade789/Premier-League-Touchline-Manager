@@ -25,7 +25,7 @@
   
     renderClubGrid(selectedId) {
       const grid = document.getElementById("clubGrid");
-      grid.innerHTML = CLUBS.map(c => `
+      const tile = c => `
         <button class="club-tile ${c.id === selectedId ? "selected" : ""}" data-club="${c.id}" type="button">
           ${this.crestHTML(c, "sm")}
           <span>
@@ -33,6 +33,10 @@
             <span class="tag">${"★".repeat(c.tier)}${"☆".repeat(5 - c.tier)} reputation</span>
           </span>
         </button>
+      `;
+      grid.innerHTML = LEAGUES.map(lg => `
+        <div class="club-group-head">${LEAGUE_NAMES[lg]}</div>
+        ${CLUBS.filter(c => c.league === lg).map(tile).join("")}
       `).join("");
     },
   
@@ -40,9 +44,11 @@
       const club = Game.myClub();
       document.getElementById("topbarCrest").outerHTML = this.crestHTML(club, "sm").replace('class="crest sm"', 'class="crest sm" id="topbarCrest"');
       document.getElementById("topbarClub").textContent = club.name;
-      document.getElementById("topbarManager").textContent = state.managerName + (state.titles ? "  ·  " + state.titles + "x Champion" : "");
+      document.getElementById("topbarManager").textContent =
+        state.managerName + "  ·  " + LEAGUE_NAMES[club.league] + (state.titles ? "  ·  " + state.titles + "x Champion" : "");
+      const total = Season.totalWeeks(state);
       document.getElementById("topbarSeason").textContent = state.season + "/" + String(state.season + 1).slice(2);
-      document.getElementById("topbarWeek").textContent = Math.min(state.week + 1, state.fixtures.length) + " / " + state.fixtures.length;
+      document.getElementById("topbarWeek").textContent = Math.min(state.week + 1, total) + " / " + total;
       document.getElementById("topbarBudget").textContent = this.money(club.budget);
     },
   
@@ -60,26 +66,34 @@
       }
       const starters = Lineup.starters(club);
       document.getElementById("hubSnapshot").innerHTML = `
+        Division: <strong>${LEAGUE_NAMES[club.league]}</strong><br>
         Formation: <strong>${club.formation}</strong><br>
         Squad size: <strong>${club.squad.length}</strong><br>
         XI average rating: <strong>${MatchEngine.overallRating(starters).toFixed(0)}</strong><br>
         Budget: <strong>${this.money(club.budget)}</strong>
       `;
-      const table = Season.table(state);
+      const league = club.league;
+      const table = Season.table(state, league);
       const row = table.find(r => r.id === club.id);
-      const zone = Season.zoneFor(row.pos);
+      const zone = Season.zoneFor(row.pos, league);
       document.getElementById("hubPosition").innerHTML = `
-        Position <strong>${row.pos}</strong> of 20<br>
+        <span class="eyebrow">${LEAGUE_NAMES[league]}</span><br>
+        Position <strong>${row.pos}</strong> of ${table.length}<br>
         ${row.points} pts (${row.won}W ${row.drawn}D ${row.lost}L)<br>
         ${zone ? `<span class="eyebrow">${zoneLabel(zone)}</span>` : ""}
       `;
       const hist = document.getElementById("hubHistory");
       if (state.history.length) {
-        hist.innerHTML = state.history.slice().reverse().slice(0, 5).map(h =>
-          `${h.season}/${String(h.season + 1).slice(2)} — ${h.champion ? "🏆 Champions" : "Finished " + ordinal(h.position)}`
-        ).join("<br>");
+        hist.innerHTML = state.history.slice().reverse().slice(0, 6).map(h => {
+          const lg = h.league ? LEAGUE_SHORT[h.league] + " " : "";
+          let outcome = "Finished " + ordinal(h.position);
+          if (h.champion) outcome = "🏆 " + (h.league === "CH" ? "Champions (promoted)" : "Champions");
+          else if (h.promoted) outcome = "🔼 Promoted (" + ordinal(h.position) + ")";
+          else if (h.relegated) outcome = "🔽 Relegated (" + ordinal(h.position) + ")";
+          return `${h.season}/${String(h.season + 1).slice(2)} — ${lg}— ${outcome}`;
+        }).join("<br>");
       }
-      this.renderHubStats(state, App.hubStatScope);
+      this.renderHubStats(state, App.hubStatScope, club.league);
     },
   
     renderPlayerRow(p, opts = {}) {
@@ -211,10 +225,13 @@
       document.getElementById("lineupError").textContent = "";
     },
   
-    renderTable(state) {
-      const rows = Season.table(state);
+    renderTable(state, league) {
+      league = league || Game.myLeague();
+      document.getElementById("tableTitle").textContent = LEAGUE_NAMES[league] + " Table";
+      document.querySelectorAll(".table-league-btn").forEach(b => b.classList.toggle("active", b.dataset.league === league));
+      const rows = Season.table(state, league);
       document.getElementById("ladderBody").innerHTML = rows.map(r => {
-        const zone = Season.zoneFor(r.pos);
+        const zone = Season.zoneFor(r.pos, league);
         return `<tr class="${r.id === state.clubId ? "me" : ""} ${zone ? "zone-" + zone : ""}">
           <td>${r.pos}</td>
           <td class="club-cell">${this.crestHTML(r, "sm")} ${r.name}</td>
@@ -223,6 +240,22 @@
           <td><strong>${r.points}</strong></td>
         </tr>`;
       }).join("");
+      document.getElementById("tableLegend").innerHTML = this.legendHTML(league);
+    },
+
+    legendHTML(league) {
+      if (league === "CH") {
+        return `
+          <span><i style="background:#4ad991;"></i>Automatic promotion</span>
+          <span><i style="background:#5ec2ff;"></i>Play-offs</span>
+          <span><i style="background:var(--alert-red);"></i>Relegation</span>`;
+      }
+      return `
+        <span><i style="background:var(--amber);"></i>Champions</span>
+        <span><i style="background:#5ec2ff;"></i>Champions League</span>
+        <span><i style="background:#ff9f5e;"></i>Europa League</span>
+        <span><i style="background:#b58cff;"></i>Conference League</span>
+        <span><i style="background:var(--alert-red);"></i>Relegation</span>`;
     },
   
     // ---------- Season stats: leaderboards & awards ----------
@@ -264,10 +297,11 @@
       return `<div class="stat-col-head"><span class="ic">${def.icon}</span> ${def.award} <span class="muted">· ${def.label}</span></div>`;
     },
 
-    renderHubStats(state, scope) {
+    renderHubStats(state, scope, league) {
+      league = league || Game.myLeague();
       const cols = STAT_DEFS.map(def => {
-        if (scope === "team") return this.teamColumnHTML(def, Stats.teamLeaders(state, def.key, 5, def.pos));
-        return this.statColumnHTML(def, Stats.leaderboard(state, def.key, 5, def.pos));
+        if (scope === "team") return this.teamColumnHTML(def, Stats.teamLeaders(state, def.key, 5, def.pos, league));
+        return this.statColumnHTML(def, Stats.leaderboard(state, def.key, 5, def.pos, league));
       }).join("");
       const wrap = document.getElementById("hubStatColumns");
       wrap.innerHTML = cols;
@@ -326,7 +360,10 @@
   }
   function posLabel(pos) { return { GK: "Goalkeeper", DF: "Defenders", MF: "Midfielders", FW: "Forwards" }[pos]; }
   function zoneLabel(zone) {
-    return { champion: "Champions", ucl: "Champions League", uel: "Europa League", ecl: "Conference League", relegation: "Relegation zone" }[zone] || "";
+    return {
+      champion: "Champions", ucl: "Champions League", uel: "Europa League", ecl: "Conference League",
+      relegation: "Relegation zone", promotion: "Automatic promotion", playoff: "Play-off place",
+    }[zone] || "";
   }
   function ordinal(n) {
     const s = ["th", "st", "nd", "rd"], v = n % 100;

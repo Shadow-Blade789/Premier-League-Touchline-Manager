@@ -35,12 +35,12 @@ zero-config setup as the original NRL game this was modeled on.
 ```
 index.html          All screens (start, hub, squad, market, lineup, match, table)
 css/styles.css       Design tokens + all styling
-js/data.js           Club & player data, formations, name pools
-js/state.js          Career state, save/load, squad-depth helper
+js/data.js           Club & player data (Premier League + Championship), formations, name pools
+js/state.js          Career state, save/load + migration, squad-depth helper
 js/lineup.js         Formation handling, best-XI auto-pick
 js/match.js          Match engine: quick AI sim + full live commentary timeline
-js/stats.js          Player stats, league leaderboards, season awards & bonuses
-js/season.js         Fixture generation, league table, promotion/relegation
+js/stats.js          Player stats, per-league leaderboards, season awards & bonuses
+js/season.js         Per-league fixtures & tables, promotion/relegation between divisions
 js/squad.js          Transfer market (buy/sell)
 js/ui.js             Rendering functions
 js/main.js           App controller, event wiring, live match player
@@ -55,13 +55,23 @@ js/main.js           App controller, event wiring, live match player
   `squad` arrays in `js/data.js` whenever you want to refresh a club.
 - **Transfer market** listings are freshly generated free agents/loanees
   each reroll, priced off the same rating curve used for your own squad.
-- **Season structure** is a real 38-game double round-robin across 20 clubs.
-  Top 4 get the Champions League, 5th the Europa League, 6th the Conference
-  League, and the bottom 3 are relegated and replaced by three sides pulled
-  from a rotating pool of real Championship clubs.
-- **Relegation ends your career** (a hard stop, same as falling out of the
-  league for real) — you'll get a "Start New Career" prompt rather than
-  silently continuing.
+- **Two divisions**: a 20-club Premier League and a 20-club Championship, each
+  a real 38-game double round-robin running its own separate season, table,
+  stats, leaderboards and awards. You can start a career in either — pick from
+  the league-grouped club list. Every matchweek your own match is played live
+  and every other game in *both* divisions is quick-simmed.
+- **Promotion & relegation** flow between the two: the Premier League's bottom
+  three swap with the Championship's top three each summer, and the
+  Championship's bottom three drop to a rotating League One pool (replaced by
+  three fresh promoted sides). In the Premier League the top 4 get the
+  Champions League, 5th the Europa League, 6th the Conference League; in the
+  Championship the top 2 go up automatically with 3rd–6th in the play-off
+  places. Clubs keep their squads when they change division.
+- **Careers survive relegation from the Premier League** — you drop into the
+  Championship and play on. The hard stop is now relegation *out of the
+  Championship* (bottom three → League One), which ends the career.
+- **Shared transfer market**: one market spans both divisions, so you can buy
+  from and sell to clubs in either league.
 - **Live matches** are a precomputed minute-by-minute event timeline
   (goals, chances, cards, subs, half/full time) revealed at your chosen
   speed (1x/2x/4x), with a momentum bar driven by the same model.

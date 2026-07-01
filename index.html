@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PLFC Touchline Manager</title>
 <meta name="description" content="A Premier League club-management sim — pick your club, run the transfer market, set your lineup, and live the season.">
-<link rel="stylesheet" href="css/styles.css?v=3">
+<link rel="stylesheet" href="css/styles.css?v=4">
 </head>
 <body>
 
@@ -153,18 +153,18 @@
   <!-- ============ TABLE ============ -->
   <section class="screen hidden" id="screen-table">
     <div class="panel">
-      <h2>Premier League Table</h2>
+      <div class="stats-toolbar">
+        <h2 id="tableTitle" style="margin:0;">Premier League Table</h2>
+        <div class="scope-toggle">
+          <button class="scope-btn table-league-btn active" data-league="PL" type="button">Premier League</button>
+          <button class="scope-btn table-league-btn" data-league="CH" type="button">Championship</button>
+        </div>
+      </div>
       <table class="ladder">
         <thead><tr><th>#</th><th>Club</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th></tr></thead>
         <tbody id="ladderBody"></tbody>
       </table>
-      <div class="legend">
-        <span><i style="background:var(--amber);"></i>Champions</span>
-        <span><i style="background:#5ec2ff;"></i>Champions League</span>
-        <span><i style="background:#ff9f5e;"></i>Europa League</span>
-        <span><i style="background:#b58cff;"></i>Conference League</span>
-        <span><i style="background:var(--alert-red);"></i>Relegation</span>
-      </div>
+      <div class="legend" id="tableLegend"></div>
     </div>
   </section>
 
@@ -212,14 +212,14 @@
 
 </div>
 
-<script src="js/data.js?v=3"></script>
-<script src="js/state.js?v=3"></script>
-<script src="js/lineup.js?v=3"></script>
-<script src="js/match.js?v=3"></script>
-<script src="js/stats.js?v=3"></script>
-<script src="js/season.js?v=3"></script>
-<script src="js/squad.js?v=3"></script>
-<script src="js/ui.js?v=3"></script>
-<script src="js/main.js?v=3"></script>
+<script src="js/data.js?v=4"></script>
+<script src="js/state.js?v=4"></script>
+<script src="js/lineup.js?v=4"></script>
+<script src="js/match.js?v=4"></script>
+<script src="js/stats.js?v=4"></script>
+<script src="js/season.js?v=4"></script>
+<script src="js/squad.js?v=4"></script>
+<script src="js/ui.js?v=4"></script>
+<script src="js/main.js?v=4"></script>
 </body>
 </html>

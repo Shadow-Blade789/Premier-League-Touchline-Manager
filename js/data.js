@@ -225,24 +225,65 @@
        ]},
    ];
    
-   // Attach club reference & ids onto players
-   const CLUBS = RAW_CLUBS.map(c => {
-     c.squad.forEach(p => { p.club = c.id; });
-     c.crestInitials = c.short;
-     return c;
-   });
-   
-   function clubById(id) { return CLUBS.find(c => c.id === id); }
-   
-   // A rotating pool of real lower-league club names used as future promoted
-   // sides once the initial 2026/27 promotions have been played out.
-   const FEEDER_CLUBS_POOL = [
-     "Leicester City", "Southampton", "Norwich City", "Middlesbrough",
-     "West Bromwich Albion", "Stoke City", "Sheffield United", "Watford",
-     "West Ham United", "Burnley", "Wolverhampton Wanderers", "Preston North End",
-     "Blackburn Rovers", "Swansea City", "Cardiff City", "Millwall",
+   // ---- THE CHAMPIONSHIP (second tier) -------------------------------------
+   // Real clubs, distinct from the 20 Premier League sides above. Squads are
+   // left empty and generated per-career by ensureSquadDepth at tier-
+   // appropriate (lower) ratings — the same mechanism promoted clubs use — so
+   // the division feels a clear step below the Premier League.
+   const RAW_CHAMPIONSHIP = [
+     { id: "lei", name: "Leicester City", short: "LEI", nick: "The Foxes", city: "Leicester", stadium: "King Power Stadium", colors: ["#003090", "#FDBE11"], tier: 2, squad: [] },
+     { id: "sou", name: "Southampton", short: "SOU", nick: "The Saints", city: "Southampton", stadium: "St Mary's Stadium", colors: ["#D71920", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "wba", name: "West Bromwich Albion", short: "WBA", nick: "The Baggies", city: "West Bromwich", stadium: "The Hawthorns", colors: ["#122F67", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "nor", name: "Norwich City", short: "NOR", nick: "The Canaries", city: "Norwich", stadium: "Carrow Road", colors: ["#FFF200", "#00A650"], tier: 2, squad: [] },
+     { id: "mid", name: "Middlesbrough", short: "MID", nick: "Boro", city: "Middlesbrough", stadium: "Riverside Stadium", colors: ["#E21E26", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "shu", name: "Sheffield United", short: "SHU", nick: "The Blades", city: "Sheffield", stadium: "Bramall Lane", colors: ["#EE2737", "#000000"], tier: 2, squad: [] },
+     { id: "bur", name: "Burnley", short: "BUR", nick: "The Clarets", city: "Burnley", stadium: "Turf Moor", colors: ["#6C1D45", "#99D6EA"], tier: 2, squad: [] },
+     { id: "wol", name: "Wolverhampton Wanderers", short: "WOL", nick: "Wolves", city: "Wolverhampton", stadium: "Molineux Stadium", colors: ["#FDB913", "#231F20"], tier: 2, squad: [] },
+     { id: "wat", name: "Watford", short: "WAT", nick: "The Hornets", city: "Watford", stadium: "Vicarage Road", colors: ["#FBEE23", "#ED2127"], tier: 1, squad: [] },
+     { id: "sto", name: "Stoke City", short: "STO", nick: "The Potters", city: "Stoke-on-Trent", stadium: "bet365 Stadium", colors: ["#E03A3E", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "pne", name: "Preston North End", short: "PNE", nick: "The Lilywhites", city: "Preston", stadium: "Deepdale", colors: ["#FFFFFF", "#0000FF"], tier: 1, squad: [] },
+     { id: "bbr", name: "Blackburn Rovers", short: "BBR", nick: "Rovers", city: "Blackburn", stadium: "Ewood Park", colors: ["#009EE0", "#E4022C"], tier: 1, squad: [] },
+     { id: "swa", name: "Swansea City", short: "SWA", nick: "The Swans", city: "Swansea", stadium: "Swansea.com Stadium", colors: ["#FFFFFF", "#000000"], tier: 1, squad: [] },
+     { id: "car", name: "Cardiff City", short: "CAR", nick: "The Bluebirds", city: "Cardiff", stadium: "Cardiff City Stadium", colors: ["#0070B5", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "mil", name: "Millwall", short: "MIL", nick: "The Lions", city: "London", stadium: "The Den", colors: ["#001C58", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "bri", name: "Bristol City", short: "BRC", nick: "The Robins", city: "Bristol", stadium: "Ashton Gate", colors: ["#E21C38", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "qpr", name: "Queens Park Rangers", short: "QPR", nick: "The Hoops", city: "London", stadium: "Loftus Road", colors: ["#1D5BA4", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "shw", name: "Sheffield Wednesday", short: "SHW", nick: "The Owls", city: "Sheffield", stadium: "Hillsborough", colors: ["#1F50A1", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "der", name: "Derby County", short: "DER", nick: "The Rams", city: "Derby", stadium: "Pride Park Stadium", colors: ["#FFFFFF", "#000000"], tier: 1, squad: [] },
+     { id: "ply", name: "Plymouth Argyle", short: "PLY", nick: "The Pilgrims", city: "Plymouth", stadium: "Home Park", colors: ["#007B5F", "#FFFFFF"], tier: 1, squad: [] },
    ];
-   
+
+   // Attach league tag, club reference & ids onto every club / player.
+   const CLUBS = [
+     ...RAW_CLUBS.map(c => {
+       c.league = "PL";
+       c.squad.forEach(p => { p.club = c.id; });
+       c.crestInitials = c.short;
+       return c;
+     }),
+     ...RAW_CHAMPIONSHIP.map(c => {
+       c.league = "CH";
+       c.crestInitials = c.short;
+       return c;
+     }),
+   ];
+
+   function clubById(id) { return CLUBS.find(c => c.id === id); }
+
+   const LEAGUES = ["PL", "CH"];
+   const LEAGUE_NAMES = { PL: "Premier League", CH: "Championship" };
+   const LEAGUE_SHORT = { PL: "Prem", CH: "Champ" };
+
+   // A rotating pool of real third-tier club names. When a Championship side is
+   // relegated it drops out of the simulated world and one of these is promoted
+   // up to take its place (with a freshly generated lower-tier squad).
+   const LEAGUE_ONE_POOL = [
+     "Wrexham", "Bolton Wanderers", "Charlton Athletic", "Huddersfield Town",
+     "Reading", "Portsmouth", "Barnsley", "Wigan Athletic", "Oxford United",
+     "Peterborough United", "Lincoln City", "Birmingham City", "Bristol Rovers",
+     "Shrewsbury Town", "Exeter City", "Stevenage",
+   ];
+
    const POSITIONS = ["GK", "DF", "MF", "FW"];
    
    // Formation definitions: required counts per outfield role group.

@@ -6,6 +6,7 @@
    const App = {
     selectedClubId: null,
     hubStatScope: "league", // "league" | "team" toggle on the hub stats panel
+    tableLeague: null,      // which division the Table tab is showing
 
     init() {
       UI.renderClubGrid(null);
@@ -16,12 +17,13 @@
       this.wireMarket();
       this.wireLineup();
       this.wireMatch();
-  
+      this.wireTable();
+
       if (Game.hasSave() && Game.load()) {
         const club = Game.myClub();
         document.getElementById("continuePanel").classList.remove("hidden");
         document.getElementById("continueSummary").textContent =
-          `${Game.state.managerName} — ${club.name} — Season ${Game.state.season}/${String(Game.state.season + 1).slice(2)}, Matchweek ${Math.min(Game.state.week + 1, Game.state.fixtures.length)}`;
+          `${Game.state.managerName} — ${club.name} (${LEAGUE_NAMES[club.league]}) — Season ${Game.state.season}/${String(Game.state.season + 1).slice(2)}, Matchweek ${Math.min(Game.state.week + 1, Season.totalWeeks(Game.state))}`;
       } else {
         Game.state = null;
       }
@@ -97,7 +99,21 @@
       if (name === "squad") UI.renderSquad(Game.state);
       if (name === "market") UI.renderMarket(Game.state);
       if (name === "lineup") UI.renderLineup(Game.state);
-      if (name === "table") UI.renderTable(Game.state);
+      if (name === "table") {
+        // Default the Table tab to the user's own division each visit.
+        this.tableLeague = Game.myLeague();
+        UI.renderTable(Game.state, this.tableLeague);
+      }
+    },
+
+    // ---------------- Table ----------------
+    wireTable() {
+      document.querySelector("#screen-table .scope-toggle").addEventListener("click", e => {
+        const btn = e.target.closest("button[data-league]");
+        if (!btn) return;
+        this.tableLeague = btn.dataset.league;
+        UI.renderTable(Game.state, this.tableLeague);
+      });
     },
   
     refreshChrome() {
@@ -257,15 +273,18 @@
       const screen = document.getElementById("screen-seasonend");
       screen.classList.remove("hidden");
   
-      if (result.userRelegated) {
+      const fromLeagueName = LEAGUE_NAMES[result.userLeague];
+
+      if (result.userRelegatedOut) {
+        // Relegated out of the Championship — the hard floor. Career ends.
         screen.innerHTML = `
           <div class="relegation-screen">
             <p class="eyebrow">Season ${state.season}/${String(state.season + 1).slice(2)} complete</p>
             <div class="big">Relegated</div>
-            <p>${club.name} finish ${ordinal(result.myFinalPos)} and drop out of the Premier League. Your top-flight career ends here.</p>
+            <p>${club.name} finish ${ordinal(result.myFinalPos)} and drop out of the Championship into League One. Your career ends here.</p>
             <button class="primary" id="btnSeasonNewCareer">Start New Career</button>
           </div>
-          ${result.awards ? `<div class="panel"><h3>Final Season Awards</h3>${UI.awardsGridHTML(result.awards)}${UI.seasonStatBoardsHTML(result.awards)}</div>` : ""}
+          ${result.awards ? `<div class="panel"><h3>Final ${fromLeagueName} Awards</h3>${UI.awardsGridHTML(result.awards)}${UI.seasonStatBoardsHTML(result.awards)}</div>` : ""}
         `;
         document.getElementById("btnSeasonNewCareer").addEventListener("click", () => {
           Game.clearSave();
@@ -280,9 +299,19 @@
         });
         return;
       }
-  
-      const isChampion = result.champion.id === club.id;
-      const zone = Season.zoneFor(result.myFinalPos);
+
+      // Headline + subtitle for the season's outcome.
+      let headline = "Season Complete", headClass = "";
+      if (result.isChampion && result.userLeague === "CH") headline = "🏆 Championship Winners!";
+      else if (result.isChampion) headline = "🏆 Champions!";
+      else if (result.userPromoted) headline = "🔼 Promoted!";
+      else if (result.userRelegatedToCh) { headline = "🔽 Relegated"; headClass = "relegated"; }
+
+      let movementLine = "";
+      if (result.userPromoted) movementLine = `<p class="promo-line">${club.name} go up to the <strong>Premier League</strong> next season.</p>`;
+      else if (result.userRelegatedToCh) movementLine = `<p class="releg-line">${club.name} drop to the <strong>Championship</strong> next season — the career continues.</p>`;
+
+      const zone = Season.zoneFor(result.myFinalPos, result.userLeague);
       const news = result.ageingNews;
       let newsHTML = "";
       if (news && (news.retirements.length || news.breakouts.length)) {
@@ -293,23 +322,24 @@
         if (news.breakouts.length) {
           newsHTML += `<p>Breakout development: ${news.breakouts.map(b => `${b.name} ${b.from}→${b.to}`).join(", ")}</p>`;
         }
-        newsHTML += `<p class="muted" style="font-size:0.78rem;">${news.totalRetired} players retired across the league this off-season.</p></div>`;
+        newsHTML += `<p class="muted" style="font-size:0.78rem;">${news.totalRetired} players retired across both leagues this off-season.</p></div>`;
       }
       const awardsHTML = result.awards
         ? `<div class="panel" style="text-align:left; margin-top:1.2rem;">
-             <h3>Season Awards</h3>
+             <h3>${fromLeagueName} Awards</h3>
              ${UI.awardsGridHTML(result.awards)}
              ${UI.bonusCalloutHTML(result.bonusesGranted)}
-             <h4 style="margin-top:1.2rem;">Final Leaderboards</h4>
+             <h4 style="margin-top:1.2rem;">Final ${fromLeagueName} Leaderboards</h4>
              ${UI.seasonStatBoardsHTML(result.awards)}
            </div>`
         : "";
       screen.innerHTML = `
         <div class="trophy-screen">
-          <p class="eyebrow">Season ${state.season - 1}/${String(state.season).slice(2)} complete</p>
-          <div class="big">${isChampion ? "🏆 Champions!" : "Season Complete"}</div>
-          <p>${club.name} finished <strong>${ordinal(result.myFinalPos)}</strong>${zone ? " — " + zoneLabel(zone) : ""}.</p>
-          <p class="muted">Champions: ${result.champion.name} · New budget: ${UI.money(club.budget)}</p>
+          <p class="eyebrow">${fromLeagueName} · Season ${state.season - 1}/${String(state.season).slice(2)} complete</p>
+          <div class="big ${headClass}">${headline}</div>
+          <p>${club.name} finished <strong>${ordinal(result.myFinalPos)}</strong> in the ${fromLeagueName}${zone ? " — " + zoneLabel(zone) : ""}.</p>
+          ${movementLine}
+          <p class="muted">${fromLeagueName} champions: ${result.champion.name} · New budget: ${UI.money(club.budget)}</p>
           <button class="primary" id="btnSeasonContinue">Continue to Next Season</button>
           ${awardsHTML}
           ${newsHTML}

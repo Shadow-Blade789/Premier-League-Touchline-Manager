@@ -106,24 +106,27 @@ const Stats = {
 
   // ---- leaderboards & awards ------------------------------------------------
 
-  allEntries(state) {
+  allEntries(state, league = null) {
     const out = [];
-    state.clubs.forEach(c => c.squad.forEach(p => {
-      this.ensure(p);
-      out.push({
-        id: p.id, name: p.name, pos: p.pos,
-        clubId: c.id, clubShort: c.short, mine: c.id === state.clubId,
-        stats: p.stats,
+    state.clubs.forEach(c => {
+      if (league && c.league !== league) return;
+      c.squad.forEach(p => {
+        this.ensure(p);
+        out.push({
+          id: p.id, name: p.name, pos: p.pos,
+          clubId: c.id, clubShort: c.short, league: c.league, mine: c.id === state.clubId,
+          stats: p.stats,
+        });
       });
-    }));
+    });
     return out;
   },
 
   // Ranked list for one stat. Returns the top `n`, plus — when none of the
   // user's players made that cut — their single best performer with the
   // league rank they actually sit at.
-  leaderboard(state, key, n = 5, pos = null) {
-    const ranked = this.allEntries(state)
+  leaderboard(state, key, n = 5, pos = null, league = null) {
+    const ranked = this.allEntries(state, league)
       .filter(e => (!pos || e.pos === pos) && e.stats[key] > 0)
       .map(e => ({ id: e.id, name: e.name, pos: e.pos, clubShort: e.clubShort, mine: e.mine, value: e.stats[key] }));
     ranked.sort((a, b) => b.value - a.value || a.name.localeCompare(b.name));
@@ -134,14 +137,15 @@ const Stats = {
   },
 
   // The user's own squad ranked within a stat, each tagged with league rank.
-  teamLeaders(state, key, n = 5, pos = null) {
-    return this.leaderboard(state, key, Infinity, pos).all.filter(e => e.mine).slice(0, n);
+  teamLeaders(state, key, n = 5, pos = null, league = null) {
+    return this.leaderboard(state, key, Infinity, pos, league).all.filter(e => e.mine).slice(0, n);
   },
 
   // One bundle per award category, including the winner and the display board.
-  awards(state) {
+  // Scoped to a single league when one is given (each division has its own).
+  awards(state, league = null) {
     return STAT_DEFS.map(def => {
-      const lb = this.leaderboard(state, def.key, 5, def.pos);
+      const lb = this.leaderboard(state, def.key, 5, def.pos, league);
       return { def, winner: lb.all[0] || null, top: lb.top, yourBest: lb.yourBest };
     });
   },
@@ -192,40 +196,57 @@ const Stats = {
     return 0;
   },
 
+  // Average of a club's eleven best ratings — a smooth strength proxy used to
+  // derive where each club was *expected* to finish within its own league.
+  clubStrength(club) {
+    const top = club.squad.map(p => p.rating).sort((a, b) => b - a).slice(0, 11);
+    return top.length ? top.reduce((s, r) => s + r, 0) / top.length : 60;
+  },
+
   // Scores every player's season in [-~1.5, ~2], judged RELATIVE to what's
   // expected of a player at their rating (so a 64 holding his own is a win,
   // while an 88 is expected to dominate) and lifted/dragged by how their club
-  // did versus its tier. Drives potential/rating drift in Aging.advanceSeason.
-  performanceIndex(state, table) {
-    const posByClub = {};
-    table.forEach(r => { posByClub[r.id] = r.pos; });
-    const expectedPosByTier = { 5: 3, 4: 7, 3: 11, 2: 15, 1: 18 };
-
-    // League-wide average contribution rate per position, among regulars.
-    const sums = { GK: [0, 0], DF: [0, 0], MF: [0, 0], FW: [0, 0] };
-    state.clubs.forEach(c => c.squad.forEach(p => {
-      this.ensure(p);
-      if (p.stats.apps >= 8) { sums[p.pos][0] += this.contribution(p) / p.stats.apps; sums[p.pos][1] += 1; }
-    }));
-    const posAvg = {};
-    ["GK", "DF", "MF", "FW"].forEach(k => { posAvg[k] = sums[k][1] ? sums[k][0] / sums[k][1] : 0.0001; });
-
+  // did versus expectation — all WITHIN their own division. Drives the
+  // potential/rating drift in Aging.advanceSeason, for both leagues.
+  performanceIndex(state) {
     const index = {};
-    state.clubs.forEach(c => {
-      const teamScore = clamp(((expectedPosByTier[c.tier] || 14) - (posByClub[c.id] || 14)) / 12, -1, 1);
-      c.squad.forEach(p => {
-        const apps = p.stats.apps;
-        const played = clamp(apps / 26, 0, 1);
-        const rate = apps ? this.contribution(p) / apps : 0;
-        const rel = rate / (posAvg[p.pos] || 0.0001);
-        // The bar rises with rating: ~0.6x the positional average at 60 OVR,
-        // ~1.0x at 80, ~1.2x at 90.
-        const expectedRel = 0.6 + (p.rating - 60) / 40 * 0.8;
-        const individual = clamp(rel - expectedRel, -1.5, 2);
-        // Establishment credit: a low-rated regular simply holding a place is
-        // an achievement worth a nudge upward.
-        const establish = clamp((72 - p.rating) / 50, 0, 0.25) * played;
-        index[p.id] = played * 0.7 * individual + 0.5 * teamScore + establish;
+    LEAGUES.forEach(lg => {
+      const clubs = state.clubs.filter(c => c.league === lg);
+      if (!clubs.length) return;
+
+      const posByClub = {};
+      Season.table(state, lg).forEach(r => { posByClub[r.id] = r.pos; });
+      // Expected finishing position = rank by squad strength within the league.
+      const expectedPos = {};
+      clubs.slice().sort((a, b) => this.clubStrength(b) - this.clubStrength(a))
+        .forEach((c, i) => { expectedPos[c.id] = i + 1; });
+
+      // Average contribution rate per position, among this league's regulars.
+      const sums = { GK: [0, 0], DF: [0, 0], MF: [0, 0], FW: [0, 0] };
+      clubs.forEach(c => c.squad.forEach(p => {
+        this.ensure(p);
+        if (p.stats.apps >= 8) { sums[p.pos][0] += this.contribution(p) / p.stats.apps; sums[p.pos][1] += 1; }
+      }));
+      const posAvg = {};
+      ["GK", "DF", "MF", "FW"].forEach(k => { posAvg[k] = sums[k][1] ? sums[k][0] / sums[k][1] : 0.0001; });
+
+      const mid = clubs.length / 2;
+      clubs.forEach(c => {
+        const teamScore = clamp(((expectedPos[c.id] || mid) - (posByClub[c.id] || mid)) / 12, -1, 1);
+        c.squad.forEach(p => {
+          const apps = p.stats.apps;
+          const played = clamp(apps / 26, 0, 1);
+          const rate = apps ? this.contribution(p) / apps : 0;
+          const rel = rate / (posAvg[p.pos] || 0.0001);
+          // The bar rises with rating: ~0.6x the positional average at 60 OVR,
+          // ~1.0x at 80, ~1.2x at 90.
+          const expectedRel = 0.6 + (p.rating - 60) / 40 * 0.8;
+          const individual = clamp(rel - expectedRel, -1.5, 2);
+          // Establishment credit: a low-rated regular simply holding a place is
+          // an achievement worth a nudge upward.
+          const establish = clamp((72 - p.rating) / 50, 0, 0.25) * played;
+          index[p.id] = played * 0.7 * individual + 0.5 * teamScore + establish;
+        });
       });
     });
     return index;

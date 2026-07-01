@@ -162,6 +162,13 @@
      background: var(--navy-panel-2); border: 1px solid var(--hairline);
      padding: 0.6rem; cursor: pointer; text-align: left;
    }
+   .club-group-head {
+     grid-column: 1 / -1; margin-top: 0.4rem;
+     font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.08em;
+     font-size: 0.8rem; color: var(--amber);
+     border-bottom: 1px solid var(--hairline); padding-bottom: 0.3rem;
+   }
+   .club-group-head:first-child { margin-top: 0; }
    .club-tile:hover, .club-tile.selected { border-color: var(--amber); background: rgba(255,200,87,0.08); }
    .club-tile .name { font-family: var(--font-display); font-size: 0.82rem; line-height: 1.15; }
    .club-tile .tag { display:block; font-size: 0.65rem; color: var(--muted); margin-top:0.1em; }
@@ -257,6 +264,8 @@
    table.ladder tr.zone-ecl td:first-child { border-left: 3px solid #b58cff; }
    table.ladder tr.zone-relegation td:first-child { border-left: 3px solid var(--alert-red); }
    table.ladder tr.zone-champion td:first-child { border-left: 3px solid var(--amber); }
+   table.ladder tr.zone-promotion td:first-child { border-left: 3px solid #4ad991; }
+   table.ladder tr.zone-playoff td:first-child { border-left: 3px solid #5ec2ff; }
    .legend { display:flex; gap: 1rem; flex-wrap: wrap; margin-top: 0.8rem; font-size: 0.74rem; color: var(--muted); }
    .legend span { display:inline-flex; align-items:center; gap:0.4em; }
    .legend i { width: 10px; height: 10px; display:inline-block; }
@@ -299,6 +308,9 @@
    /* ---------- Season end / hero states ---------- */
    .trophy-screen { text-align: center; padding: 3rem 1rem; }
    .trophy-screen .big { font-size: clamp(2.2rem, 7vw, 3.4rem); color: var(--amber); margin-bottom: 0.3rem; }
+   .trophy-screen .big.relegated { color: var(--alert-red); }
+   .trophy-screen .promo-line { color: #4ad991; font-weight: 600; }
+   .trophy-screen .releg-line { color: #ff9f5e; font-weight: 600; }
    .relegation-screen { text-align: center; padding: 3rem 1rem; }
    .relegation-screen .big { font-size: clamp(2rem, 6vw, 3rem); color: var(--alert-red); margin-bottom: 0.3rem; }
    
