@@ -217,6 +217,7 @@
      start(managerName, clubId) {
        this.state = newCareerState(managerName, clubId);
        Season.buildFixtures(this.state);
+       Cup.initCareer(this.state);
        Market.weeklyUpdate(this.state);
        this.save();
      },
@@ -265,4 +266,11 @@
 
      if (!state.leagueOnePool) state.leagueOnePool = [...LEAGUE_ONE_POOL];
      delete state.feederPool;
+
+     // Bring the FA Cup into an older save. Mid-season it sits out the current
+     // campaign (skipped) and kicks in properly from next season.
+     if (!state.faTeams || !state.faCup) {
+       Cup.initCareer(state);
+       if (state.week > 0) state.faCup.skipped = true;
+     }
    }

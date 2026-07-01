@@ -7,6 +7,10 @@
     selectedClubId: null,
     hubStatScope: "league", // "league" | "team" toggle on the hub stats panel
     tableLeague: null,      // which division the Table tab is showing
+    weekQueue: [],          // the user's remaining live matches this week (league, then cup)
+    currentItem: null,      // the match currently being played
+    weekInProgress: false,  // a matchweek sequence is mid-flight
+    windowTransition: null,
 
     init() {
       UI.renderClubGrid(null);
@@ -80,11 +84,10 @@
     },
   
     showTab(name) {
-      // If navigating away while a match has ended but user hasn't clicked
-      // Continue, commit the result now so it isn't lost.
-      const matchScreen = document.getElementById("screen-match");
-      if (!matchScreen.classList.contains("hidden") && MatchPlayer.matchEnded && !MatchPlayer.committed) {
-        MatchPlayer.commit();
+      // If navigating away mid-matchweek, wrap up the whole week (record the
+      // remaining precomputed results and advance) so nothing is lost.
+      if (this.weekInProgress) {
+        if (this.wrapUpWeek()) return; // jumped to the season-end screen
       }
   
       ["hub", "squad", "market", "lineup", "table"].forEach(t => {
@@ -92,7 +95,7 @@
         const tabBtn = document.getElementById("tab" + t[0].toUpperCase() + t.slice(1));
         if (tabBtn) tabBtn.classList.toggle("active", t === name);
       });
-      matchScreen.classList.add("hidden");
+      document.getElementById("screen-match").classList.add("hidden");
       document.getElementById("screen-seasonend").classList.add("hidden");
       this.refreshChrome();
       if (name === "hub") UI.renderHub(Game.state);
@@ -215,24 +218,81 @@
       const state = Game.state;
       const fixture = Season.userMatchThisRound(state);
       if (!fixture) { UI.toast("No fixture this week."); return; }
-  
+
+      // Resolve every other match in both leagues for the week.
       Season.simulateOtherMatchesThisRound(state);
-  
+
+      // Build the user's live-match queue: the league game first, then an FA
+      // Cup tie if one falls on this matchweek and they're still in.
+      this.weekQueue = [];
       const home = state.clubs.find(c => c.id === fixture.home);
       const away = state.clubs.find(c => c.id === fixture.away);
-  
-      // Always force a fresh auto-pick for AI opponents so they field a valid
-      // full XI. Stale lineups from transfers, aging, or promotion can have
-      // null slots that badly distort the simulation.
+      // AI opponents get a fresh auto-pick so they field a valid full XI.
       const ai = home.id === club.id ? away : home;
       Lineup.autoPick(ai, ai.formation || "4-4-2");
-  
-      const full = MatchEngine.simulateFull(home, away);
-  
-      MatchPlayer.load(home, away, full);
+      const leagueFull = MatchEngine.simulateFull(home, away);
+      this.weekQueue.push({
+        type: "league", home, away, full: leagueFull, recorded: false,
+        label: LEAGUE_NAMES[Game.myLeague()] + " · Matchweek " + (state.week + 1),
+      });
+
+      if (Cup.isActive(state) && !state.faCup.winner && Cup.roundForWeek(state.week)) {
+        Cup.drawRound(state);
+        Cup.simulateOtherTies(state);
+        const tie = Cup.userTie(state);
+        if (tie && !tie.played) {
+          const roundDef = Cup.currentRoundDef(state);
+          const chome = Cup.clubByAnyId(state, tie.home);
+          const caway = Cup.clubByAnyId(state, tie.away);
+          const cai = chome.id === club.id ? caway : chome;
+          Lineup.autoPick(cai, cai.formation || "4-4-2");
+          const cupFull = MatchEngine.simulateFull(chome, caway);
+          this.weekQueue.push({
+            type: "cup", home: chome, away: caway, full: cupFull, tie, recorded: false,
+            label: "FA Cup · " + roundDef.name,
+          });
+        } else {
+          Cup.completeRoundIfDone(state); // user not involved — resolve the round now
+        }
+      }
+
+      this.weekInProgress = true;
       document.getElementById("screen-lineup").classList.add("hidden");
       document.getElementById("screen-hub").classList.add("hidden");
+      this.playNextInQueue();
+    },
+
+    // Load the next queued match into the player, or wrap up the week.
+    playNextInQueue() {
+      if (!this.weekQueue.length) { this.finalizeWeek(); return; }
+      this.currentItem = this.weekQueue.shift();
+      MatchPlayer.load(this.currentItem.home, this.currentItem.away, this.currentItem.full, {
+        label: this.currentItem.label, type: this.currentItem.type,
+      });
       document.getElementById("screen-match").classList.remove("hidden");
+    },
+
+    // Called by MatchPlayer the instant a live match reaches full time.
+    onLiveMatchEnded() {
+      this.recordItem(this.currentItem);
+    },
+
+    // Apply a match's precomputed outcome to game state (idempotent).
+    recordItem(item) {
+      if (!item || item.recorded) return;
+      item.recorded = true;
+      const state = Game.state;
+      if (item.type === "league") {
+        Season.recordResult(state, item.home.id, item.away.id, item.full.hg, item.full.ag);
+        Stats.recordUserMatch(item.full.hStarters, item.full.aStarters, item.full.hg, item.full.ag, item.full.homeScorers, item.full.awayScorers);
+      } else if (item.type === "cup") {
+        Cup.recordUserTie(state, item.tie, item.full.hg, item.full.ag);
+        Cup.completeRoundIfDone(state);
+        if (item.tie.pens) {
+          document.getElementById("matchStatus").textContent = "AET · " + Cup.clubShort(state, item.tie.winner) + " win on pens";
+        }
+      }
+      Game.save();
     },
   
     // ---------------- Match controls ----------------
@@ -250,17 +310,51 @@
       document.getElementById("btnMatchContinue").addEventListener("click", () => this.finishMatch());
     },
   
+    // "Continue" after a live match — record it (if not already) and move on
+    // to the next queued match, or finalise the week.
     finishMatch() {
-      // The result was already committed by MatchPlayer.commit() when the match
-      // ended (endMatch). All we need to do here is navigate.
-      if (MatchPlayer.seasonOver) {
-        this.renderSeasonEnd(MatchPlayer.seasonResult);
+      this.recordItem(this.currentItem);
+      this.playNextInQueue();
+    },
+
+    // No more live matches this week: advance the week and route onward.
+    finalizeWeek() {
+      this.weekInProgress = false;
+      this.currentItem = null;
+      const state = Game.state;
+      this.windowTransition = Season.advanceWeek(state);
+      Game.save();
+      if (Season.isSeasonOver(state)) {
+        const result = Season.endOfSeason(state);
+        Game.save();
+        this.renderSeasonEnd(result);
       } else {
-        const t = MatchPlayer.windowTransition;
+        const t = this.windowTransition;
         this.showTab("hub");
         if (t && t.transition === "opened") UI.toast(`🔁 ${t.name} transfer window is now open!`);
         else if (t && t.transition === "closed") UI.toast("🔒 Transfer window has closed.");
       }
+    },
+
+    // Mid-week bail-out (e.g. user taps a tab): record every remaining match
+    // from its precomputed result, advance the week. Returns true if it routed
+    // to the season-end screen.
+    wrapUpWeek() {
+      MatchPlayer.stop();
+      this.recordItem(this.currentItem);
+      while (this.weekQueue.length) this.recordItem(this.weekQueue.shift());
+      this.weekInProgress = false;
+      this.currentItem = null;
+      const state = Game.state;
+      this.windowTransition = Season.advanceWeek(state);
+      Game.save();
+      if (Season.isSeasonOver(state)) {
+        const result = Season.endOfSeason(state);
+        Game.save();
+        this.renderSeasonEnd(result);
+        return true;
+      }
+      return false;
     },
   
     // ---------------- Season end ----------------
@@ -339,6 +433,7 @@
           <div class="big ${headClass}">${headline}</div>
           <p>${club.name} finished <strong>${ordinal(result.myFinalPos)}</strong> in the ${fromLeagueName}${zone ? " — " + zoneLabel(zone) : ""}.</p>
           ${movementLine}
+          ${result.faCup ? `<p class="${result.faCup.userWon ? "promo-line" : "muted"}">FA Cup: ${result.faCup.userWon ? "🏆 " + club.name + " — Winners!" : result.faCup.winner + " · your run: " + result.faCup.userResult}</p>` : ""}
           <p class="muted">${fromLeagueName} champions: ${result.champion.name} · New budget: ${UI.money(club.budget)}</p>
           <button class="primary" id="btnSeasonContinue">Continue to Next Season</button>
           ${awardsHTML}
@@ -355,25 +450,21 @@
   // =========================================================================
   // LIVE MATCH PLAYER
   // =========================================================================
+  // Pure visualiser — reveals a precomputed timeline. Recording the outcome
+  // and advancing the week is App's job (App.onLiveMatchEnded / finalizeWeek).
   const MatchPlayer = {
     home: null, away: null, timeline: [], idx: 0, speed: 1, timer: null, running: false,
-    finalHg: 0, finalAg: 0,
-    // Post-match state (populated by commit()):
-    committed: false, matchEnded: false,
-    seasonOver: false, seasonResult: null, windowTransition: null,
-  
-    load(home, away, full) {
+
+    load(home, away, full, meta) {
       this.home = home; this.away = away;
       this.timeline = full.timeline; this.idx = 0;
-      this.finalHg = full.hg; this.finalAg = full.ag;
-      // Stat attribution inputs, applied once at commit().
-      this.hStarters = full.hStarters; this.aStarters = full.aStarters;
-      this.homeScorers = full.homeScorers; this.awayScorers = full.awayScorers;
       this.speed = 1; this.running = false;
-      this.committed = false; this.matchEnded = false;
-      this.seasonOver = false; this.seasonResult = null; this.windowTransition = null;
       clearInterval(this.timer);
-  
+
+      const comp = document.getElementById("matchCompetition");
+      comp.textContent = (meta && meta.label) || "";
+      comp.className = "match-competition" + (meta && meta.type === "cup" ? " cup" : "");
+
       document.getElementById("matchHomeCrest").outerHTML = UI.crestHTML(home).replace('class="crest "', 'class="crest" id="matchHomeCrest"');
       document.getElementById("matchAwayCrest").outerHTML = UI.crestHTML(away).replace('class="crest "', 'class="crest" id="matchAwayCrest"');
       document.getElementById("matchHomeName").textContent = home.short;
@@ -448,35 +539,21 @@
       this.endMatch();
     },
   
-    // Called the moment the last event is revealed. Commits the result to
-    // game state immediately — so navigating away via a tab never loses it.
+    stop() {
+      clearInterval(this.timer);
+      this.running = false;
+    },
+
+    // Called the moment the last event is revealed. Hands off to App to record
+    // the result; App decides whether another match or the week-end follows.
     endMatch() {
       clearInterval(this.timer);
       this.running = false;
-      this.matchEnded = true;
       document.getElementById("matchStatus").textContent = "Full Time";
       document.getElementById("btnMatchStart").disabled = true;
       document.getElementById("btnMatchPause").disabled = true;
       document.getElementById("btnMatchContinue").classList.remove("hidden");
-      this.commit();
-    },
-  
-    // Idempotent: safe to call multiple times (e.g. from showTab guard).
-    commit() {
-      if (this.committed || !this.matchEnded) return;
-      this.committed = true;
-      const state = Game.state;
-      Season.recordResult(state, this.home.id, this.away.id, this.finalHg, this.finalAg);
-      // Credit goals to the exact scorers shown in the commentary; apps, clean
-      // sheets, saves and assists round out the stat sheet for this fixture.
-      Stats.recordUserMatch(this.hStarters, this.aStarters, this.finalHg, this.finalAg, this.homeScorers, this.awayScorers);
-      this.windowTransition = Season.advanceWeek(state);
-      Game.save();
-      if (Season.isSeasonOver(state)) {
-        this.seasonOver = true;
-        this.seasonResult = Season.endOfSeason(state);
-        Game.save();
-      }
+      App.onLiveMatchEnded();
     },
   };
   

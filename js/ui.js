@@ -94,6 +94,50 @@
         }).join("<br>");
       }
       this.renderHubStats(state, App.hubStatScope, club.league);
+      this.renderCupPanel(state);
+    },
+
+    // Hub FA Cup panel: the user's run + the round-by-round schedule, so it's
+    // clear which cup game is played on which matchweek.
+    renderCupPanel(state) {
+      const body = document.getElementById("hubCupBody");
+      const fc = state.faCup;
+      if (!fc || fc.skipped) { body.innerHTML = `<span class="muted">The FA Cup begins next season.</span>`; return; }
+      const clubId = state.clubId;
+
+      let head;
+      if (fc.winner === clubId) {
+        head = `<div class="cup-status win">🏆 FA Cup Winners!</div>`;
+      } else if (fc.winner) {
+        head = `<div class="cup-status">Won by <strong>${Cup.clubName(state, fc.winner)}</strong>${fc.userExitRound != null ? " — you went out in the " + Cup.ROUNDS[fc.userExitRound].name : ""}.</div>`;
+      } else if (fc.userOut) {
+        head = `<div class="cup-status out">Knocked out in the ${Cup.ROUNDS[fc.userExitRound].name}.</div>`;
+      } else {
+        const rd = Cup.ROUNDS[fc.roundIndex];
+        const tie = Cup.userTie(state);
+        let oppLine = "";
+        if (tie && !tie.played) {
+          const oppId = tie.home === clubId ? tie.away : tie.home;
+          const venue = tie.home === clubId ? "vs" : "@";
+          oppLine = ` — ${venue} <strong>${Cup.clubShort(state, oppId)}</strong>`;
+        }
+        head = `<div class="cup-status in">Still in — <strong>${rd ? rd.name : ""}</strong> (MW${rd ? rd.week : "?"})${oppLine}</div>`;
+      }
+
+      const rows = Cup.ROUNDS.map((r, i) => {
+        let mark = "—", cls = "upcoming";
+        if (fc.winner === clubId) { mark = "✓"; cls = "won"; }
+        else if (fc.userOut) {
+          if (i < fc.userExitRound) { mark = "✓"; cls = "won"; }
+          else if (i === fc.userExitRound) { mark = "✗"; cls = "out"; }
+        } else {
+          if (i < fc.roundIndex) { mark = "✓"; cls = "won"; }
+          else if (i === fc.roundIndex) { mark = "•"; cls = "current"; }
+        }
+        const here = r.week === state.week && !fc.userOut && fc.winner == null && i === fc.roundIndex ? " here" : "";
+        return `<li class="cup-round ${cls}${here}"><span class="cr-mark">${mark}</span><span class="cr-name">${r.name}</span><span class="cr-wk mono">MW${r.week}</span></li>`;
+      }).join("");
+      body.innerHTML = head + `<ol class="cup-rounds">${rows}</ol>`;
     },
   
     renderPlayerRow(p, opts = {}) {

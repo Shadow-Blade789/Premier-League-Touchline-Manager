@@ -40,6 +40,7 @@ js/state.js          Career state, save/load + migration, squad-depth helper
 js/lineup.js         Formation handling, best-XI auto-pick
 js/match.js          Match engine: quick AI sim + full live commentary timeline
 js/stats.js          Player stats, per-league leaderboards, season awards & bonuses
+js/cup.js            FA Cup: placeholder minnows, bracket draw & knockout resolution
 js/season.js         Per-league fixtures & tables, promotion/relegation between divisions
 js/squad.js          Transfer market (buy/sell)
 js/ui.js             Rendering functions
@@ -72,6 +73,16 @@ js/main.js           App controller, event wiring, live match player
   Championship* (bottom three → League One), which ends the career.
 - **Shared transfer market**: one market spans both divisions, so you can buy
   from and sell to clubs in either league.
+- **The FA Cup** runs *through* the season as a knockout, not at the end. Its
+  64-team "competition proper" (Round 3) is the 20 Premier League + 20
+  Championship clubs plus 24 fixed lower-league "placeholder" minnows (real
+  names, generated once per career and reused every season so they stay
+  consistent). Six rounds are pinned to specific matchweeks (9, 14, 19, 25,
+  30, 36) — on those weeks you play your league game *and*, if still in, your
+  cup tie, as two live matches with clear competition banners. Draws go to
+  penalties. Cup goals are kept out of the league leaderboards, and the hub's
+  **FA Cup** panel shows your run and the round-by-round schedule. Tune the
+  rounds, weeks and placeholder clubs in `js/cup.js`.
 - **Live matches** are a precomputed minute-by-minute event timeline
   (goals, chances, cards, subs, half/full time) revealed at your chosen
   speed (1x/2x/4x), with a momentum bar driven by the same model.

@@ -155,6 +155,7 @@
       const champion = myTable[0];
       const myFinalPos = myTable.find(r => r.id === state.clubId).pos;
       const awards = awardsByLeague[userLeague]; // the user sees their own league's awards
+      const faCup = Cup.seasonSummary(state); // FA Cup recap before it resets
 
       // Who moves: PL bottom 3 ↔ CH top 3, and CH bottom 3 drop to League One.
       const plRelegated = tables.PL.slice(17, 20).map(r => r.id);
@@ -184,7 +185,7 @@
       const resultBase = {
         userLeague, toLeague, myFinalPos, champion, isChampion,
         userPromoted, userRelegatedToCh, userRelegatedOut,
-        awards, tables,
+        awards, tables, faCup,
       };
 
       if (userRelegatedOut) {
@@ -226,6 +227,7 @@
       state.week = 0;
       state.results = [];
       this.buildFixtures(state);
+      Cup.initSeason(state); // fresh FA Cup bracket for the new season
       state.windowWasOpen = false; // force the season-opening "window just opened" transition
       Market.weeklyUpdate(state);
 
