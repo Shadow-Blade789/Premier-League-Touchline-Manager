@@ -156,6 +156,7 @@
           <div>
             <div class="name">${p.wonderkid ? "⭐ " : ""}${p.name} <span class="nat-tag">${p.nat || "ENG"}</span></div>
             <div class="sub">${opts.subLabel || (p.club ? clubShortLookup(p.club) : "Free agent")}</div>
+            ${opts.careerLabel ? `<div class="career-sub mono">${opts.careerLabel}</div>` : ""}
           </div>
           <div class="mono">${p.age}</div>
           <div class="rating-pill">${p.rating}</div>
@@ -182,6 +183,7 @@
       const sorted = club.squad.slice().sort((a, b) => POSITIONS.indexOf(a.pos) - POSITIONS.indexOf(b.pos) || b.rating - a.rating);
       document.getElementById("squadList").innerHTML = sorted.map(p => this.renderPlayerRow(p, {
         subLabel: this.wage(p.wage),
+        careerLabel: Stats.careerSquadLine(p), // lifetime apps/goals/assists etc.
         potentialLabel: String(p.potential), // your own players: exact potential
         action: `<button class="small danger" data-sell="${p.id}" ${open ? "" : "disabled"}>Sell</button>`,
       })).join("");

@@ -198,6 +198,18 @@ const Stats = {
     return `${p.career.apps} apps · ${p.career[key]} ${this.careerKeyLabel(key)}`;
   },
 
+  // A fuller career line for the squad list — appearances, goals and assists,
+  // plus clean sheets / saves where they matter for the position.
+  careerSquadLine(p) {
+    this.ensure(p);
+    const c = p.career;
+    const parts = [`${c.apps} apps`];
+    if (p.pos === "GK") parts.push(`${c.saves} saves`, `${c.cleanSheets} CS`);
+    else if (p.pos === "DF") parts.push(`${c.goals} G`, `${c.assists} A`, `${c.cleanSheets} CS`);
+    else parts.push(`${c.goals} G`, `${c.assists} A`);
+    return "Career: " + parts.join(" · ");
+  },
+
   // Human-readable summary of a player's active boosts, e.g. "+12% goals".
   bonusTags(p) {
     if (!p.bonus) return [];

@@ -192,6 +192,7 @@
    .pos-chip.FW { color: #ff7a6b; border-color: #ff7a6b; }
    .player-row .name { font-weight: 600; }
    .player-row .sub { color: var(--muted); font-size: 0.78rem; }
+   .player-row .career-sub { color: var(--amber); font-size: 0.7rem; letter-spacing: 0.02em; margin-top: 0.1em; opacity: 0.85; }
    .nat-tag {
      font-family: var(--font-mono); font-size: 0.6rem; color: var(--muted);
      border: 1px solid var(--hairline); padding: 0.1em 0.35em; margin-left: 0.3em;
