@@ -198,6 +198,8 @@
       const awards = awardsByLeague[userLeague]; // the user sees their own league's awards
       const faCup = Cup.seasonSummary(state, state.faCup, Cup.CUPS.fa);
       const eflCup = Cup.seasonSummary(state, state.eflCup, Cup.CUPS.efl);
+      Vertu.autoResolve(state); // guarantee a Vertu Trophy winner
+      const vertu = Vertu.seasonSummary(state);
 
       // Movement per league: N automatic promotions (+ a play-off winner where
       // applicable) go up; the bottom few go down.
@@ -243,10 +245,18 @@
       });
       if (isChampion && userLeague === "PL") state.titles++;
 
+      // Trophy cabinet: record everything the manager won this season.
+      state.honours = state.honours || [];
+      const seasonPlayed = state.season;
+      if (isChampion) state.honours.push({ type: userLeague, season: seasonPlayed });
+      if (faCup && faCup.userWon) state.honours.push({ type: "facup", season: seasonPlayed });
+      if (eflCup && eflCup.userWon) state.honours.push({ type: "carabao", season: seasonPlayed });
+      if (vertu && vertu.userWon) state.honours.push({ type: "vertu", season: seasonPlayed });
+
       const resultBase = {
         userLeague, toLeague, myFinalPos, champion, isChampion,
         userPromoted, userRelegated, userSacked, userPlayoff,
-        awards, tables, faCup, eflCup,
+        awards, tables, faCup, eflCup, vertu,
       };
 
       if (userSacked) {
@@ -274,11 +284,22 @@
         c.points = 0; c.played = 0; c.won = 0; c.drawn = 0; c.lost = 0; c.gf = 0; c.ga = 0;
       });
 
+      // Community Shield for the coming season: the Premier League champions
+      // vs the FA Cup winners (the FA Cup runner-up deputises if they're the
+      // same club). Played on matchweek 1 of the new season.
+      const plChampionId = tables.PL[0].id;
+      const faWinnerId = state.faCup && state.faCup.winner;
+      const faRunnerUpId = state.faCup && state.faCup.runnerUp;
+      state.pendingShield = faWinnerId
+        ? { champion: plChampionId, faWinner: faWinnerId, faRunnerUp: faRunnerUpId }
+        : null;
+
       state.season++;
       state.week = 0;
       state.results = [];
       this.buildFixtures(state);
-      Cup.initSeason(state); // fresh FA Cup + Carabao Cup brackets for the new season
+      Cup.initSeason(state); // fresh FA Cup + Carabao Cup brackets
+      Vertu.initSeason(state); // fresh Vertu Trophy
       state.windowWasOpen = false; // force the season-opening "window just opened" transition
       Market.weeklyUpdate(state);
 

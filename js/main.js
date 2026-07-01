@@ -22,6 +22,7 @@
       this.wireLineup();
       this.wireMatch();
       this.wireTable();
+      this.wireTrophies();
 
       if (Game.hasSave() && Game.load()) {
         const club = Game.myClub();
@@ -107,6 +108,17 @@
         this.tableLeague = Game.myLeague();
         UI.renderTable(Game.state, this.tableLeague);
       }
+    },
+
+    // ---------------- Trophy cabinet ----------------
+    wireTrophies() {
+      const modal = document.getElementById("trophyModal");
+      document.getElementById("btnTrophies").addEventListener("click", () => {
+        UI.renderTrophyCabinet(Game.state);
+        modal.classList.remove("hidden");
+      });
+      document.getElementById("btnCloseTrophies").addEventListener("click", () => modal.classList.add("hidden"));
+      modal.addEventListener("click", e => { if (e.target === modal) modal.classList.add("hidden"); });
     },
 
     // ---------------- Table ----------------
@@ -222,9 +234,13 @@
       // Resolve every other match in both leagues for the week.
       Season.simulateOtherMatchesThisRound(state);
 
-      // Build the user's live-match queue: the league game first, then an FA
-      // Cup tie if one falls on this matchweek and they're still in.
+      // Build the user's live-match queue for the week.
       this.weekQueue = [];
+
+      // Season curtain-raiser: the Community Shield on matchweek 1.
+      this.queueCommunityShield(state, club);
+
+      // The league game.
       const home = state.clubs.find(c => c.id === fixture.home);
       const away = state.clubs.find(c => c.id === fixture.away);
       // AI opponents get a fresh auto-pick so they field a valid full XI.
@@ -259,10 +275,59 @@
         }
       });
 
+      // Vertu Trophy (League One & Two): a group game or a knockout tie.
+      this.queueVertu(state, club);
+
       this.weekInProgress = true;
       document.getElementById("screen-lineup").classList.add("hidden");
       document.getElementById("screen-hub").classList.add("hidden");
       this.playNextInQueue();
+    },
+
+    // Queue the Community Shield if it's matchweek 1, there are participants,
+    // and the user is one of them. Otherwise resolve it silently.
+    queueCommunityShield(state, club) {
+      if (state.week !== 0 || !state.pendingShield) return;
+      const ps = state.pendingShield;
+      state.pendingShield = null;
+      const other = ps.faWinner === ps.champion ? ps.faRunnerUp : ps.faWinner;
+      const a = state.clubs.find(c => c.id === ps.champion);
+      const b = state.clubs.find(c => c.id === other);
+      if (!a || !b) return;
+      if (a.id === club.id || b.id === club.id) {
+        const foe = a.id === club.id ? b : a;
+        Lineup.autoPick(foe, foe.formation || "4-4-2");
+        const full = MatchEngine.simulateFull(a, b);
+        this.weekQueue.push({ type: "shield", home: a, away: b, full, recorded: false, label: "FA Community Shield" });
+      } else {
+        MatchEngine.simulateQuick(a, b); // played in the background
+      }
+    },
+
+    queueVertu(state, club) {
+      if (!Vertu.isActive(state)) return;
+      const v = state.vertu;
+      if (v.stage === "group") {
+        const g = Vertu.userGameThisWeek(state);
+        if (!g) return;
+        const vh = Vertu.clubById(state, g.home), va = Vertu.clubById(state, g.away);
+        const foe = vh.id === club.id ? va : vh;
+        Lineup.autoPick(foe, foe.formation || "4-4-2");
+        this.weekQueue.push({ type: "vertu-group", game: g, home: vh, away: va, full: MatchEngine.simulateFull(vh, va), recorded: false, label: "Vertu Trophy · Group Stage" });
+      } else if (v.stage === "ko" && Vertu.roundForWeek(state.week)) {
+        Vertu.drawKoRound(state);
+        Vertu.simulateOtherKoTies(state);
+        const tie = Vertu.userKoTie(state);
+        if (tie && !tie.played) {
+          const roundDef = Vertu.currentKoRound(state);
+          const vh = Vertu.clubById(state, tie.home), va = Vertu.clubById(state, tie.away);
+          const foe = vh.id === club.id ? va : vh;
+          Lineup.autoPick(foe, foe.formation || "4-4-2");
+          this.weekQueue.push({ type: "vertu-ko", tie, home: vh, away: va, full: MatchEngine.simulateFull(vh, va), recorded: false, label: "Vertu Trophy · " + roundDef.name });
+        } else {
+          Vertu.completeKoRoundIfDone(state);
+        }
+      }
     },
 
     // Load the next queued match into the player, or wrap up the week.
@@ -295,6 +360,24 @@
         Cup.completeRoundIfDone(state, fc);
         if (item.tie.pens) {
           document.getElementById("matchStatus").textContent = "AET · " + Cup.clubShort(state, item.tie.winner) + " win on pens";
+        }
+      } else if (item.type === "shield") {
+        let winnerId = item.full.hg > item.full.ag ? item.home.id
+          : item.full.ag > item.full.hg ? item.away.id
+          : Cup.penaltyWinner(item.home, item.away);
+        if (winnerId === state.clubId) {
+          state.honours = state.honours || [];
+          state.honours.push({ type: "shield", season: state.season });
+        }
+        document.getElementById("matchStatus").textContent =
+          (item.full.hg === item.full.ag ? "Pens · " : "") + Cup.clubShort(state, winnerId) + " lift the Shield";
+      } else if (item.type === "vertu-group") {
+        Vertu.recordUserGroupGame(state, item.game, item.full.hg, item.full.ag);
+      } else if (item.type === "vertu-ko") {
+        Vertu.recordUserKoTie(state, item.full.hg, item.full.ag);
+        Vertu.completeKoRoundIfDone(state);
+        if (item.tie.pens) {
+          document.getElementById("matchStatus").textContent = "AET · " + Vertu.clubShort(state, item.tie.winner) + " win on pens";
         }
       }
       Game.save();
@@ -453,6 +536,7 @@
           ${playoffLine}
           ${cupLine(result.faCup)}
           ${cupLine(result.eflCup)}
+          ${result.vertu && result.vertu.eligible ? cupLine(result.vertu) : ""}
           <p class="muted">${fromLeagueName} champions: ${result.champion.name} · New budget: ${UI.money(club.budget)}</p>
           <button class="primary" id="btnSeasonContinue">Continue to Next Season</button>
           ${awardsHTML}
@@ -482,7 +566,7 @@
 
       const comp = document.getElementById("matchCompetition");
       comp.textContent = (meta && meta.label) || "";
-      comp.className = "match-competition" + (meta && meta.type === "cup" ? " cup" : "");
+      comp.className = "match-competition" + (meta && meta.type && meta.type !== "league" ? " cup" : "");
 
       document.getElementById("matchHomeCrest").outerHTML = UI.crestHTML(home).replace('class="crest "', 'class="crest" id="matchHomeCrest"');
       document.getElementById("matchAwayCrest").outerHTML = UI.crestHTML(away).replace('class="crest "', 'class="crest" id="matchAwayCrest"');

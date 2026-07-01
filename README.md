@@ -41,6 +41,7 @@ js/lineup.js         Formation handling, best-XI auto-pick
 js/match.js          Match engine: quick AI sim + full live commentary timeline
 js/stats.js          Player stats, per-league leaderboards, season awards & bonuses
 js/cup.js            Domestic cups (FA + Carabao): generic staged-entry knockout engine
+js/vertu.js          Vertu Trophy: League One & Two group stage + knockout
 js/season.js         Per-league fixtures & tables, promotion/relegation between divisions
 js/squad.js          Transfer market (buy/sell)
 js/ui.js             Rendering functions
@@ -85,13 +86,28 @@ js/main.js           App controller, event wiring, live match player
   league leaderboards, and the hub shows a panel per cup with your run and the
   round-by-round schedule. Clubs enter at staged rounds (minnows early, the
   biggest sides latest), so the field halves cleanly to a Wembley final.
-  - **FA Cup** — all 92 clubs: the weakest play a First Round, the rest are
-    seeded into the 64-team Third Round.
+  - **FA Cup** — all 92 clubs: the weakest 16 open the First Round, the next
+    tier joins the Second Round, and the strongest are seeded into the 64-team
+    Third Round; then a clean knockout to the Final.
   - **Carabao Cup** — the 72 EFL clubs open in Round One; the 13
     "non-European" Premier League clubs join in Round Two; the 7 "European"
     clubs (approximated by squad strength) in Round Three.
   - Tune the rounds, weeks and entry structure in `js/cup.js` (a single
     generic engine drives both cups).
+- **The Vertu Trophy** (EFL Trophy) is a League One & League Two competition
+  (48 clubs): a group stage of 16 groups of three — each club plays the other
+  two home and away (3 pts a win) — and the 16 group winners go into a straight
+  knockout to the Final at Wembley. If you manage a third- or fourth-tier club
+  you play your group games and knockout ties live (the hub shows your group
+  table and progress); for anyone else it plays out in the background. Lives in
+  `js/vertu.js`.
+- **The Community Shield** opens every season (matchweek 1) — last season's
+  Premier League champions vs the FA Cup winners (the FA Cup runner-up
+  deputises if they're the same club). You play it live if your club is one of
+  the two; it doesn't count for the leagues, just the honours board.
+- **Trophy cabinet**: the 🏆 button in the top bar opens your manager's honours
+  — league titles, FA Cup, Carabao Cup, Vertu Trophy and Community Shields,
+  each with a count and the seasons you won them.
 - **Career records**: every player carries lifetime totals — appearances,
   goals, assists, clean sheets, saves — that accumulate across seasons.
   Made-up players are seeded with a plausible history estimated from their

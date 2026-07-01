@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PLFC Touchline Manager</title>
 <meta name="description" content="A Premier League club-management sim — pick your club, run the transfer market, set your lineup, and live the season.">
-<link rel="stylesheet" href="css/styles.css?v=8">
+<link rel="stylesheet" href="css/styles.css?v=9">
 </head>
 <body>
 
@@ -22,6 +22,18 @@
     <div class="stat"><span class="label">Season</span><span id="topbarSeason">—</span></div>
     <div class="stat"><span class="label">Matchweek</span><span id="topbarWeek">—</span></div>
     <div class="stat"><span class="label">Budget</span><span id="topbarBudget">—</span></div>
+    <button class="topbar-trophy" id="btnTrophies" title="Trophy cabinet" type="button">🏆</button>
+  </div>
+
+  <!-- ============ TROPHY CABINET (modal) ============ -->
+  <div class="modal-overlay hidden" id="trophyModal">
+    <div class="modal">
+      <div class="modal-head">
+        <h3 style="margin:0;">Trophy Cabinet</h3>
+        <button class="ghost small" id="btnCloseTrophies" type="button">Close</button>
+      </div>
+      <div id="trophyCabinetBody"></div>
+    </div>
   </div>
 
   <div class="tabs hidden" id="tabs">
@@ -106,6 +118,10 @@
         <h3>Carabao Cup</h3>
         <div id="hubCarabaoBody" class="muted">—</div>
       </div>
+    </div>
+    <div class="panel" id="hubVertuPanel">
+      <h3>Vertu Trophy</h3>
+      <div id="hubVertuBody" class="muted">—</div>
     </div>
   </section>
 
@@ -225,15 +241,16 @@
 
 </div>
 
-<script src="js/data.js?v=8"></script>
-<script src="js/state.js?v=8"></script>
-<script src="js/lineup.js?v=8"></script>
-<script src="js/match.js?v=8"></script>
-<script src="js/stats.js?v=8"></script>
-<script src="js/cup.js?v=8"></script>
-<script src="js/season.js?v=8"></script>
-<script src="js/squad.js?v=8"></script>
-<script src="js/ui.js?v=8"></script>
-<script src="js/main.js?v=8"></script>
+<script src="js/data.js?v=9"></script>
+<script src="js/state.js?v=9"></script>
+<script src="js/lineup.js?v=9"></script>
+<script src="js/match.js?v=9"></script>
+<script src="js/stats.js?v=9"></script>
+<script src="js/cup.js?v=9"></script>
+<script src="js/vertu.js?v=9"></script>
+<script src="js/season.js?v=9"></script>
+<script src="js/squad.js?v=9"></script>
+<script src="js/ui.js?v=9"></script>
+<script src="js/main.js?v=9"></script>
 </body>
 </html>

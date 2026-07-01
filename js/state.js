@@ -79,6 +79,8 @@
        market: [],            // current transfer market listings (shared by both leagues)
        history: [],           // past season summaries {season, league, position, ...}
        titles: 0,             // Premier League titles won
+       honours: [],           // trophy cabinet: [{type, season}]
+       pendingShield: null,   // Community Shield participants for the coming season
        pendingMatch: null,    // result payload waiting to be viewed live
        windowWasOpen: false,
      };
@@ -220,6 +222,7 @@
        this.state = newCareerState(managerName, clubId);
        Season.buildFixtures(this.state);
        Cup.initCareer(this.state);
+       Vertu.initSeason(this.state);
        Market.weeklyUpdate(this.state);
        this.save();
      },
@@ -281,6 +284,14 @@
        Cup.initSeason(state);
        if (state.week > 0) { state.faCup.skipped = true; state.eflCup.skipped = true; }
      }
+
+     // Vertu Trophy, honours and Community Shield are newer than some saves.
+     if (!state.vertu || injected) {
+       Vertu.initSeason(state);
+       if (state.week > 0) state.vertu.skipped = true;
+     }
+     if (!Array.isArray(state.honours)) state.honours = [];
+     if (state.pendingShield === undefined) state.pendingShield = null;
 
      ensureCareers(state);
    }

@@ -15,12 +15,13 @@
    ========================================================================= */
 
 const FA_CUP_ROUNDS = [
-  { key: "R1", name: "First Round",   short: "R1",    week: 4 },
-  { key: "R3", name: "Third Round",   short: "R3",    week: 9 },
-  { key: "R4", name: "Fourth Round",  short: "R4",    week: 14 },
-  { key: "R5", name: "Fifth Round",   short: "R5",    week: 19 },
-  { key: "QF", name: "Quarter-Final", short: "QF",    week: 25 },
-  { key: "SF", name: "Semi-Final",    short: "SF",    week: 30 },
+  { key: "R1", name: "First Round",   short: "R1",    week: 3 },
+  { key: "R2", name: "Second Round",  short: "R2",    week: 7 },
+  { key: "R3", name: "Third Round",   short: "R3",    week: 12 },
+  { key: "R4", name: "Fourth Round",  short: "R4",    week: 17 },
+  { key: "R5", name: "Fifth Round",   short: "R5",    week: 23 },
+  { key: "QF", name: "Quarter-Final", short: "QF",    week: 28 },
+  { key: "SF", name: "Semi-Final",    short: "SF",    week: 32 },
   { key: "F",  name: "Final",         short: "Final", week: 36 },
 ];
 const CARABAO_ROUNDS = [
@@ -40,12 +41,17 @@ const Cup = {
     fa: {
       key: "fa", stateKey: "faCup", name: "FA Cup", rounds: FA_CUP_ROUNDS,
       build(state) {
+        // Weakest 16 open the First Round; the next tier joins the Second
+        // Round; the strongest 44 are seeded into the 64-team Third Round.
+        // (16 → 8) + M → (8+M)/2 winners; + seeded = 64 at the Third Round.
         const ranked = state.clubs.slice().sort((a, b) => Stats.clubStrength(a) - Stats.clubStrength(b));
         const total = ranked.length;
-        const prelimPlay = Math.max(0, 2 * (total - 64)); // play down to a 64-team Third Round
-        const participants = ranked.slice(0, prelimPlay).map(c => c.id);
-        const byes = ranked.slice(prelimPlay).map(c => c.id);
-        return { participants, entrantsByRound: { 1: byes } };
+        const r1 = 16;
+        const m = Math.max(0, 2 * (total - 76)); // clubs entering the Second Round (32 for 92)
+        const participants = ranked.slice(0, r1).map(c => c.id);
+        const r2entrants = ranked.slice(r1, r1 + m).map(c => c.id);
+        const r3entrants = ranked.slice(r1 + m).map(c => c.id); // seeded to the Third Round
+        return { participants, entrantsByRound: { 1: r2entrants, 2: r3entrants } };
       },
     },
     efl: {
@@ -162,6 +168,8 @@ const Cup = {
     }
     if (winners.length === 1) {
       fc.winner = winners[0];
+      const final = fc.ties[0];
+      fc.runnerUp = final.winner === final.home ? final.away : final.home;
     } else {
       const next = fc.roundIndex + 1;
       fc.participants = [...winners, ...(fc.entrantsByRound[next] || [])];

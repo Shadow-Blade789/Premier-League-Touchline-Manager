@@ -96,6 +96,63 @@
       this.renderHubStats(state, App.hubStatScope, club.league);
       this.renderCupPanel(state, Cup.CUPS.fa, "hubCupBody");
       this.renderCupPanel(state, Cup.CUPS.efl, "hubCarabaoBody");
+      this.renderVertuPanel(state);
+    },
+
+    // Hub Vertu Trophy panel — a group mini-table + knockout progress for
+    // League One / Two clubs, or a note for everyone else.
+    renderVertuPanel(state) {
+      const body = document.getElementById("hubVertuBody");
+      if (!body) return;
+      const v = state.vertu;
+      if (!v || v.skipped) { body.innerHTML = `<span class="muted">The Vertu Trophy begins next season.</span>`; return; }
+      if (v.userGroup < 0) {
+        body.innerHTML = `<span class="muted">A League One &amp; League Two competition — your club isn't eligible.${v.winner ? " Holders: <strong>" + Vertu.clubName(state, v.winner) + "</strong>." : ""}</span>`;
+        return;
+      }
+      let head;
+      if (v.winner === state.clubId) head = `<div class="cup-status win">🏆 Vertu Trophy Winners!</div>`;
+      else if (v.winner) head = `<div class="cup-status">Won by <strong>${Vertu.clubName(state, v.winner)}</strong>.</div>`;
+      else if (v.userOut) head = `<div class="cup-status out">${v.userExitStage === "group" ? "Eliminated in the group stage." : "Knocked out in the " + v.userExitStage + "."}</div>`;
+      else if (v.stage === "group") head = `<div class="cup-status in">Group stage — win the group to reach the knockouts.</div>`;
+      else {
+        const rd = Vertu.currentKoRound(state);
+        const tie = Vertu.userKoTie(state);
+        let opp = "";
+        if (tie && !tie.played) { const oid = tie.home === state.clubId ? tie.away : tie.home; opp = ` — vs <strong>${Vertu.clubShort(state, oid)}</strong>`; }
+        head = `<div class="cup-status in">Qualified! <strong>${rd ? rd.name : ""}</strong> (MW${rd ? rd.week + 1 : "?"})${opp}</div>`;
+      }
+      const rows = Vertu.userGroupTable(state).map(r =>
+        `<li class="stat-row${r.id === state.clubId ? " me" : ""}"><span class="rk mono">${r.rank}</span><span class="nm">${Vertu.clubName(state, r.id)}</span><span class="vl mono">${r.pts}</span></li>`
+      ).join("");
+      body.innerHTML = head + `<div class="eyebrow" style="margin-top:0.6rem;margin-bottom:0.3rem;">Your group (Pts)</div><ol class="stat-list">${rows}</ol>`;
+    },
+
+    // The manager's trophy cabinet (modal content).
+    renderTrophyCabinet(state) {
+      const body = document.getElementById("trophyCabinetBody");
+      const honours = state.honours || [];
+      const seasonLabel = y => `${y}/${String(y + 1).slice(2)}`;
+      const defs = [
+        { type: "PL", label: "Premier League Champions", icon: "🏆" },
+        { type: "CH", label: "Championship Winners", icon: "🏆" },
+        { type: "L1", label: "League One Winners", icon: "🏆" },
+        { type: "L2", label: "League Two Winners", icon: "🏆" },
+        { type: "facup", label: "FA Cup", icon: "🏆" },
+        { type: "carabao", label: "Carabao Cup", icon: "🏆" },
+        { type: "vertu", label: "Vertu Trophy", icon: "🏆" },
+        { type: "shield", label: "Community Shield", icon: "🛡️" },
+      ];
+      const lines = defs.map(d => {
+        const seasons = honours.filter(h => h.type === d.type).map(h => h.season).sort((a, b) => a - b);
+        if (!seasons.length) return "";
+        return `<div class="trophy-line">
+          <span class="tr-icon">${d.icon}</span>
+          <span class="tr-name">${d.label} <span class="tr-count">×${seasons.length}</span></span>
+          <span class="tr-seasons">${seasons.map(seasonLabel).join(", ")}</span>
+        </div>`;
+      }).filter(Boolean).join("");
+      body.innerHTML = lines || `<p class="muted">No trophies yet — go and win something!</p>`;
     },
 
     // Hub cup panel: the user's run + the round-by-round schedule, so it's
