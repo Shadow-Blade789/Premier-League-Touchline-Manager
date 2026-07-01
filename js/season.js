@@ -111,7 +111,9 @@
   
     advanceWeek(state) {
       state.week++;
-      return Market.weeklyUpdate(state);
+      const transition = Market.weeklyUpdate(state);
+      Coaching.weeklyMarket(state); // fresh coach shortlist every matchweek
+      return transition;
     },
   
     isSeasonOver(state) {
@@ -302,6 +304,7 @@
       Vertu.initSeason(state); // fresh Vertu Trophy
       state.windowWasOpen = false; // force the season-opening "window just opened" transition
       Market.weeklyUpdate(state);
+      Coaching.weeklyMarket(state);
 
       return { ...resultBase, ageingNews, bonusesGranted };
     },

@@ -231,6 +231,18 @@
    .list-head { display:grid; grid-template-columns: 2.6em 1fr auto auto auto auto auto; gap:0.7rem; padding: 0 0.3rem 0.4rem; font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--hairline); }
    
    .market-toolbar { display:flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; flex-wrap: wrap; gap: 0.6rem; }
+
+   /* ---------- Coaches ---------- */
+   .coach-row {
+     display: grid; grid-template-columns: 2.6em 1fr auto auto auto;
+     align-items: center; gap: 0.7rem;
+     padding: 0.55rem 0.3rem; border-bottom: 1px solid var(--hairline); font-size: 0.88rem;
+   }
+   .coach-row:last-child { border-bottom: none; }
+   .coach-row .name { font-weight: 600; }
+   .coach-row .sub { color: var(--muted); font-size: 0.78rem; }
+   .list-head.coach-head { grid-template-columns: 2.6em 1fr auto auto auto; }
+   #coachStaff { margin-top: 0.6rem; }
    
    /* ---------- Pitch / lineup ---------- */
    .pitch-wrap {

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PLFC Touchline Manager</title>
 <meta name="description" content="A Premier League club-management sim — pick your club, run the transfer market, set your lineup, and live the season.">
-<link rel="stylesheet" href="css/styles.css?v=10">
+<link rel="stylesheet" href="css/styles.css?v=11">
 </head>
 <body>
 
@@ -40,6 +40,7 @@
     <button data-tab="hub" id="tabHub">Hub</button>
     <button data-tab="squad" id="tabSquad">Squad</button>
     <button data-tab="market" id="tabMarket">Market</button>
+    <button data-tab="coaches" id="tabCoaches">Coaches</button>
     <button data-tab="lineup" id="tabLineup">Lineup</button>
     <button data-tab="table" id="tabTable">Table</button>
   </div>
@@ -151,6 +152,21 @@
     </div>
   </section>
 
+  <!-- ============ COACHES ============ -->
+  <section class="screen hidden" id="screen-coaches">
+    <div class="panel">
+      <h2>Coaching Staff</h2>
+      <p class="muted" style="font-size:0.84rem;">Your position coaches are the main driver of how your players develop each season.</p>
+      <div id="coachStaff"></div>
+    </div>
+    <div class="panel">
+      <h2 style="margin-bottom:0.3rem;">Coaches Market</h2>
+      <p class="muted" style="font-size:0.8rem; margin-top:0;">A fresh shortlist arrives every matchweek — there's no reroll.</p>
+      <div class="list-head coach-head"><div></div><div>Coach</div><div>Rating</div><div>Fee</div><div></div></div>
+      <div id="coachMarketList"></div>
+    </div>
+  </section>
+
   <!-- ============ LINEUP ============ -->
   <section class="screen hidden" id="screen-lineup">
     <div class="panel">
@@ -241,16 +257,17 @@
 
 </div>
 
-<script src="js/data.js?v=10"></script>
-<script src="js/state.js?v=10"></script>
-<script src="js/lineup.js?v=10"></script>
-<script src="js/match.js?v=10"></script>
-<script src="js/stats.js?v=10"></script>
-<script src="js/cup.js?v=10"></script>
-<script src="js/vertu.js?v=10"></script>
-<script src="js/season.js?v=10"></script>
-<script src="js/squad.js?v=10"></script>
-<script src="js/ui.js?v=10"></script>
-<script src="js/main.js?v=10"></script>
+<script src="js/data.js?v=11"></script>
+<script src="js/state.js?v=11"></script>
+<script src="js/lineup.js?v=11"></script>
+<script src="js/match.js?v=11"></script>
+<script src="js/stats.js?v=11"></script>
+<script src="js/cup.js?v=11"></script>
+<script src="js/vertu.js?v=11"></script>
+<script src="js/season.js?v=11"></script>
+<script src="js/squad.js?v=11"></script>
+<script src="js/coaches.js?v=11"></script>
+<script src="js/ui.js?v=11"></script>
+<script src="js/main.js?v=11"></script>
 </body>
 </html>

@@ -43,7 +43,8 @@ js/stats.js          Player stats, per-league leaderboards, season awards & bonu
 js/cup.js            Domestic cups (FA + Carabao): generic staged-entry knockout engine
 js/vertu.js          Vertu Trophy: League One & Two group stage + knockout
 js/season.js         Per-league fixtures & tables, promotion/relegation between divisions
-js/squad.js          Transfer market (buy/sell)
+js/squad.js          Transfer market (buy/sell) + AI-to-AI transfers
+js/coaches.js        Coaching staff, coaches market, development multipliers
 js/ui.js             Rendering functions
 js/main.js           App controller, event wiring, live match player
 ```
@@ -82,9 +83,18 @@ js/main.js           App controller, event wiring, live match player
   themselves** while a window is open — squads churn, money changes hands, and
   players (with their stats and career records) move between clubs — so the
   world isn't static around you. Your own club is never touched automatically.
+- **Coaching staff** drive player development. Every club fields a position
+  coach for each unit (GK, DF, MF, FW), scaled to reputation at kick-off. Coach
+  quality is the **primary** driver of how fast a club's players grow toward
+  (or hold off decline from) their potential — the season result is only a
+  small nudge, *except* a dramatic overachievement (a relegation-tipped side
+  finishing top five) still earns big growth. You upgrade your staff from a
+  **coaches market** (the Coaches tab) that refreshes on its own every
+  matchweek — there's no reroll, you wait for next week's names. Lives in
+  `js/coaches.js`; growth is applied in `Aging.advanceSeason` (`js/state.js`).
 - **Squad development is league-wide**: every club's players — not just yours —
-  gain or lose overall rating each off-season based on the same
-  performance-relative model (`Aging.advanceSeason` + `Stats.performanceIndex`).
+  develop or decline each off-season under the same coaching + performance
+  model, so rival squads strengthen and fade around you.
 - **Two domestic cups** run *through* the season as knockouts, not at the end,
   and every entrant is a real club (no placeholders). On a cup week you play
   your league game *and*, if still in, your cup tie — two live matches with

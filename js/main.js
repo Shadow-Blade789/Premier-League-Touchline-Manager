@@ -23,6 +23,7 @@
       this.wireMatch();
       this.wireTable();
       this.wireTrophies();
+      this.wireCoaches();
 
       if (Game.hasSave() && Game.load()) {
         const club = Game.myClub();
@@ -91,7 +92,7 @@
         if (this.wrapUpWeek()) return; // jumped to the season-end screen
       }
   
-      ["hub", "squad", "market", "lineup", "table"].forEach(t => {
+      ["hub", "squad", "market", "coaches", "lineup", "table"].forEach(t => {
         document.getElementById("screen-" + t).classList.toggle("hidden", t !== name);
         const tabBtn = document.getElementById("tab" + t[0].toUpperCase() + t.slice(1));
         if (tabBtn) tabBtn.classList.toggle("active", t === name);
@@ -102,12 +103,27 @@
       if (name === "hub") UI.renderHub(Game.state);
       if (name === "squad") UI.renderSquad(Game.state);
       if (name === "market") UI.renderMarket(Game.state);
+      if (name === "coaches") UI.renderCoaches(Game.state);
       if (name === "lineup") UI.renderLineup(Game.state);
       if (name === "table") {
         // Default the Table tab to the user's own division each visit.
         this.tableLeague = Game.myLeague();
         UI.renderTable(Game.state, this.tableLeague);
       }
+    },
+
+    // ---------------- Coaches ----------------
+    wireCoaches() {
+      document.getElementById("coachMarketList").addEventListener("click", e => {
+        const btn = e.target.closest("button[data-hirecoach]");
+        if (!btn) return;
+        const res = Coaching.hire(Game.state, btn.dataset.hirecoach);
+        if (!res.ok) { UI.toast(res.reason); return; }
+        UI.toast(`Hired ${res.name} as ${res.pos} coach for ${UI.money(res.price)}`);
+        Game.save();
+        UI.renderCoaches(Game.state);
+        this.refreshChrome();
+      });
     },
 
     // ---------------- Trophy cabinet ----------------

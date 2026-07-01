@@ -66,6 +66,7 @@
        c.gf = 0; c.ga = 0;
        c.formation = "4-4-2";
        c.lineup = null; // filled by auto-pick on first use
+       Coaching.initClubCoaches(c); // tier-appropriate starting staff
      });
 
      return {
@@ -80,6 +81,7 @@
        history: [],           // past season summaries {season, league, position, ...}
        titles: 0,             // Premier League titles won
        honours: [],           // trophy cabinet: [{type, season}]
+       coachMarket: [],       // hireable coaches, refreshed each matchweek
        pendingShield: null,   // Community Shield participants for the coming season
        pendingMatch: null,    // result payload waiting to be viewed live
        windowWasOpen: false,
@@ -131,23 +133,29 @@
            }
            const before = p.rating;
            const perf = perfIndex[p.id] || 0;
+           // How far a season BEAT expectation (a relegation-tipped side finishing
+           // top five scores big here) — the part that still earns huge growth.
+           const over = perf > 0.5 ? perf - 0.5 : 0;
+           // Coaching is the dominant driver of development.
+           const coachMult = Coaching.growthMultiplier(club, p.pos);
 
-           // Performance reshapes the ceiling — a strong year raises potential,
-           // a poor one trims it (bounded so a single season can't swing wildly).
-           const potDelta = clamp(Math.round(perf * 6), -5, 5);
+           // Potential: a small nudge for an ordinary season, a big jump for a
+           // dramatic overachievement; a strong coach can unlock a touch more.
+           let potDelta = clamp(Math.round(perf * 2 + over * 9), -4, 9);
+           if (p.age < 24 && coachMult > 1 && Math.random() < coachMult - 1) potDelta += 1;
            p.potential = clamp(p.potential + potDelta, 40, 99);
 
-           // Rating drift = age trajectory + the season's verdict. A good season
-           // accelerates a young player's growth or cushions an old one's
-           // decline; a poor season can pull anyone's overall down.
+           // Rating: coaching drives growth toward potential (and cushions
+           // decline); the season result is only a small nudge unless the
+           // overachievement was dramatic.
            let delta = 0;
            if (p.age < 30) {
-             if (p.rating < p.potential) delta += this.growthStep(p.age);
+             if (p.rating < p.potential) delta += this.growthStep(p.age) * coachMult;
            } else {
-             delta -= this.declineStep(p.age);
+             delta -= this.declineStep(p.age) * clamp(1.3 - coachMult * 0.3, 0.55, 1.3);
            }
-           delta += clamp(Math.round(perf * 3), -3, 3);
-           p.rating = clamp(p.rating + delta, 40, 99);
+           delta += clamp(Math.round(perf * 1.0 + over * 8), -2, 9);
+           p.rating = clamp(Math.round(p.rating + delta), 40, 99);
            // A storming season can push a player past their old ceiling.
            if (p.rating > p.potential) p.potential = p.rating;
 
@@ -224,6 +232,7 @@
        Cup.initCareer(this.state);
        Vertu.initSeason(this.state);
        Market.weeklyUpdate(this.state);
+       Coaching.weeklyMarket(this.state);
        this.save();
      },
      myClub() {
@@ -292,6 +301,10 @@
      }
      if (!Array.isArray(state.honours)) state.honours = [];
      if (state.pendingShield === undefined) state.pendingShield = null;
+
+     // Coaching staff + coaches market are newer than some saves.
+     Coaching.ensureAll(state);
+     if (!Array.isArray(state.coachMarket) || !state.coachMarket.length) Coaching.weeklyMarket(state);
 
      ensureCareers(state);
    }

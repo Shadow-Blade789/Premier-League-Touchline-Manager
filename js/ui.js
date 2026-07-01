@@ -273,6 +273,36 @@
       })).join("");
     },
   
+    renderCoaches(state) {
+      const club = Game.myClub();
+      const posLabels = { GK: "Goalkeeping", DF: "Defence", MF: "Midfield", FW: "Attack" };
+      document.getElementById("coachStaff").innerHTML = POSITIONS.map(pos => {
+        const c = club.coaches[pos];
+        return `<div class="coach-row">
+          <div class="pos-chip ${pos}">${pos}</div>
+          <div><div class="name">${c.name}</div><div class="sub">${posLabels[pos]} coach · ${Coaching.ratingLabel(c.rating)}</div></div>
+          <div class="rating-pill">${c.rating}</div>
+          <div class="mono muted">×${Coaching.growthMultiplier(club, pos).toFixed(2)} growth</div>
+        </div>`;
+      }).join("");
+
+      const list = document.getElementById("coachMarketList");
+      const mk = state.coachMarket || [];
+      if (!mk.length) { list.innerHTML = `<p class="muted">No coaches available — check back next matchweek.</p>`; return; }
+      list.innerHTML = mk.map(c => {
+        const price = Coaching.cost(c.rating);
+        const cur = club.coaches[c.pos] ? club.coaches[c.pos].rating : 0;
+        const tag = c.rating > cur ? " · upgrade" : c.rating < cur ? " · downgrade" : "";
+        return `<div class="coach-row market">
+          <div class="pos-chip ${c.pos}">${c.pos}</div>
+          <div><div class="name">${c.name}</div><div class="sub">${Coaching.ratingLabel(c.rating)}${tag}</div></div>
+          <div class="rating-pill">${c.rating}</div>
+          <div class="mono">${this.money(price)}</div>
+          <button class="small primary" data-hirecoach="${c.id}" ${club.budget < price ? "disabled" : ""}>Hire</button>
+        </div>`;
+      }).join("");
+    },
+
     formationOptions(current) {
       return Object.keys(FORMATIONS).map(f => `<option value="${f}" ${f === current ? "selected" : ""}>${f}</option>`).join("");
     },
