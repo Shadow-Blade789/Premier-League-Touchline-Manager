@@ -35,7 +35,7 @@ zero-config setup as the original NRL game this was modeled on.
 ```
 index.html          All screens (start, hub, squad, market, lineup, match, table)
 css/styles.css       Design tokens + all styling
-js/data.js           Club & player data (Premier League + Championship), formations, name pools
+js/data.js           Club & player data (all four leagues), career estimation, formations, name pools
 js/state.js          Career state, save/load + migration, squad-depth helper
 js/lineup.js         Formation handling, best-XI auto-pick
 js/match.js          Match engine: quick AI sim + full live commentary timeline
@@ -56,33 +56,41 @@ js/main.js           App controller, event wiring, live match player
   `squad` arrays in `js/data.js` whenever you want to refresh a club.
 - **Transfer market** listings are freshly generated free agents/loanees
   each reroll, priced off the same rating curve used for your own squad.
-- **Two divisions**: a 20-club Premier League and a 20-club Championship, each
-  a real 38-game double round-robin running its own separate season, table,
-  stats, leaderboards and awards. You can start a career in either — pick from
-  the league-grouped club list. Every matchweek your own match is played live
-  and every other game in *both* divisions is quick-simmed.
-- **Promotion & relegation** flow between the two: the Premier League's bottom
-  three swap with the Championship's top three each summer, and the
-  Championship's bottom three drop to a rotating League One pool (replaced by
-  three fresh promoted sides). In the Premier League the top 4 get the
-  Champions League, 5th the Europa League, 6th the Conference League; in the
-  Championship the top 2 go up automatically with 3rd–6th in the play-off
-  places. Clubs keep their squads when they change division.
-- **Careers survive relegation from the Premier League** — you drop into the
-  Championship and play on. The hard stop is now relegation *out of the
-  Championship* (bottom three → League One), which ends the career.
+- **Four divisions**: a 20-club Premier League, Championship, League One and
+  League Two — 80 real clubs — each a real 38-game double round-robin running
+  its own separate season, table, stats, leaderboards and awards. You can
+  start a career in any of them (the club picker is grouped by league). Every
+  matchweek your own match is played live and every other game in *all four*
+  divisions is quick-simmed. The lower leagues run on far smaller budgets.
+- **Promotion & relegation** flow up and down a closed chain
+  (PL ⇄ CH ⇄ L1 ⇄ L2): each summer every league's top three go up and bottom
+  three come down (3-up/3-down keeps all four at 20). The Premier League has
+  European spots; the Championship and League One have automatic promotion
+  (top 2) and play-offs (3rd–6th). Clubs keep their squads when they change
+  division.
+- **Careers survive relegation** all the way down — you just drop a division
+  and play on. **League Two has no relegation** (there's nothing below it);
+  instead its bottom three is a *sacking zone* — finish there and the board
+  dismiss you, ending the career.
 - **Shared transfer market**: one market spans both divisions, so you can buy
   from and sell to clubs in either league.
-- **The FA Cup** runs *through* the season as a knockout, not at the end. Its
-  64-team "competition proper" (Round 3) is the 20 Premier League + 20
-  Championship clubs plus 24 fixed lower-league "placeholder" minnows (real
-  names, generated once per career and reused every season so they stay
-  consistent). Six rounds are pinned to specific matchweeks (9, 14, 19, 25,
+- **The FA Cup** runs *through* the season as a knockout, not at the end, and
+  every entrant is a real club from the four leagues (no placeholders). With
+  80 clubs, the 32 weakest contest a preliminary First Round while the 48
+  strongest are seeded straight into the 64-team Third Round; from there it's
+  a clean 64 → 1 knockout. Rounds are pinned to matchweeks (4, 9, 14, 19, 25,
   30, 36) — on those weeks you play your league game *and*, if still in, your
   cup tie, as two live matches with clear competition banners. Draws go to
-  penalties. Cup goals are kept out of the league leaderboards, and the hub's
+  penalties. Cup goals stay out of the league leaderboards, and the hub's
   **FA Cup** panel shows your run and the round-by-round schedule. Tune the
-  rounds, weeks and placeholder clubs in `js/cup.js`.
+  rounds and weeks in `js/cup.js`.
+- **Career records**: every player carries lifetime totals — appearances,
+  goals, assists, clean sheets, saves — that accumulate across seasons.
+  Made-up players are seeded with a plausible history estimated from their
+  rating, age and position. In the transfer market each listing shows the
+  player's career appearances plus the headline stat for their position
+  (forwards → goals, midfielders → assists, defenders → clean sheets,
+  keepers → saves).
 - **Live matches** are a precomputed minute-by-minute event timeline
   (goals, chances, cards, subs, half/full time) revealed at your chosen
   speed (1x/2x/4x), with a momentum bar driven by the same model.

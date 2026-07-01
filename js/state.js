@@ -6,20 +6,22 @@
    const SAVE_KEY = "plfc_manager_save_v1";
 
    const Econ = {
-     // Starting transfer kitty by club reputation tier.
-     startBudget(tier) {
-       return { 5: 80, 4: 45, 3: 25, 2: 12, 1: 5 }[tier] || 10;
+     leagueFactor(league) { return LEAGUE_ECON[league] || 1; },
+     // Starting transfer kitty by club reputation tier, scaled down hard for
+     // the lower divisions.
+     startBudget(tier, league = "PL") {
+       const base = { 5: 80, 4: 45, 3: 25, 2: 12, 1: 5, 0: 2.5 }[tier] ?? 10;
+       return Math.max(0.5, Math.round(base * this.leagueFactor(league) * 10) / 10);
      },
-     // Per-matchweek broadcast/prize income trickle, scaled by tier.
-     weeklyIncome(tier) {
-       return Math.round(({ 5: 2.2, 4: 1.4, 3: 1.0, 2: 0.6, 1: 0.4 }[tier] || 0.8) * 10) / 10;
+     // Per-matchweek broadcast/prize income trickle.
+     weeklyIncome(tier, league = "PL") {
+       const base = { 5: 2.2, 4: 1.4, 3: 1.0, 2: 0.6, 1: 0.4, 0: 0.25 }[tier] ?? 0.8;
+       return Math.max(0.1, Math.round(base * this.leagueFactor(league) * 10) / 10);
      },
-     // End-of-season prize money by final league position (1-20). The
-     // Championship's pot is a fraction of the Premier League's riches.
+     // End-of-season prize money by final position, scaled by division.
      endOfSeasonPrize(position, league = "PL") {
-       const base = 35 - position * 1.1;
-       const prize = Math.max(4, Math.round(base * 10) / 10);
-       return league === "CH" ? Math.max(1.5, Math.round(prize * 0.35 * 10) / 10) : prize;
+       const prize = Math.max(4, Math.round((35 - position * 1.1) * 10) / 10);
+       return Math.max(0.5, Math.round(prize * this.leagueFactor(league) * 10) / 10);
      },
    };
    
@@ -27,7 +29,8 @@
      const need = { GK: 2, DF: 7, MF: 6, FW: 4 };
      const have = { GK: 0, DF: 0, MF: 0, FW: 0 };
      club.squad.forEach(p => have[p.pos]++);
-     const baseRating = Math.max(58, 60 + club.tier * 2);
+     // Gradient by tier so squads step down PL → CH → L1 → L2.
+     const baseRating = Math.max(46, 54 + club.tier * 3);
      for (const pos of POSITIONS) {
        while (have[pos] < need[pos]) {
          // Skew young: most fill-ins are academy-aged depth, with a handful of
@@ -47,9 +50,9 @@
      // Deep-ish copy so a new career never mutates the shared template data.
      const copy = CLUBS.map(c => ({
        ...c,
-       // Clone stats/bonus too — a shallow {...p} would otherwise share those
-       // objects with the shared CLUBS template and leak across careers.
-       squad: c.squad.map(p => ({ ...p, stats: Stats.blank(), bonus: Stats.blankBonus() })),
+       // Clone stats/bonus/career too — a shallow {...p} would otherwise share
+       // those objects with the shared CLUBS template and leak across careers.
+       squad: c.squad.map(p => ({ ...p, stats: Stats.blank(), bonus: Stats.blankBonus(), career: { ...p.career } })),
      }));
      copy.forEach(ensureSquadDepth);
      return copy;
@@ -58,7 +61,7 @@
    function newCareerState(managerName, clubId) {
      const clubs = freshClubsCopy();
      clubs.forEach(c => {
-       c.budget = Econ.startBudget(c.tier);
+       c.budget = Econ.startBudget(c.tier, c.league);
        c.points = 0; c.played = 0; c.won = 0; c.drawn = 0; c.lost = 0;
        c.gf = 0; c.ga = 0;
        c.formation = "4-4-2";
@@ -77,7 +80,6 @@
        history: [],           // past season summaries {season, league, position, ...}
        titles: 0,             // Premier League titles won
        pendingMatch: null,    // result payload waiting to be viewed live
-       leagueOnePool: [...LEAGUE_ONE_POOL],
        windowWasOpen: false,
      };
    }
@@ -230,25 +232,25 @@
      },
    };
 
-   // Brings a pre-Championship save (single league, fixtures as a bare array,
-   // no c.league tags) up to the two-league world: tag the existing clubs as
-   // the Premier League and inject a freshly generated Championship that plays
-   // out the remainder of the current season alongside it.
+   // Brings any older save up to the four-league world. Tags legacy clubs as
+   // the Premier League and injects whichever of Championship / League One /
+   // League Two are missing (each generated fresh, playing out the rest of the
+   // current season alongside the existing division), then repairs fixtures,
+   // the FA Cup and career stats.
    function migrateSave(state) {
-     const alreadyTwoLeague = state.fixtures && !Array.isArray(state.fixtures) && state.fixtures.PL;
-     if (alreadyTwoLeague && state.clubs.some(c => c.league === "CH")) return;
-
+     const LEAGUE_TEMPLATES = { CH: RAW_CHAMPIONSHIP, L1: RAW_LEAGUEONE, L2: RAW_LEAGUETWO };
      state.clubs.forEach(c => { if (!c.league) c.league = "PL"; });
 
-     if (!state.clubs.some(c => c.league === "CH")) {
+     let injected = false;
+     Object.entries(LEAGUE_TEMPLATES).forEach(([lg, templates]) => {
+       if (state.clubs.some(c => c.league === lg)) return;
+       injected = true;
        const existing = new Set(state.clubs.map(c => c.id));
-       RAW_CHAMPIONSHIP.forEach(template => {
+       templates.forEach(template => {
          if (existing.has(template.id)) return;
          const club = {
-           ...template,
-           squad: [],
-           crestInitials: template.short,
-           budget: Econ.startBudget(template.tier),
+           ...template, squad: [], crestInitials: template.short,
+           budget: Econ.startBudget(template.tier, lg),
            points: 0, played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0,
            formation: "4-4-2", lineup: null,
          };
@@ -256,21 +258,34 @@
          club.squad.forEach(p => { p.club = club.id; });
          state.clubs.push(club);
        });
+     });
+
+     const fixturesOk = state.fixtures && !Array.isArray(state.fixtures) && state.fixtures.PL && state.fixtures.CH && state.fixtures.L1 && state.fixtures.L2;
+     if (!fixturesOk || injected) {
+       const oldPL = Array.isArray(state.fixtures) ? state.fixtures : (state.fixtures && state.fixtures.PL);
+       Season.buildFixtures(state);
+       if (oldPL) state.fixtures.PL = oldPL;
      }
 
-     // Rebuild the fixtures container. The Championship plays from the current
-     // week onward this season (a short first campaign), then runs normally.
-     const oldArray = Array.isArray(state.fixtures) ? state.fixtures : null;
-     Season.buildFixtures(state);
-     if (oldArray) state.fixtures.PL = oldArray;
-
-     if (!state.leagueOnePool) state.leagueOnePool = [...LEAGUE_ONE_POOL];
      delete state.feederPool;
+     delete state.leagueOnePool;
+     delete state.faTeams; // placeholders retired — the cup now uses real clubs
 
-     // Bring the FA Cup into an older save. Mid-season it sits out the current
-     // campaign (skipped) and kicks in properly from next season.
-     if (!state.faTeams || !state.faCup) {
-       Cup.initCareer(state);
+     // (Re)initialise the FA Cup. Old brackets referenced placeholder "fa_"
+     // teams that no longer exist, so rebuild from real clubs. Mid-season it
+     // sits out the current campaign and starts fresh next season.
+     const oldCup = state.faCup && (state.faCup.participants || []).some(id => String(id).startsWith("fa_"));
+     if (!state.faCup || oldCup || injected) {
+       Cup.initSeason(state);
        if (state.week > 0) state.faCup.skipped = true;
      }
+
+     ensureCareers(state);
+   }
+
+   // Seed missing lifetime records on saves that predate career tracking.
+   function ensureCareers(state) {
+     state.clubs.forEach(club => club.squad.forEach(p => {
+       if (!p.career) p.career = estimateCareer(p.rating, p.age, p.pos);
+     }));
    }

@@ -1,16 +1,17 @@
 /* =========================================================================
    PLFC TOUCHLINE MANAGER — THE FA CUP
-   A single-elimination cup that runs THROUGH the season alongside the two
-   leagues: on six designated matchweeks you play a cup tie as well as your
-   league game. The 64-team "competition proper" (Round 3) is the 20 Premier
-   League clubs + 20 Championship clubs + 24 fixed lower-league "placeholder"
-   minnows (generated once per career and reused every season). Draws are
-   settled on penalties; cup goals stay out of the league leaderboards.
+   A single-elimination cup that runs THROUGH the season alongside the four
+   leagues: on designated matchweeks you play a cup tie as well as your league
+   game. Every entrant is a REAL club from one of the four divisions (no
+   placeholders). With 80 clubs, the 32 weakest contest a preliminary First
+   Round; the 48 strongest are seeded straight into the 64-team Third Round
+   proper, after which it's a clean 64 → 1 knockout. Draws go to penalties,
+   and cup goals stay out of the league leaderboards.
    ========================================================================= */
 
-// Six rounds, each pinned to a matchweek so a cup game and a league game share
-// certain weeks. field = number of teams entering that round.
+// Rounds, each pinned to a matchweek. field = teams entering that round.
 const FA_CUP_ROUNDS = [
+  { key: "R1", name: "First Round",   short: "R1",    week: 4,  field: 32 },
   { key: "R3", name: "Third Round",   short: "R3",    week: 9,  field: 64 },
   { key: "R4", name: "Fourth Round",  short: "R4",    week: 14, field: 32 },
   { key: "R5", name: "Fifth Round",   short: "R5",    week: 19, field: 16 },
@@ -18,110 +19,50 @@ const FA_CUP_ROUNDS = [
   { key: "SF", name: "Semi-Final",    short: "SF",    week: 30, field: 4 },
   { key: "F",  name: "Final",         short: "Final", week: 36, field: 2 },
 ];
-
-// The 24 lower-league / non-league sides that fill out Round 3. Fixed names so
-// the cup feels consistent from season to season. Squads are generated once.
-const FA_PLACEHOLDER_CLUBS = [
-  { id: "man", name: "Mansfield Town", short: "MAN", colors: ["#FFD700", "#00205B"] },
-  { id: "crw", name: "Crawley Town", short: "CRW", colors: ["#D2122E", "#FFFFFF"] },
-  { id: "sal", name: "Salford City", short: "SAL", colors: ["#D2122E", "#000000"] },
-  { id: "not", name: "Notts County", short: "NOT", colors: ["#000000", "#FFFFFF"] },
-  { id: "gri", name: "Grimsby Town", short: "GRI", colors: ["#000000", "#FFFFFF"] },
-  { id: "che", name: "Chesterfield", short: "CFC", colors: ["#0033A0", "#FFFFFF"] },
-  { id: "yeo", name: "Yeovil Town", short: "YEO", colors: ["#007A33", "#FFFFFF"] },
-  { id: "wok", name: "Woking", short: "WOK", colors: ["#D2122E", "#FFFFFF"] },
-  { id: "sol", name: "Solihull Moors", short: "SOL", colors: ["#FDB827", "#000000"] },
-  { id: "bar", name: "Barnet", short: "BAR", colors: ["#EE7203", "#000000"] },
-  { id: "ald", name: "Aldershot Town", short: "ALD", colors: ["#D2122E", "#0033A0"] },
-  { id: "eas", name: "Eastleigh", short: "EAS", colors: ["#0033A0", "#FFFFFF"] },
-  { id: "alt", name: "Altrincham", short: "ALT", colors: ["#000000", "#FFFFFF"] },
-  { id: "gat", name: "Gateshead", short: "GAT", colors: ["#000000", "#FFFFFF"] },
-  { id: "bor", name: "Boreham Wood", short: "BOR", colors: ["#FFFFFF", "#000000"] },
-  { id: "dag", name: "Dagenham & Redbridge", short: "DAG", colors: ["#D2122E", "#0033A0"] },
-  { id: "har", name: "Hartlepool United", short: "HAR", colors: ["#00205B", "#FFFFFF"] },
-  { id: "snd", name: "Southend United", short: "SND", colors: ["#00205B", "#FFFFFF"] },
-  { id: "tor", name: "Torquay United", short: "TOR", colors: ["#FFCC00", "#00205B"] },
-  { id: "hal", name: "Halifax Town", short: "HAL", colors: ["#00205B", "#FFFFFF"] },
-  { id: "roc", name: "Rochdale", short: "ROC", colors: ["#00205B", "#FFFFFF"] },
-  { id: "old", name: "Oldham Athletic", short: "OLD", colors: ["#00205B", "#FFFFFF"] },
-  { id: "sto", name: "Stockport County", short: "STK", colors: ["#0033A0", "#FFFFFF"] },
-  { id: "for", name: "Forest Green Rovers", short: "FGR", colors: ["#4C9A2A", "#FFFFFF"] },
-];
+const FA_PRELIM_SIZE = 32; // weakest clubs that must win a First Round tie
 
 const Cup = {
   ROUNDS: FA_CUP_ROUNDS,
 
-  // ---- setup ---------------------------------------------------------------
+  // Kept for API symmetry with the rest of the app.
+  initCareer(state) { this.initSeason(state); },
 
-  // A deliberately weak squad (~48-60 rated) so the minnows can be beaten but
-  // occasionally spring an upset — the magic of the cup.
-  generatePlaceholderSquad(club) {
-    const need = { GK: 2, DF: 6, MF: 6, FW: 4 };
-    POSITIONS.forEach(pos => {
-      for (let i = 0; i < need[pos]; i++) {
-        const age = 20 + Math.floor(Math.random() * 14);
-        const rating = 48 + Math.floor(Math.random() * 13);
-        const { name, nat } = randomProspect();
-        const p = P(name, pos, age, rating, { nat });
-        p.club = club.id;
-        club.squad.push(p);
-      }
-    });
-  },
-
-  // Build the fixed placeholder clubs once per career.
-  initCareer(state) {
-    state.faTeams = FA_PLACEHOLDER_CLUBS.map(t => {
-      const club = {
-        id: "fa_" + t.id, name: t.name, short: t.short, nick: t.name,
-        city: t.name, stadium: t.name, colors: t.colors, tier: 0, league: "FA",
-        crestInitials: t.short, squad: [], formation: "4-4-2", lineup: null, budget: 0,
-      };
-      this.generatePlaceholderSquad(club);
-      return club;
-    });
-    this.initSeason(state);
-  },
-
-  // Reset the bracket for a new season: all 40 league clubs + 24 placeholders.
+  // Build a fresh bracket for the new season from all 80 league clubs. The 32
+  // weakest (by squad strength) start in the First Round; the other 48 get a
+  // bye into the Third Round.
   initSeason(state) {
-    if (!state.faTeams) this.initCareer(state);
-    const realIds = state.clubs.filter(c => c.league === "PL" || c.league === "CH").map(c => c.id);
-    const faIds = state.faTeams.map(c => c.id);
+    const ranked = state.clubs
+      .filter(c => c.league === "PL" || c.league === "CH" || c.league === "L1" || c.league === "L2")
+      .slice()
+      .sort((a, b) => Stats.clubStrength(a) - Stats.clubStrength(b));
+    const prelim = ranked.slice(0, FA_PRELIM_SIZE).map(c => c.id);
+    const byes = ranked.slice(FA_PRELIM_SIZE).map(c => c.id);
     state.faCup = {
       season: state.season,
       roundIndex: 0,
       drawnRound: -1,
-      participants: [...realIds, ...faIds], // 64
+      participants: prelim,   // First Round field
+      byes,                   // seeded into the Third Round after the prelim
+      userEntryRound: byes.includes(state.clubId) ? 1 : 0, // 0 = First Round, 1 = Third Round
       ties: [],
       winner: null,
       userOut: false,
       userExitRound: null,
       skipped: false,
     };
+    delete state.faTeams; // no placeholders anymore
   },
 
   // ---- lookups & status ----------------------------------------------------
 
-  isActive(state) {
-    return !!(state.faCup && !state.faCup.skipped);
-  },
-  clubByAnyId(state, id) {
-    return state.clubs.find(c => c.id === id) || (state.faTeams || []).find(c => c.id === id) || null;
-  },
-  clubName(state, id) {
-    const c = this.clubByAnyId(state, id);
-    return c ? c.name : id;
-  },
-  clubShort(state, id) {
-    const c = this.clubByAnyId(state, id);
-    return c ? c.short : id;
-  },
-  roundForWeek(week) {
-    return FA_CUP_ROUNDS.find(r => r.week === week) || null;
-  },
-  currentRoundDef(state) {
-    return FA_CUP_ROUNDS[state.faCup.roundIndex] || null;
+  isActive(state) { return !!(state.faCup && !state.faCup.skipped); },
+  clubByAnyId(state, id) { return state.clubs.find(c => c.id === id) || null; },
+  clubName(state, id) { const c = this.clubByAnyId(state, id); return c ? c.name : id; },
+  clubShort(state, id) { const c = this.clubByAnyId(state, id); return c ? c.short : id; },
+  roundForWeek(week) { return FA_CUP_ROUNDS.find(r => r.week === week) || null; },
+  currentRoundDef(state) { return FA_CUP_ROUNDS[state.faCup.roundIndex] || null; },
+  userHasBye(state) {
+    return state.faCup.roundIndex === 0 && state.faCup.userEntryRound === 1;
   },
   userTie(state) {
     if (!this.isActive(state)) return null;
@@ -138,7 +79,6 @@ const Cup = {
     return arr;
   },
 
-  // Random pairings among the surviving participants for the current round.
   drawRound(state) {
     const fc = state.faCup;
     if (fc.winner || fc.drawnRound === fc.roundIndex) return;
@@ -168,7 +108,6 @@ const Cup = {
     tie.played = true;
   },
 
-  // Quick-sim every tie in the round except the user's (played live).
   simulateOtherTies(state) {
     state.faCup.ties.forEach(t => {
       if (t.played || t.home === state.clubId || t.away === state.clubId) return;
@@ -179,13 +118,13 @@ const Cup = {
     });
   },
 
-  // Record the user's live cup result.
   recordUserTie(state, tie, hg, ag) {
     if (!tie.played) this.applyScore(state, tie, hg, ag);
     return tie;
   },
 
-  // Once every tie in the round has a winner, advance the bracket.
+  // Advance the bracket once every tie in the round has a winner. After the
+  // First Round the 48 seeded byes join the 16 winners to make the 64.
   completeRoundIfDone(state) {
     const fc = state.faCup;
     if (!fc.ties.length || fc.ties.some(t => !t.played)) return false;
@@ -198,7 +137,8 @@ const Cup = {
     if (winners.length === 1) {
       fc.winner = winners[0];
     } else {
-      fc.participants = winners;
+      fc.participants = fc.roundIndex === 0 ? [...(fc.byes || []), ...winners] : winners;
+      fc.byes = [];
       fc.roundIndex++;
     }
     return true;

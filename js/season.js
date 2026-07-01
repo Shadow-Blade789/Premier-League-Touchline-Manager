@@ -65,8 +65,8 @@
       else if (hg < ag) { away.won++; away.points += 3; home.lost++; }
       else { home.drawn++; away.drawn++; home.points += 1; away.points += 1; }
       state.results.push({ week: state.week, home: homeId, away: awayId, hg, ag });
-      home.budget = Math.round((home.budget + Econ.weeklyIncome(home.tier)) * 10) / 10;
-      away.budget = Math.round((away.budget + Econ.weeklyIncome(away.tier)) * 10) / 10;
+      home.budget = Math.round((home.budget + Econ.weeklyIncome(home.tier, home.league)) * 10) / 10;
+      away.budget = Math.round((away.budget + Econ.weeklyIncome(away.tier, away.league)) * 10) / 10;
     },
   
     // Simulate every match in BOTH leagues this round, except the user's own
@@ -111,10 +111,17 @@
     // and relegation; the Championship has automatic promotion, the play-offs,
     // and relegation.
     zoneFor(pos, league = "PL") {
-      if (league === "CH") {
+      if (league === "CH" || league === "L1") {
         if (pos <= 2) return "promotion";
         if (pos <= 6) return "playoff";
         if (pos >= 18) return "relegation";
+        return "";
+      }
+      if (league === "L2") {
+        // No division below — the bottom three is a "sacking zone" instead.
+        if (pos <= 2) return "promotion";
+        if (pos <= 6) return "playoff";
+        if (pos >= 18) return "sacking";
         return "";
       }
       if (pos === 1) return "champion";
@@ -125,30 +132,14 @@
       return "";
     },
   
-    // Returns a fresh Championship club built around a real third-tier club
-    // name pulled from the League One pool, with a generated lower-tier squad.
-    makePromotedClub(state, name) {
-      const idx = state.leagueOnePool.indexOf(name);
-      if (idx >= 0) state.leagueOnePool.splice(idx, 1);
-      const id = name.toLowerCase().replace(/[^a-z]/g, "").slice(0, 3) + Math.floor(Math.random() * 90);
-      const palette = [["#D2122E","#FFFFFF"],["#0033A0","#FFFFFF"],["#FDB927","#000000"],["#6F263D","#FFFFFF"],["#00A650","#FFFFFF"]];
-      const colors = palette[Math.floor(Math.random() * palette.length)];
-      const club = {
-        id, name, short: name.split(" ").map(w => w[0]).join("").slice(0, 3).toUpperCase(),
-        nick: name, city: name, stadium: name + " Stadium", colors, tier: 1, league: "CH",
-        squad: [], crestInitials: name.split(" ").map(w => w[0]).join("").slice(0, 3).toUpperCase(),
-        budget: Econ.startBudget(1),
-        points: 0, played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0,
-        formation: "4-4-2", lineup: null,
-      };
-      ensureSquadDepth(club);
-      club.squad.forEach(p => { p.club = club.id; });
-      return club;
-    },
+    // League ladder, top → bottom.
+    ORDER: ["PL", "CH", "L1", "L2"],
+    leagueAbove(lg) { const i = this.ORDER.indexOf(lg); return i > 0 ? this.ORDER[i - 1] : null; },
+    leagueBelow(lg) { const i = this.ORDER.indexOf(lg); return i >= 0 && i < this.ORDER.length - 1 ? this.ORDER[i + 1] : null; },
 
     endOfSeason(state) {
-      const tables = { PL: this.table(state, "PL"), CH: this.table(state, "CH") };
-      const awardsByLeague = { PL: Stats.awards(state, "PL"), CH: Stats.awards(state, "CH") };
+      const tables = {}; LEAGUES.forEach(lg => { tables[lg] = this.table(state, lg); });
+      const awardsByLeague = {}; LEAGUES.forEach(lg => { awardsByLeague[lg] = Stats.awards(state, lg); });
 
       const userLeague = Game.myLeague();
       const myTable = tables[userLeague];
@@ -157,10 +148,15 @@
       const awards = awardsByLeague[userLeague]; // the user sees their own league's awards
       const faCup = Cup.seasonSummary(state); // FA Cup recap before it resets
 
-      // Who moves: PL bottom 3 ↔ CH top 3, and CH bottom 3 drop to League One.
-      const plRelegated = tables.PL.slice(17, 20).map(r => r.id);
-      const chPromoted = tables.CH.slice(0, 3).map(r => r.id);
-      const chRelegated = tables.CH.slice(17, 20).map(r => r.id);
+      // Movement, computed per league: top 3 promote, bottom 3 relegate. The
+      // chain PL⇄CH⇄L1⇄L2 is closed (3 up, 3 down each rung), and League Two
+      // has no relegation — its bottom 3 is a sacking zone for the user only.
+      const promoteIds = {}; // clubs going UP out of each league
+      const relegateIds = {}; // clubs going DOWN out of each league
+      LEAGUES.forEach(lg => {
+        if (this.leagueAbove(lg)) promoteIds[lg] = tables[lg].slice(0, 3).map(r => r.id);
+        if (this.leagueBelow(lg)) relegateIds[lg] = tables[lg].slice(17, 20).map(r => r.id);
+      });
 
       // Prize money for every club, scaled to its division.
       LEAGUES.forEach(lg => tables[lg].forEach(row => {
@@ -168,57 +164,48 @@
         club.budget = Math.round((club.budget + Econ.endOfSeasonPrize(row.pos, lg)) * 10) / 10;
       }));
 
-      // Work out the user's fate.
-      const userPromoted = userLeague === "CH" && chPromoted.includes(state.clubId);
-      const userRelegatedToCh = userLeague === "PL" && plRelegated.includes(state.clubId);
-      const userRelegatedOut = userLeague === "CH" && chRelegated.includes(state.clubId);
+      // The user's fate.
       const isChampion = champion.id === state.clubId;
-      const toLeague = userPromoted ? "PL" : userRelegatedToCh ? "CH" : userLeague;
+      const userPromoted = !!(promoteIds[userLeague] && promoteIds[userLeague].includes(state.clubId));
+      const userRelegated = !!(relegateIds[userLeague] && relegateIds[userLeague].includes(state.clubId));
+      const userSacked = userLeague === "L2" && myFinalPos >= 18; // no floor below League Two
+      const toLeague = userPromoted ? this.leagueAbove(userLeague)
+        : userRelegated ? this.leagueBelow(userLeague) : userLeague;
 
       state.history.push({
         season: state.season, league: userLeague, position: myFinalPos,
-        champion: isChampion, promoted: userPromoted, relegated: userRelegatedToCh || userRelegatedOut,
+        champion: isChampion, promoted: userPromoted, relegated: userRelegated || userSacked,
         club: clubNameLookup(state, state.clubId),
       });
       if (isChampion && userLeague === "PL") state.titles++;
 
       const resultBase = {
         userLeague, toLeague, myFinalPos, champion, isChampion,
-        userPromoted, userRelegatedToCh, userRelegatedOut,
+        userPromoted, userRelegated, userSacked,
         awards, tables, faCup,
       };
 
-      if (userRelegatedOut) {
-        // Relegated out of the Championship — the hard floor. Career ends.
+      if (userSacked) {
+        // Bottom three of League Two — sacked. Career ends here.
         return { ...resultBase, bonusesGranted: [] };
       }
 
-      // Off-season development for every club in both divisions.
+      // Off-season development for every club in all four divisions.
       const ageingNews = Aging.advanceSeason(state);
 
-      // Promotion / relegation swaps. PL⇄CH clubs keep their squads (and tier),
-      // they just change division; CH's bottom 3 leave for League One.
-      plRelegated.forEach(id => { const c = state.clubs.find(c => c.id === id); if (c) c.league = "CH"; });
-      chPromoted.forEach(id => { const c = state.clubs.find(c => c.id === id); if (c) c.league = "PL"; });
-      chRelegated.forEach(id => {
-        const club = state.clubs.find(c => c.id === id);
-        if (club) state.leagueOnePool.push(club.name);
+      // Apply the swaps: relegated clubs drop a division, promoted clubs rise.
+      // Clubs keep their squads and reputation tier; only their league changes.
+      LEAGUES.forEach(lg => {
+        (relegateIds[lg] || []).forEach(id => { const c = state.clubs.find(c => c.id === id); if (c) c.league = this.leagueBelow(lg); });
+        (promoteIds[lg] || []).forEach(id => { const c = state.clubs.find(c => c.id === id); if (c) c.league = this.leagueAbove(lg); });
       });
-      state.clubs = state.clubs.filter(c => !chRelegated.includes(c.id));
 
-      const promotedNames = [];
-      while (promotedNames.length < 3 && state.leagueOnePool.length) {
-        const pick = state.leagueOnePool[Math.floor(Math.random() * state.leagueOnePool.length)];
-        if (!promotedNames.includes(pick)) promotedNames.push(pick);
-      }
-      promotedNames.forEach(name => state.clubs.push(this.makePromotedClub(state, name)));
-
-      // Hand out next season's form bonuses (top five of every category in BOTH
-      // leagues), then wipe every player's tallies for the new campaign.
-      const bonusesGranted = Stats.assignSeasonBonuses(state, [...awardsByLeague.PL, ...awardsByLeague.CH]);
+      // Next season's form bonuses — top five of every category in every
+      // league — then wipe season tallies (career totals persist).
+      const allAwards = LEAGUES.flatMap(lg => awardsByLeague[lg]);
+      const bonusesGranted = Stats.assignSeasonBonuses(state, allAwards);
       Stats.resetSeason(state);
 
-      // Reset season-long table stats for every surviving/joining club.
       state.clubs.forEach(c => {
         c.points = 0; c.played = 0; c.won = 0; c.drawn = 0; c.lost = 0; c.gf = 0; c.ga = 0;
       });

@@ -14,6 +14,28 @@
      if (age <= 29) return Math.round(Math.random() * 2);        // +0..2
      return 0;
    }
+   // Every player carries a lifetime record. Since we have no real historical
+   // data, seed it from rating + age + position so a 30-year-old star looks
+   // like one (hundreds of apps, plenty of output) and a teenager barely
+   // features yet. In-game appearances then accumulate on top of this.
+   function estimateCareer(rating, age, pos) {
+     const seasons = Math.max(0, Math.min(17, age - 18));
+     const appsPerSeason = Math.max(6, Math.min(40, 12 + (rating - 50) * 0.65));
+     const apps = Math.round(seasons * appsPerSeason * (0.8 + Math.random() * 0.4));
+     const q = Math.max(0.1, Math.min(1.2, (rating - 50) / 40));
+     const gpg = ({ FW: 0.42, MF: 0.18, DF: 0.05, GK: 0 })[pos] || 0;
+     const apg = ({ FW: 0.15, MF: 0.30, DF: 0.08, GK: 0 })[pos] || 0;
+     const csg = ({ GK: 0.30, DF: 0.28, MF: 0, FW: 0 })[pos] || 0;
+     const svg = ({ GK: 2.6, DF: 0, MF: 0, FW: 0 })[pos] || 0;
+     return {
+       apps,
+       goals: Math.round(apps * gpg * q),
+       assists: Math.round(apps * apg * q),
+       cleanSheets: Math.round(apps * csg),
+       saves: Math.round(apps * svg * (0.7 + q * 0.3)),
+     };
+   }
+
    function P(name, pos, age, rating, opts = {}) {
      const id = "p" + (_pid++);
      const rf = Math.max(0, rating - 55);
@@ -45,7 +67,8 @@
        form: 0,
        club: null,
        stats: { goals: 0, assists: 0, cleanSheets: 0, saves: 0, apps: 0 },
-       bonus: { goal: 0, assist: 0, keeper: 0 },
+       bonus: { goal: 0, assist: 0, keeper: 0, defense: 0 },
+       career: estimateCareer(rating, age, pos),
      };
    }
    
@@ -253,6 +276,54 @@
      { id: "ply", name: "Plymouth Argyle", short: "PLY", nick: "The Pilgrims", city: "Plymouth", stadium: "Home Park", colors: ["#007B5F", "#FFFFFF"], tier: 1, squad: [] },
    ];
 
+   // ---- EFL LEAGUE ONE (third tier) ----------------------------------------
+   const RAW_LEAGUEONE = [
+     { id: "bol", name: "Bolton Wanderers", short: "BOL", nick: "The Trotters", city: "Bolton", stadium: "Toughsheet Community Stadium", colors: ["#FFFFFF", "#001C58"], tier: 1, squad: [] },
+     { id: "wig", name: "Wigan Athletic", short: "WIG", nick: "The Latics", city: "Wigan", stadium: "Brick Community Stadium", colors: ["#0070B5", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "brn", name: "Barnsley", short: "BRN", nick: "The Tykes", city: "Barnsley", stadium: "Oakwell", colors: ["#D2122E", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "por", name: "Portsmouth", short: "POR", nick: "Pompey", city: "Portsmouth", stadium: "Fratton Park", colors: ["#001C58", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "cha", name: "Charlton Athletic", short: "CHA", nick: "The Addicks", city: "London", stadium: "The Valley", colors: ["#D2122E", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "hud", name: "Huddersfield Town", short: "HUD", nick: "The Terriers", city: "Huddersfield", stadium: "John Smith's Stadium", colors: ["#0070B5", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "oxf", name: "Oxford United", short: "OXF", nick: "The U's", city: "Oxford", stadium: "Kassam Stadium", colors: ["#FFD700", "#001C58"], tier: 1, squad: [] },
+     { id: "pet", name: "Peterborough United", short: "PET", nick: "Posh", city: "Peterborough", stadium: "Weston Homes Stadium", colors: ["#0070B5", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "lin", name: "Lincoln City", short: "LIN", nick: "The Imps", city: "Lincoln", stadium: "LNER Stadium", colors: ["#D2122E", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "brv", name: "Bristol Rovers", short: "BRV", nick: "The Gas", city: "Bristol", stadium: "Memorial Stadium", colors: ["#0070B5", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "wre", name: "Wrexham", short: "WRE", nick: "The Red Dragons", city: "Wrexham", stadium: "Racecourse Ground", colors: ["#D2122E", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "stk", name: "Stockport County", short: "STK", nick: "The Hatters", city: "Stockport", stadium: "Edgeley Park", colors: ["#0070B5", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "bkp", name: "Blackpool", short: "BKP", nick: "The Seasiders", city: "Blackpool", stadium: "Bloomfield Road", colors: ["#F68712", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "rot", name: "Rotherham United", short: "ROT", nick: "The Millers", city: "Rotherham", stadium: "AESSEAL New York Stadium", colors: ["#D2122E", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "cam", name: "Cambridge United", short: "CAM", nick: "The U's", city: "Cambridge", stadium: "Abbey Stadium", colors: ["#FFCC00", "#000000"], tier: 1, squad: [] },
+     { id: "nor2", name: "Northampton Town", short: "NTH", nick: "The Cobblers", city: "Northampton", stadium: "Sixfields Stadium", colors: ["#7C2D8A", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "shr", name: "Shrewsbury Town", short: "SHR", nick: "The Shrews", city: "Shrewsbury", stadium: "Croud Meadow", colors: ["#0033A0", "#FFD700"], tier: 1, squad: [] },
+     { id: "rea", name: "Reading", short: "REA", nick: "The Royals", city: "Reading", stadium: "Select Car Leasing Stadium", colors: ["#004494", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "exe", name: "Exeter City", short: "EXE", nick: "The Grecians", city: "Exeter", stadium: "St James Park", colors: ["#D2122E", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "mns", name: "Mansfield Town", short: "MNS", nick: "The Stags", city: "Mansfield", stadium: "One Call Stadium", colors: ["#FFD700", "#00205B"], tier: 1, squad: [] },
+   ];
+
+   // ---- EFL LEAGUE TWO (fourth tier — no relegation below it) ---------------
+   const RAW_LEAGUETWO = [
+     { id: "nts", name: "Notts County", short: "NTS", nick: "The Magpies", city: "Nottingham", stadium: "Meadow Lane", colors: ["#000000", "#FFFFFF"], tier: 0, squad: [] },
+     { id: "grm", name: "Grimsby Town", short: "GRM", nick: "The Mariners", city: "Grimsby", stadium: "Blundell Park", colors: ["#000000", "#FFFFFF"], tier: 0, squad: [] },
+     { id: "brd", name: "Bradford City", short: "BRD", nick: "The Bantams", city: "Bradford", stadium: "Valley Parade", colors: ["#8A1538", "#F68712"], tier: 0, squad: [] },
+     { id: "cht", name: "Chesterfield", short: "CHT", nick: "The Spireites", city: "Chesterfield", stadium: "SMH Group Stadium", colors: ["#0033A0", "#FFFFFF"], tier: 0, squad: [] },
+     { id: "gil", name: "Gillingham", short: "GIL", nick: "The Gills", city: "Gillingham", stadium: "Priestfield Stadium", colors: ["#0033A0", "#FFFFFF"], tier: 0, squad: [] },
+     { id: "mkd", name: "MK Dons", short: "MKD", nick: "The Dons", city: "Milton Keynes", stadium: "Stadium MK", colors: ["#FFFFFF", "#000000"], tier: 0, squad: [] },
+     { id: "crw", name: "Crawley Town", short: "CRW", nick: "The Red Devils", city: "Crawley", stadium: "Broadfield Stadium", colors: ["#D2122E", "#FFFFFF"], tier: 0, squad: [] },
+     { id: "sal", name: "Salford City", short: "SAL", nick: "The Ammies", city: "Salford", stadium: "Peninsula Stadium", colors: ["#D2122E", "#000000"], tier: 0, squad: [] },
+     { id: "wal", name: "Walsall", short: "WAL", nick: "The Saddlers", city: "Walsall", stadium: "Poundland Bescot Stadium", colors: ["#D2122E", "#FFFFFF"], tier: 0, squad: [] },
+     { id: "don", name: "Doncaster Rovers", short: "DON", nick: "Rovers", city: "Doncaster", stadium: "Eco-Power Stadium", colors: ["#D2122E", "#FFFFFF"], tier: 0, squad: [] },
+     { id: "col", name: "Colchester United", short: "COL", nick: "The U's", city: "Colchester", stadium: "JobServe Community Stadium", colors: ["#0033A0", "#FFFFFF"], tier: 0, squad: [] },
+     { id: "npt", name: "Newport County", short: "NPT", nick: "The Exiles", city: "Newport", stadium: "Rodney Parade", colors: ["#F68712", "#000000"], tier: 0, squad: [] },
+     { id: "trn", name: "Tranmere Rovers", short: "TRN", nick: "The Whites", city: "Birkenhead", stadium: "Prenton Park", colors: ["#FFFFFF", "#0033A0"], tier: 0, squad: [] },
+     { id: "cre", name: "Crewe Alexandra", short: "CRE", nick: "The Railwaymen", city: "Crewe", stadium: "Mornflake Stadium", colors: ["#D2122E", "#FFFFFF"], tier: 0, squad: [] },
+     { id: "hgt", name: "Harrogate Town", short: "HGT", nick: "The Sulphurites", city: "Harrogate", stadium: "Wetherby Road", colors: ["#FFD700", "#000000"], tier: 0, squad: [] },
+     { id: "bar2", name: "Barrow", short: "BAW", nick: "The Bluebirds", city: "Barrow-in-Furness", stadium: "Holker Street", colors: ["#0070B5", "#FFFFFF"], tier: 0, squad: [] },
+     { id: "swn", name: "Swindon Town", short: "SWN", nick: "The Robins", city: "Swindon", stadium: "County Ground", colors: ["#D2122E", "#FFFFFF"], tier: 0, squad: [] },
+     { id: "acc", name: "Accrington Stanley", short: "ACC", nick: "Stanley", city: "Accrington", stadium: "Wham Stadium", colors: ["#D2122E", "#000000"], tier: 0, squad: [] },
+     { id: "mor", name: "Morecambe", short: "MOR", nick: "The Shrimps", city: "Morecambe", stadium: "Mazuma Stadium", colors: ["#D2122E", "#000000"], tier: 0, squad: [] },
+     { id: "fle", name: "Fleetwood Town", short: "FLE", nick: "The Cod Army", city: "Fleetwood", stadium: "Highbury Stadium", colors: ["#D2122E", "#FFFFFF"], tier: 0, squad: [] },
+   ];
+
    // Attach league tag, club reference & ids onto every club / player.
    const CLUBS = [
      ...RAW_CLUBS.map(c => {
@@ -261,28 +332,18 @@
        c.crestInitials = c.short;
        return c;
      }),
-     ...RAW_CHAMPIONSHIP.map(c => {
-       c.league = "CH";
-       c.crestInitials = c.short;
-       return c;
-     }),
+     ...RAW_CHAMPIONSHIP.map(c => { c.league = "CH"; c.crestInitials = c.short; return c; }),
+     ...RAW_LEAGUEONE.map(c => { c.league = "L1"; c.crestInitials = c.short; return c; }),
+     ...RAW_LEAGUETWO.map(c => { c.league = "L2"; c.crestInitials = c.short; return c; }),
    ];
 
    function clubById(id) { return CLUBS.find(c => c.id === id); }
 
-   const LEAGUES = ["PL", "CH"];
-   const LEAGUE_NAMES = { PL: "Premier League", CH: "Championship" };
-   const LEAGUE_SHORT = { PL: "Prem", CH: "Champ" };
-
-   // A rotating pool of real third-tier club names. When a Championship side is
-   // relegated it drops out of the simulated world and one of these is promoted
-   // up to take its place (with a freshly generated lower-tier squad).
-   const LEAGUE_ONE_POOL = [
-     "Wrexham", "Bolton Wanderers", "Charlton Athletic", "Huddersfield Town",
-     "Reading", "Portsmouth", "Barnsley", "Wigan Athletic", "Oxford United",
-     "Peterborough United", "Lincoln City", "Birmingham City", "Bristol Rovers",
-     "Shrewsbury Town", "Exeter City", "Stevenage",
-   ];
+   const LEAGUES = ["PL", "CH", "L1", "L2"];
+   const LEAGUE_NAMES = { PL: "Premier League", CH: "Championship", L1: "League One", L2: "League Two" };
+   const LEAGUE_SHORT = { PL: "Prem", CH: "Champ", L1: "Lg 1", L2: "Lg 2" };
+   // Per-division economy multiplier — the lower leagues are far poorer.
+   const LEAGUE_ECON = { PL: 1, CH: 1, L1: 0.4, L2: 0.18 };
 
    const POSITIONS = ["GK", "DF", "MF", "FW"];
    

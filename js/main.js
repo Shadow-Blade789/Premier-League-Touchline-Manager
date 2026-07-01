@@ -369,13 +369,13 @@
   
       const fromLeagueName = LEAGUE_NAMES[result.userLeague];
 
-      if (result.userRelegatedOut) {
-        // Relegated out of the Championship — the hard floor. Career ends.
+      if (result.userSacked) {
+        // Bottom three of League Two — sacked. Career ends here.
         screen.innerHTML = `
           <div class="relegation-screen">
             <p class="eyebrow">Season ${state.season}/${String(state.season + 1).slice(2)} complete</p>
-            <div class="big">Relegated</div>
-            <p>${club.name} finish ${ordinal(result.myFinalPos)} and drop out of the Championship into League One. Your career ends here.</p>
+            <div class="big">Sacked</div>
+            <p>${club.name} finish ${ordinal(result.myFinalPos)} in League Two — bottom of the Football League. The board have dismissed you and your career ends here.</p>
             <button class="primary" id="btnSeasonNewCareer">Start New Career</button>
           </div>
           ${result.awards ? `<div class="panel"><h3>Final ${fromLeagueName} Awards</h3>${UI.awardsGridHTML(result.awards)}${UI.seasonStatBoardsHTML(result.awards)}</div>` : ""}
@@ -395,15 +395,16 @@
       }
 
       // Headline + subtitle for the season's outcome.
+      const toLeagueName = LEAGUE_NAMES[result.toLeague];
       let headline = "Season Complete", headClass = "";
-      if (result.isChampion && result.userLeague === "CH") headline = "🏆 Championship Winners!";
+      if (result.isChampion && result.userLeague !== "PL") headline = `🏆 ${fromLeagueName} Winners!`;
       else if (result.isChampion) headline = "🏆 Champions!";
       else if (result.userPromoted) headline = "🔼 Promoted!";
-      else if (result.userRelegatedToCh) { headline = "🔽 Relegated"; headClass = "relegated"; }
+      else if (result.userRelegated) { headline = "🔽 Relegated"; headClass = "relegated"; }
 
       let movementLine = "";
-      if (result.userPromoted) movementLine = `<p class="promo-line">${club.name} go up to the <strong>Premier League</strong> next season.</p>`;
-      else if (result.userRelegatedToCh) movementLine = `<p class="releg-line">${club.name} drop to the <strong>Championship</strong> next season — the career continues.</p>`;
+      if (result.userPromoted) movementLine = `<p class="promo-line">${club.name} go up to the <strong>${toLeagueName}</strong> next season.</p>`;
+      else if (result.userRelegated) movementLine = `<p class="releg-line">${club.name} drop to the <strong>${toLeagueName}</strong> next season — the career continues.</p>`;
 
       const zone = Season.zoneFor(result.myFinalPos, result.userLeague);
       const news = result.ageingNews;

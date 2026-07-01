@@ -28,18 +28,27 @@ const TOP5_BONUS_SCALE = 0.4; // ranks 2–5 earn this fraction of the winner's 
 
 const Stats = {
   blank() { return { goals: 0, assists: 0, cleanSheets: 0, saves: 0, apps: 0 }; },
-  blankBonus() { return { goal: 0, assist: 0, keeper: 0 }; },
+  blankBonus() { return { goal: 0, assist: 0, keeper: 0, defense: 0 }; },
 
-  // Guarantees a player has well-formed stats/bonus objects (used on load to
-  // migrate older saves that predate this feature, and defensively elsewhere).
+  // Guarantees a player has well-formed stats/bonus/career objects (used on
+  // load to migrate older saves, and defensively elsewhere).
   ensure(p) {
     if (!p.stats) p.stats = this.blank();
     else STAT_KEYS.forEach(k => { if (p.stats[k] == null) p.stats[k] = 0; });
     if (!p.bonus) p.bonus = this.blankBonus();
     else BONUS_KEYS.forEach(k => { if (p.bonus[k] == null) p.bonus[k] = 0; });
+    if (!p.career) p.career = this.blank();
+    else STAT_KEYS.forEach(k => { if (p.career[k] == null) p.career[k] = 0; });
     return p;
   },
   ensureAll(state) { state.clubs.forEach(c => c.squad.forEach(p => this.ensure(p))); },
+
+  // Add to a player's season tally AND their lifetime career total at once.
+  add(p, key, n = 1) {
+    this.ensure(p);
+    p.stats[key] += n;
+    p.career[key] += n;
+  },
 
   resetSeason(state) { state.clubs.forEach(c => c.squad.forEach(p => { p.stats = this.blank(); })); },
   clearBonuses(state) { state.clubs.forEach(c => c.squad.forEach(p => { p.bonus = this.blankBonus(); })); },
@@ -57,7 +66,7 @@ const Stats = {
     const sot = poisson(clamp(oppAtt * 0.05 - myDef * 0.025 + 2.2, 0.4, 8));
     let saves = Math.max(0, sot - goalsAgainst);
     if (Math.random() < keeperBonus * 5) saves += 1;
-    gk.stats.saves += saves;
+    this.add(gk, "saves", saves);
   },
 
   // Credit appearances, clean sheet, saves for one side, then hand `goalsFor`
@@ -66,14 +75,14 @@ const Stats = {
   // credited so the feed and the stat sheet never disagree; otherwise scorers
   // are drawn fresh (AI matches).
   recordSide(starters, oppStarters, goalsFor, goalsAgainst, scorers) {
-    starters.forEach(p => { this.ensure(p); p.stats.apps++; });
+    starters.forEach(p => this.add(p, "apps", 1));
     const gk = starters.find(p => p.pos === "GK");
-    if (gk) { this.ensure(gk); this.recordSaves(gk, starters, oppStarters, goalsAgainst); }
+    if (gk) this.recordSaves(gk, starters, oppStarters, goalsAgainst);
     // A clean sheet is shared by the keeper and every starting defender — it
     // anchors both the Golden Glove (GK) and Best Defender (DF) races.
     if (goalsAgainst === 0) {
-      if (gk) gk.stats.cleanSheets++;
-      starters.filter(p => p.pos === "DF").forEach(d => { this.ensure(d); d.stats.cleanSheets++; });
+      if (gk) this.add(gk, "cleanSheets", 1);
+      starters.filter(p => p.pos === "DF").forEach(d => this.add(d, "cleanSheets", 1));
     }
 
     const attackers = starters.filter(p => p.pos === "FW" || p.pos === "MF");
@@ -83,11 +92,10 @@ const Stats = {
       if (scorers && scorers[i]) scorer = starters.find(p => p.id === scorers[i]);
       if (!scorer) scorer = MatchEngine.weightedScorer(pool);
       if (!scorer) continue;
-      this.ensure(scorer);
-      scorer.stats.goals++;
+      this.add(scorer, "goals", 1);
       if (Math.random() < 0.72) {
         const assister = MatchEngine.weightedAssister(pool, scorer);
-        if (assister) { this.ensure(assister); assister.stats.assists++; }
+        if (assister) this.add(assister, "assists", 1);
       }
     }
   },
@@ -171,6 +179,23 @@ const Stats = {
       });
     });
     return granted;
+  },
+
+  // ---- career records -------------------------------------------------------
+
+  // The headline lifetime stat for a position: FW goals, MF assists,
+  // DF clean sheets, GK saves.
+  careerKeyFor(pos) {
+    return ({ FW: "goals", MF: "assists", DF: "cleanSheets", GK: "saves" })[pos] || "goals";
+  },
+  careerKeyLabel(key) {
+    return ({ goals: "goals", assists: "assists", cleanSheets: "clean sheets", saves: "saves" })[key] || key;
+  },
+  // "312 apps · 88 goals" — appearances plus the position's headline stat.
+  signingLine(p) {
+    this.ensure(p);
+    const key = this.careerKeyFor(p.pos);
+    return `${p.career.apps} apps · ${p.career[key]} ${this.careerKeyLabel(key)}`;
   },
 
   // Human-readable summary of a player's active boosts, e.g. "+12% goals".

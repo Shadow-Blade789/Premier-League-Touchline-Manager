@@ -112,6 +112,9 @@
         head = `<div class="cup-status">Won by <strong>${Cup.clubName(state, fc.winner)}</strong>${fc.userExitRound != null ? " — you went out in the " + Cup.ROUNDS[fc.userExitRound].name : ""}.</div>`;
       } else if (fc.userOut) {
         head = `<div class="cup-status out">Knocked out in the ${Cup.ROUNDS[fc.userExitRound].name}.</div>`;
+      } else if (Cup.userHasBye(state)) {
+        const entry = Cup.ROUNDS[fc.userEntryRound];
+        head = `<div class="cup-status in">Seeded — bye to the <strong>${entry.name}</strong> (MW${entry.week}).</div>`;
       } else {
         const rd = Cup.ROUNDS[fc.roundIndex];
         const tie = Cup.userTie(state);
@@ -124,17 +127,22 @@
         head = `<div class="cup-status in">Still in — <strong>${rd ? rd.name : ""}</strong> (MW${rd ? rd.week : "?"})${oppLine}</div>`;
       }
 
+      const entryRound = fc.userEntryRound || 0;
+      const activeRound = Math.max(fc.roundIndex, entryRound);
       const rows = Cup.ROUNDS.map((r, i) => {
         let mark = "—", cls = "upcoming";
         if (fc.winner === clubId) { mark = "✓"; cls = "won"; }
         else if (fc.userOut) {
           if (i < fc.userExitRound) { mark = "✓"; cls = "won"; }
           else if (i === fc.userExitRound) { mark = "✗"; cls = "out"; }
-        } else {
-          if (i < fc.roundIndex) { mark = "✓"; cls = "won"; }
-          else if (i === fc.roundIndex) { mark = "•"; cls = "current"; }
+        } else if (i < entryRound) {
+          mark = "»"; cls = "upcoming"; // seeded past this round (bye)
+        } else if (i < fc.roundIndex) {
+          mark = "✓"; cls = "won";
+        } else if (i === activeRound) {
+          mark = "•"; cls = "current";
         }
-        const here = r.week === state.week && !fc.userOut && fc.winner == null && i === fc.roundIndex ? " here" : "";
+        const here = r.week === state.week && !fc.userOut && fc.winner == null && i === activeRound ? " here" : "";
         return `<li class="cup-round ${cls}${here}"><span class="cr-mark">${mark}</span><span class="cr-name">${r.name}</span><span class="cr-wk mono">MW${r.week}</span></li>`;
       }).join("");
       body.innerHTML = head + `<ol class="cup-rounds">${rows}</ol>`;
@@ -195,7 +203,8 @@
         return;
       }
       list.innerHTML = state.market.map(l => this.renderPlayerRow(l.player, {
-        subLabel: l.origin ? "Listed by " + l.originName : l.originName,
+        // Career record (apps + the position's headline stat) plus who's selling.
+        subLabel: `${Stats.signingLine(l.player)} · ${l.origin ? "from " + l.originName : l.originName}`,
         priceLabel: this.money(l.price),
         potentialLabel: this.potentialRange(l.player.potential), // scouted: 5-wide range
         action: `<button class="small primary" data-buy="${l.listingId}" ${club.budget < l.price ? "disabled" : ""}>Sign</button>`,
@@ -288,11 +297,17 @@
     },
 
     legendHTML(league) {
-      if (league === "CH") {
+      if (league === "CH" || league === "L1") {
         return `
           <span><i style="background:#4ad991;"></i>Automatic promotion</span>
           <span><i style="background:#5ec2ff;"></i>Play-offs</span>
           <span><i style="background:var(--alert-red);"></i>Relegation</span>`;
+      }
+      if (league === "L2") {
+        return `
+          <span><i style="background:#4ad991;"></i>Automatic promotion</span>
+          <span><i style="background:#5ec2ff;"></i>Play-offs</span>
+          <span><i style="background:var(--alert-red);"></i>Sacking zone (no relegation)</span>`;
       }
       return `
         <span><i style="background:var(--amber);"></i>Champions</span>
@@ -407,6 +422,7 @@
     return {
       champion: "Champions", ucl: "Champions League", uel: "Europa League", ecl: "Conference League",
       relegation: "Relegation zone", promotion: "Automatic promotion", playoff: "Play-off place",
+      sacking: "Sacking zone",
     }[zone] || "";
   }
   function ordinal(n) {
