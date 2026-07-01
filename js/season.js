@@ -40,8 +40,30 @@
       });
     },
 
+    // Leagues have different sizes (20 vs 24 clubs) and therefore different
+    // fixture counts. The season runs for as long as the USER's league does.
     totalWeeks(state) {
-      return (state.fixtures.PL || []).length;
+      const lg = Game.myLeague();
+      return (state.fixtures[lg] || state.fixtures.PL || []).length;
+    },
+
+    // Leagues longer than the user's keep playing after the user's season is
+    // done — quick-sim their outstanding rounds so every table is complete
+    // before promotions and relegations are worked out.
+    finishRemainingLeagues(state) {
+      LEAGUES.forEach(lg => {
+        const sched = state.fixtures[lg] || [];
+        for (let w = state.week; w < sched.length; w++) {
+          sched[w].forEach(m => {
+            const home = state.clubs.find(c => c.id === m.home);
+            const away = state.clubs.find(c => c.id === m.away);
+            if (!home || !away) return;
+            const { hg, ag } = MatchEngine.simulateQuick(home, away);
+            this.recordResult(state, m.home, m.away, hg, ag);
+            Stats.recordMatch(Lineup.starters(home), Lineup.starters(away), hg, ag);
+          });
+        }
+      });
     },
 
     currentRound(state, league) {
@@ -107,29 +129,53 @@
       return rows;
     },
 
-    // Coloured zones differ by division: the Premier League has European spots
-    // and relegation; the Championship has automatic promotion, the play-offs,
-    // and relegation.
-    zoneFor(pos, league = "PL") {
-      if (league === "CH" || league === "L1") {
-        if (pos <= 2) return "promotion";
-        if (pos <= 6) return "playoff";
-        if (pos >= 18) return "relegation";
+    // Promotion / relegation rules per division. The chain is closed
+    // (PL ⇄ CH ⇄ L1 ⇄ L2): the Championship promotes 3 directly; League One and
+    // Two promote 3 directly plus one play-off winner from the next four.
+    // League Two has no relegation — its bottom four is a sacking zone.
+    LEAGUE_RULES: {
+      PL: { autoPromote: 0, playoff: 0, relegate: 3 },
+      CH: { autoPromote: 3, playoff: 0, relegate: 4 },
+      L1: { autoPromote: 3, playoff: 1, relegate: 4 },
+      L2: { autoPromote: 3, playoff: 1, relegate: 0, sacking: 4 },
+    },
+    ORDER: ["PL", "CH", "L1", "L2"],
+    leagueAbove(lg) { const i = this.ORDER.indexOf(lg); return i > 0 ? this.ORDER[i - 1] : null; },
+    leagueBelow(lg) { const i = this.ORDER.indexOf(lg); return i >= 0 && i < this.ORDER.length - 1 ? this.ORDER[i + 1] : null; },
+
+    // Coloured table zones, sized to the league (20 or 24 clubs).
+    zoneFor(pos, league = "PL", size = 20) {
+      const r = this.LEAGUE_RULES[league] || {};
+      if (league === "PL") {
+        if (pos === 1) return "champion";
+        if (pos <= 4) return "ucl";
+        if (pos === 5) return "uel";
+        if (pos === 6) return "ecl";
+        if (pos > size - r.relegate) return "relegation";
         return "";
       }
-      if (league === "L2") {
-        // No division below — the bottom three is a "sacking zone" instead.
-        if (pos <= 2) return "promotion";
-        if (pos <= 6) return "playoff";
-        if (pos >= 18) return "sacking";
-        return "";
-      }
-      if (pos === 1) return "champion";
-      if (pos <= 4) return "ucl";
-      if (pos === 5) return "uel";
-      if (pos === 6) return "ecl";
-      if (pos >= 18) return "relegation";
+      if (pos <= r.autoPromote) return "promotion";
+      if (r.playoff && pos <= r.autoPromote + 4) return "playoff";
+      if (league === "L2") { if (pos > size - (r.sacking || 3)) return "sacking"; return ""; }
+      if (pos > size - r.relegate) return "relegation";
       return "";
+    },
+
+    // Resolve a play-off among a league's next four (positions autoPromote+1..+4):
+    // semis are 1v4 and 2v3 by seed, then a final. Returns { winner, finalists }.
+    runPlayoff(state, table, autoPromote) {
+      const c = table.slice(autoPromote, autoPromote + 4).map(r => r.id);
+      if (c.length < 4) return { winner: c[0] || null, finalists: c.slice(0, 2) };
+      const f1 = this.playoffWinner(state, c[0], c[3]); // seed 4 v 7
+      const f2 = this.playoffWinner(state, c[1], c[2]); // seed 5 v 6
+      const winner = this.playoffWinner(state, f1, f2);
+      return { winner, finalists: [f1, f2], contenders: c };
+    },
+    playoffWinner(state, aId, bId) {
+      const a = state.clubs.find(c => c.id === aId), b = state.clubs.find(c => c.id === bId);
+      const ra = MatchEngine.overallRating(Lineup.starters(a)) + 1.5; // slight edge to the higher seed
+      const rb = MatchEngine.overallRating(Lineup.starters(b));
+      return Math.random() < ra / (ra + rb) ? aId : bId;
     },
   
     // League ladder, top → bottom.
@@ -138,24 +184,41 @@
     leagueBelow(lg) { const i = this.ORDER.indexOf(lg); return i >= 0 && i < this.ORDER.length - 1 ? this.ORDER[i + 1] : null; },
 
     endOfSeason(state) {
+      // Finish any divisions that run longer than the user's before ranking.
+      this.finishRemainingLeagues(state);
+
       const tables = {}; LEAGUES.forEach(lg => { tables[lg] = this.table(state, lg); });
       const awardsByLeague = {}; LEAGUES.forEach(lg => { awardsByLeague[lg] = Stats.awards(state, lg); });
 
       const userLeague = Game.myLeague();
       const myTable = tables[userLeague];
+      const size = myTable.length;
       const champion = myTable[0];
       const myFinalPos = myTable.find(r => r.id === state.clubId).pos;
       const awards = awardsByLeague[userLeague]; // the user sees their own league's awards
-      const faCup = Cup.seasonSummary(state); // FA Cup recap before it resets
+      const faCup = Cup.seasonSummary(state, state.faCup, Cup.CUPS.fa);
+      const eflCup = Cup.seasonSummary(state, state.eflCup, Cup.CUPS.efl);
 
-      // Movement, computed per league: top 3 promote, bottom 3 relegate. The
-      // chain PL⇄CH⇄L1⇄L2 is closed (3 up, 3 down each rung), and League Two
-      // has no relegation — its bottom 3 is a sacking zone for the user only.
+      // Movement per league: N automatic promotions (+ a play-off winner where
+      // applicable) go up; the bottom few go down.
       const promoteIds = {}; // clubs going UP out of each league
       const relegateIds = {}; // clubs going DOWN out of each league
+      let userPlayoff = null;  // the user's play-off run, if any
       LEAGUES.forEach(lg => {
-        if (this.leagueAbove(lg)) promoteIds[lg] = tables[lg].slice(0, 3).map(r => r.id);
-        if (this.leagueBelow(lg)) relegateIds[lg] = tables[lg].slice(17, 20).map(r => r.id);
+        const rules = this.LEAGUE_RULES[lg]; const tbl = tables[lg]; const n = tbl.length;
+        if (rules.autoPromote) {
+          const promoted = tbl.slice(0, rules.autoPromote).map(r => r.id);
+          if (rules.playoff) {
+            const po = this.runPlayoff(state, tbl, rules.autoPromote);
+            if (po.winner) promoted.push(po.winner);
+            if (lg === userLeague && po.contenders && po.contenders.includes(state.clubId)) {
+              userPlayoff = po.winner === state.clubId ? "won"
+                : po.finalists.includes(state.clubId) ? "lostFinal" : "lostSemi";
+            }
+          }
+          promoteIds[lg] = promoted;
+        }
+        if (rules.relegate) relegateIds[lg] = tbl.slice(n - rules.relegate).map(r => r.id);
       });
 
       // Prize money for every club, scaled to its division.
@@ -165,10 +228,11 @@
       }));
 
       // The user's fate.
+      const rules = this.LEAGUE_RULES[userLeague];
       const isChampion = champion.id === state.clubId;
       const userPromoted = !!(promoteIds[userLeague] && promoteIds[userLeague].includes(state.clubId));
       const userRelegated = !!(relegateIds[userLeague] && relegateIds[userLeague].includes(state.clubId));
-      const userSacked = userLeague === "L2" && myFinalPos >= 18; // no floor below League Two
+      const userSacked = userLeague === "L2" && myFinalPos > size - (rules.sacking || 4); // no floor below
       const toLeague = userPromoted ? this.leagueAbove(userLeague)
         : userRelegated ? this.leagueBelow(userLeague) : userLeague;
 
@@ -181,12 +245,12 @@
 
       const resultBase = {
         userLeague, toLeague, myFinalPos, champion, isChampion,
-        userPromoted, userRelegated, userSacked,
-        awards, tables, faCup,
+        userPromoted, userRelegated, userSacked, userPlayoff,
+        awards, tables, faCup, eflCup,
       };
 
       if (userSacked) {
-        // Bottom three of League Two — sacked. Career ends here.
+        // Bottom of League Two — sacked. Career ends here.
         return { ...resultBase, bonusesGranted: [] };
       }
 
@@ -214,7 +278,7 @@
       state.week = 0;
       state.results = [];
       this.buildFixtures(state);
-      Cup.initSeason(state); // fresh FA Cup bracket for the new season
+      Cup.initSeason(state); // fresh FA Cup + Carabao Cup brackets for the new season
       state.windowWasOpen = false; // force the season-opening "window just opened" transition
       Market.weeklyUpdate(state);
 

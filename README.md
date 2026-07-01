@@ -40,7 +40,7 @@ js/state.js          Career state, save/load + migration, squad-depth helper
 js/lineup.js         Formation handling, best-XI auto-pick
 js/match.js          Match engine: quick AI sim + full live commentary timeline
 js/stats.js          Player stats, per-league leaderboards, season awards & bonuses
-js/cup.js            FA Cup: placeholder minnows, bracket draw & knockout resolution
+js/cup.js            Domestic cups (FA + Carabao): generic staged-entry knockout engine
 js/season.js         Per-league fixtures & tables, promotion/relegation between divisions
 js/squad.js          Transfer market (buy/sell)
 js/ui.js             Rendering functions
@@ -56,34 +56,42 @@ js/main.js           App controller, event wiring, live match player
   `squad` arrays in `js/data.js` whenever you want to refresh a club.
 - **Transfer market** listings are freshly generated free agents/loanees
   each reroll, priced off the same rating curve used for your own squad.
-- **Four divisions**: a 20-club Premier League, Championship, League One and
-  League Two — 80 real clubs — each a real 38-game double round-robin running
-  its own separate season, table, stats, leaderboards and awards. You can
-  start a career in any of them (the club picker is grouped by league). Every
-  matchweek your own match is played live and every other game in *all four*
-  divisions is quick-simmed. The lower leagues run on far smaller budgets.
+- **Four divisions**: a 20-club Premier League plus a 24-club Championship,
+  League One and League Two — 92 real clubs. Each runs its own separate season
+  (a 20-team league is 38 games, a 24-team league 46), table, stats,
+  leaderboards and awards. You can start a career in any of them (the club
+  picker is grouped by league). The season lasts as long as *your* league;
+  divisions that run longer are completed before promotions are worked out.
+  Every matchweek your own match is played live and every other game across
+  all four divisions is quick-simmed. The lower leagues run on far smaller
+  budgets and weaker squads.
 - **Promotion & relegation** flow up and down a closed chain
-  (PL ⇄ CH ⇄ L1 ⇄ L2): each summer every league's top three go up and bottom
-  three come down (3-up/3-down keeps all four at 20). The Premier League has
-  European spots; the Championship and League One have automatic promotion
-  (top 2) and play-offs (3rd–6th). Clubs keep their squads when they change
-  division.
+  (PL ⇄ CH ⇄ L1 ⇄ L2). The Championship promotes 3 directly; League One and
+  League Two promote 3 directly **plus one play-off winner** from the next
+  four (positions 4–7, semis + final, quick-simmed and reported at season's
+  end). Relegation counts keep every league at its size. The Premier League
+  has European spots; the lower leagues show automatic-promotion, play-off and
+  relegation zones. Clubs keep their squads when they change division.
 - **Careers survive relegation** all the way down — you just drop a division
   and play on. **League Two has no relegation** (there's nothing below it);
-  instead its bottom three is a *sacking zone* — finish there and the board
+  instead its bottom four is a *sacking zone* — finish there and the board
   dismiss you, ending the career.
 - **Shared transfer market**: one market spans both divisions, so you can buy
   from and sell to clubs in either league.
-- **The FA Cup** runs *through* the season as a knockout, not at the end, and
-  every entrant is a real club from the four leagues (no placeholders). With
-  80 clubs, the 32 weakest contest a preliminary First Round while the 48
-  strongest are seeded straight into the 64-team Third Round; from there it's
-  a clean 64 → 1 knockout. Rounds are pinned to matchweeks (4, 9, 14, 19, 25,
-  30, 36) — on those weeks you play your league game *and*, if still in, your
-  cup tie, as two live matches with clear competition banners. Draws go to
-  penalties. Cup goals stay out of the league leaderboards, and the hub's
-  **FA Cup** panel shows your run and the round-by-round schedule. Tune the
-  rounds and weeks in `js/cup.js`.
+- **Two domestic cups** run *through* the season as knockouts, not at the end,
+  and every entrant is a real club (no placeholders). On a cup week you play
+  your league game *and*, if still in, your cup tie — two live matches with
+  clear competition banners. Draws go to penalties, cup goals stay out of the
+  league leaderboards, and the hub shows a panel per cup with your run and the
+  round-by-round schedule. Clubs enter at staged rounds (minnows early, the
+  biggest sides latest), so the field halves cleanly to a Wembley final.
+  - **FA Cup** — all 92 clubs: the weakest play a First Round, the rest are
+    seeded into the 64-team Third Round.
+  - **Carabao Cup** — the 72 EFL clubs open in Round One; the 13
+    "non-European" Premier League clubs join in Round Two; the 7 "European"
+    clubs (approximated by squad strength) in Round Three.
+  - Tune the rounds, weeks and entry structure in `js/cup.js` (a single
+    generic engine drives both cups).
 - **Career records**: every player carries lifetime totals — appearances,
   goals, assists, clean sheets, saves — that accumulate across seasons.
   Made-up players are seeded with a plausible history estimated from their

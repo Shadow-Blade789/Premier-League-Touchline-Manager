@@ -75,7 +75,7 @@
       const league = club.league;
       const table = Season.table(state, league);
       const row = table.find(r => r.id === club.id);
-      const zone = Season.zoneFor(row.pos, league);
+      const zone = Season.zoneFor(row.pos, league, table.length);
       document.getElementById("hubPosition").innerHTML = `
         <span class="eyebrow">${LEAGUE_NAMES[league]}</span><br>
         Position <strong>${row.pos}</strong> of ${table.length}<br>
@@ -94,42 +94,45 @@
         }).join("<br>");
       }
       this.renderHubStats(state, App.hubStatScope, club.league);
-      this.renderCupPanel(state);
+      this.renderCupPanel(state, Cup.CUPS.fa, "hubCupBody");
+      this.renderCupPanel(state, Cup.CUPS.efl, "hubCarabaoBody");
     },
 
-    // Hub FA Cup panel: the user's run + the round-by-round schedule, so it's
-    // clear which cup game is played on which matchweek.
-    renderCupPanel(state) {
-      const body = document.getElementById("hubCupBody");
-      const fc = state.faCup;
-      if (!fc || fc.skipped) { body.innerHTML = `<span class="muted">The FA Cup begins next season.</span>`; return; }
+    // Hub cup panel: the user's run + the round-by-round schedule, so it's
+    // clear which cup game is played on which matchweek. Works for either cup.
+    renderCupPanel(state, cfg, bodyId) {
+      const body = document.getElementById(bodyId);
+      if (!body) return;
+      const fc = state[cfg.stateKey];
+      if (!fc || fc.skipped) { body.innerHTML = `<span class="muted">The ${cfg.name} begins next season.</span>`; return; }
       const clubId = state.clubId;
+      const rounds = cfg.rounds;
 
       let head;
       if (fc.winner === clubId) {
-        head = `<div class="cup-status win">🏆 FA Cup Winners!</div>`;
+        head = `<div class="cup-status win">🏆 ${cfg.name} Winners!</div>`;
       } else if (fc.winner) {
-        head = `<div class="cup-status">Won by <strong>${Cup.clubName(state, fc.winner)}</strong>${fc.userExitRound != null ? " — you went out in the " + Cup.ROUNDS[fc.userExitRound].name : ""}.</div>`;
+        head = `<div class="cup-status">Won by <strong>${Cup.clubName(state, fc.winner)}</strong>${fc.userExitRound != null ? " — you went out in the " + rounds[fc.userExitRound].name : ""}.</div>`;
       } else if (fc.userOut) {
-        head = `<div class="cup-status out">Knocked out in the ${Cup.ROUNDS[fc.userExitRound].name}.</div>`;
-      } else if (Cup.userHasBye(state)) {
-        const entry = Cup.ROUNDS[fc.userEntryRound];
-        head = `<div class="cup-status in">Seeded — bye to the <strong>${entry.name}</strong> (MW${entry.week}).</div>`;
+        head = `<div class="cup-status out">Knocked out in the ${rounds[fc.userExitRound].name}.</div>`;
+      } else if (Cup.userHasBye(fc)) {
+        const entry = rounds[fc.userEntryRound];
+        head = `<div class="cup-status in">Seeded — bye to the <strong>${entry.name}</strong> (MW${entry.week + 1}).</div>`;
       } else {
-        const rd = Cup.ROUNDS[fc.roundIndex];
-        const tie = Cup.userTie(state);
+        const rd = rounds[fc.roundIndex];
+        const tie = Cup.userTie(state, fc);
         let oppLine = "";
         if (tie && !tie.played) {
           const oppId = tie.home === clubId ? tie.away : tie.home;
           const venue = tie.home === clubId ? "vs" : "@";
           oppLine = ` — ${venue} <strong>${Cup.clubShort(state, oppId)}</strong>`;
         }
-        head = `<div class="cup-status in">Still in — <strong>${rd ? rd.name : ""}</strong> (MW${rd ? rd.week : "?"})${oppLine}</div>`;
+        head = `<div class="cup-status in">Still in — <strong>${rd ? rd.name : ""}</strong> (MW${rd ? rd.week + 1 : "?"})${oppLine}</div>`;
       }
 
       const entryRound = fc.userEntryRound || 0;
       const activeRound = Math.max(fc.roundIndex, entryRound);
-      const rows = Cup.ROUNDS.map((r, i) => {
+      const rowsHtml = rounds.map((r, i) => {
         let mark = "—", cls = "upcoming";
         if (fc.winner === clubId) { mark = "✓"; cls = "won"; }
         else if (fc.userOut) {
@@ -143,9 +146,9 @@
           mark = "•"; cls = "current";
         }
         const here = r.week === state.week && !fc.userOut && fc.winner == null && i === activeRound ? " here" : "";
-        return `<li class="cup-round ${cls}${here}"><span class="cr-mark">${mark}</span><span class="cr-name">${r.name}</span><span class="cr-wk mono">MW${r.week}</span></li>`;
+        return `<li class="cup-round ${cls}${here}"><span class="cr-mark">${mark}</span><span class="cr-name">${r.name}</span><span class="cr-wk mono">MW${r.week + 1}</span></li>`;
       }).join("");
-      body.innerHTML = head + `<ol class="cup-rounds">${rows}</ol>`;
+      body.innerHTML = head + `<ol class="cup-rounds">${rowsHtml}</ol>`;
     },
   
     renderPlayerRow(p, opts = {}) {
@@ -286,7 +289,7 @@
       document.querySelectorAll(".table-league-btn").forEach(b => b.classList.toggle("active", b.dataset.league === league));
       const rows = Season.table(state, league);
       document.getElementById("ladderBody").innerHTML = rows.map(r => {
-        const zone = Season.zoneFor(r.pos, league);
+        const zone = Season.zoneFor(r.pos, league, rows.length);
         return `<tr class="${r.id === state.clubId ? "me" : ""} ${zone ? "zone-" + zone : ""}">
           <td>${r.pos}</td>
           <td class="club-cell">${this.crestHTML(r, "sm")} ${r.name}</td>

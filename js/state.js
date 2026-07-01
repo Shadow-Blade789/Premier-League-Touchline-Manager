@@ -232,22 +232,20 @@
      },
    };
 
-   // Brings any older save up to the four-league world. Tags legacy clubs as
-   // the Premier League and injects whichever of Championship / League One /
-   // League Two are missing (each generated fresh, playing out the rest of the
-   // current season alongside the existing division), then repairs fixtures,
-   // the FA Cup and career stats.
+   // Brings any older save up to the current world: four divisions at their
+   // full sizes (PL 20, CH/L1/L2 24 each), the FA Cup + Carabao Cup, and career
+   // stats. Missing clubs are injected fresh; newly-added clubs play out the
+   // rest of the current season alongside the existing ones.
    function migrateSave(state) {
      const LEAGUE_TEMPLATES = { CH: RAW_CHAMPIONSHIP, L1: RAW_LEAGUEONE, L2: RAW_LEAGUETWO };
      state.clubs.forEach(c => { if (!c.league) c.league = "PL"; });
 
      let injected = false;
+     const existing = new Set(state.clubs.map(c => c.id));
      Object.entries(LEAGUE_TEMPLATES).forEach(([lg, templates]) => {
-       if (state.clubs.some(c => c.league === lg)) return;
-       injected = true;
-       const existing = new Set(state.clubs.map(c => c.id));
        templates.forEach(template => {
-         if (existing.has(template.id)) return;
+         if (existing.has(template.id)) return; // top up whatever's missing to the full 24
+         injected = true;
          const club = {
            ...template, squad: [], crestInitials: template.short,
            budget: Econ.startBudget(template.tier, lg),
@@ -257,27 +255,31 @@
          ensureSquadDepth(club);
          club.squad.forEach(p => { p.club = club.id; });
          state.clubs.push(club);
+         existing.add(template.id);
        });
      });
 
-     const fixturesOk = state.fixtures && !Array.isArray(state.fixtures) && state.fixtures.PL && state.fixtures.CH && state.fixtures.L1 && state.fixtures.L2;
+     const counts = LEAGUES.map(lg => (state.fixtures && !Array.isArray(state.fixtures) && state.fixtures[lg] || []).length);
+     const expected = LEAGUES.map(lg => 2 * (state.clubs.filter(c => c.league === lg).length - 1));
+     const fixturesOk = counts.every((c, i) => c === expected[i]);
      if (!fixturesOk || injected) {
        const oldPL = Array.isArray(state.fixtures) ? state.fixtures : (state.fixtures && state.fixtures.PL);
        Season.buildFixtures(state);
-       if (oldPL) state.fixtures.PL = oldPL;
+       // Keep the in-progress Premier League schedule if it still matches (20 clubs).
+       if (oldPL && oldPL.length === state.fixtures.PL.length) state.fixtures.PL = oldPL;
      }
 
      delete state.feederPool;
      delete state.leagueOnePool;
-     delete state.faTeams; // placeholders retired — the cup now uses real clubs
+     delete state.faTeams; // placeholders retired — the cups now use real clubs
 
-     // (Re)initialise the FA Cup. Old brackets referenced placeholder "fa_"
-     // teams that no longer exist, so rebuild from real clubs. Mid-season it
-     // sits out the current campaign and starts fresh next season.
-     const oldCup = state.faCup && (state.faCup.participants || []).some(id => String(id).startsWith("fa_"));
-     if (!state.faCup || oldCup || injected) {
+     // (Re)initialise the cups. Old FA brackets referenced placeholder "fa_"
+     // teams; and older saves have no Carabao Cup. Mid-season the cups sit out
+     // the current campaign and start fresh next season.
+     const oldFa = state.faCup && (state.faCup.participants || []).some(id => String(id).startsWith("fa_"));
+     if (!state.faCup || !state.eflCup || oldFa || injected) {
        Cup.initSeason(state);
-       if (state.week > 0) state.faCup.skipped = true;
+       if (state.week > 0) { state.faCup.skipped = true; state.eflCup.skipped = true; }
      }
 
      ensureCareers(state);

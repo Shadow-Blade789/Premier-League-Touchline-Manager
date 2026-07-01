@@ -236,25 +236,28 @@
         label: LEAGUE_NAMES[Game.myLeague()] + " · Matchweek " + (state.week + 1),
       });
 
-      if (Cup.isActive(state) && !state.faCup.winner && Cup.roundForWeek(state.week)) {
-        Cup.drawRound(state);
-        Cup.simulateOtherTies(state);
-        const tie = Cup.userTie(state);
+      // A cup round can fall on this week (FA Cup and/or Carabao Cup).
+      Object.values(Cup.CUPS).forEach(cfg => {
+        const fc = state[cfg.stateKey];
+        if (!Cup.isActive(fc) || fc.winner || !Cup.roundForWeek(cfg, state.week)) return;
+        Cup.drawRound(state, fc);
+        Cup.simulateOtherTies(state, fc);
+        const tie = Cup.userTie(state, fc);
         if (tie && !tie.played) {
-          const roundDef = Cup.currentRoundDef(state);
+          const roundDef = Cup.currentRoundDef(cfg, fc);
           const chome = Cup.clubByAnyId(state, tie.home);
           const caway = Cup.clubByAnyId(state, tie.away);
           const cai = chome.id === club.id ? caway : chome;
           Lineup.autoPick(cai, cai.formation || "4-4-2");
           const cupFull = MatchEngine.simulateFull(chome, caway);
           this.weekQueue.push({
-            type: "cup", home: chome, away: caway, full: cupFull, tie, recorded: false,
-            label: "FA Cup · " + roundDef.name,
+            type: "cup", cupKey: cfg.key, home: chome, away: caway, full: cupFull, tie, recorded: false,
+            label: cfg.name + " · " + roundDef.name,
           });
         } else {
-          Cup.completeRoundIfDone(state); // user not involved — resolve the round now
+          Cup.completeRoundIfDone(state, fc); // user not involved — resolve now
         }
-      }
+      });
 
       this.weekInProgress = true;
       document.getElementById("screen-lineup").classList.add("hidden");
@@ -286,8 +289,10 @@
         Season.recordResult(state, item.home.id, item.away.id, item.full.hg, item.full.ag);
         Stats.recordUserMatch(item.full.hStarters, item.full.aStarters, item.full.hg, item.full.ag, item.full.homeScorers, item.full.awayScorers);
       } else if (item.type === "cup") {
-        Cup.recordUserTie(state, item.tie, item.full.hg, item.full.ag);
-        Cup.completeRoundIfDone(state);
+        const cfg = Cup.CUPS[item.cupKey];
+        const fc = state[cfg.stateKey];
+        Cup.recordUserTie(state, fc, item.full.hg, item.full.ag);
+        Cup.completeRoundIfDone(state, fc);
         if (item.tie.pens) {
           document.getElementById("matchStatus").textContent = "AET · " + Cup.clubShort(state, item.tie.winner) + " win on pens";
         }
@@ -406,7 +411,18 @@
       if (result.userPromoted) movementLine = `<p class="promo-line">${club.name} go up to the <strong>${toLeagueName}</strong> next season.</p>`;
       else if (result.userRelegated) movementLine = `<p class="releg-line">${club.name} drop to the <strong>${toLeagueName}</strong> next season — the career continues.</p>`;
 
-      const zone = Season.zoneFor(result.myFinalPos, result.userLeague);
+      // Play-off outcome (League One / Two only).
+      let playoffLine = "";
+      if (result.userPlayoff === "won") playoffLine = `<p class="promo-line">🎉 Won the play-off final!</p>`;
+      else if (result.userPlayoff === "lostFinal") playoffLine = `<p class="muted">Lost the play-off final — so near, yet so far.</p>`;
+      else if (result.userPlayoff === "lostSemi") playoffLine = `<p class="muted">Knocked out in the play-off semi-final.</p>`;
+
+      const cupLine = cup => cup
+        ? `<p class="${cup.userWon ? "promo-line" : "muted"}">${cup.name}: ${cup.userWon ? "🏆 " + club.name + " — Winners!" : cup.winner + " · your run: " + cup.userResult}</p>`
+        : "";
+
+      const size = (result.tables && result.tables[result.userLeague]) ? result.tables[result.userLeague].length : 20;
+      const zone = Season.zoneFor(result.myFinalPos, result.userLeague, size);
       const news = result.ageingNews;
       let newsHTML = "";
       if (news && (news.retirements.length || news.breakouts.length)) {
@@ -434,7 +450,9 @@
           <div class="big ${headClass}">${headline}</div>
           <p>${club.name} finished <strong>${ordinal(result.myFinalPos)}</strong> in the ${fromLeagueName}${zone ? " — " + zoneLabel(zone) : ""}.</p>
           ${movementLine}
-          ${result.faCup ? `<p class="${result.faCup.userWon ? "promo-line" : "muted"}">FA Cup: ${result.faCup.userWon ? "🏆 " + club.name + " — Winners!" : result.faCup.winner + " · your run: " + result.faCup.userResult}</p>` : ""}
+          ${playoffLine}
+          ${cupLine(result.faCup)}
+          ${cupLine(result.eflCup)}
           <p class="muted">${fromLeagueName} champions: ${result.champion.name} · New budget: ${UI.money(club.budget)}</p>
           <button class="primary" id="btnSeasonContinue">Continue to Next Season</button>
           ${awardsHTML}

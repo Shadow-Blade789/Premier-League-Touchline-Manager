@@ -274,6 +274,10 @@
      { id: "shw", name: "Sheffield Wednesday", short: "SHW", nick: "The Owls", city: "Sheffield", stadium: "Hillsborough", colors: ["#1F50A1", "#FFFFFF"], tier: 1, squad: [] },
      { id: "der", name: "Derby County", short: "DER", nick: "The Rams", city: "Derby", stadium: "Pride Park Stadium", colors: ["#FFFFFF", "#000000"], tier: 1, squad: [] },
      { id: "ply", name: "Plymouth Argyle", short: "PLY", nick: "The Pilgrims", city: "Plymouth", stadium: "Home Park", colors: ["#007B5F", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "bir", name: "Birmingham City", short: "BIR", nick: "The Blues", city: "Birmingham", stadium: "St Andrew's", colors: ["#0000FF", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "lut", name: "Luton Town", short: "LUT", nick: "The Hatters", city: "Luton", stadium: "Kenilworth Road", colors: ["#F78F1E", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "wyc", name: "Wycombe Wanderers", short: "WYC", nick: "The Chairboys", city: "High Wycombe", stadium: "Adams Park", colors: ["#00B7EB", "#0A0A6E"], tier: 1, squad: [] },
+     { id: "leo", name: "Leyton Orient", short: "LEY", nick: "The O's", city: "London", stadium: "Brisbane Road", colors: ["#D2122E", "#FFFFFF"], tier: 1, squad: [] },
    ];
 
    // ---- EFL LEAGUE ONE (third tier) ----------------------------------------
@@ -298,6 +302,10 @@
      { id: "rea", name: "Reading", short: "REA", nick: "The Royals", city: "Reading", stadium: "Select Car Leasing Stadium", colors: ["#004494", "#FFFFFF"], tier: 1, squad: [] },
      { id: "exe", name: "Exeter City", short: "EXE", nick: "The Grecians", city: "Exeter", stadium: "St James Park", colors: ["#D2122E", "#FFFFFF"], tier: 1, squad: [] },
      { id: "mns", name: "Mansfield Town", short: "MNS", nick: "The Stags", city: "Mansfield", stadium: "One Call Stadium", colors: ["#FFD700", "#00205B"], tier: 1, squad: [] },
+     { id: "bua", name: "Burton Albion", short: "BUA", nick: "The Brewers", city: "Burton upon Trent", stadium: "Pirelli Stadium", colors: ["#FFDF00", "#000000"], tier: 1, squad: [] },
+     { id: "pva", name: "Port Vale", short: "PVA", nick: "The Valiants", city: "Stoke-on-Trent", stadium: "Vale Park", colors: ["#FFFFFF", "#000000"], tier: 1, squad: [] },
+     { id: "chl", name: "Cheltenham Town", short: "CHL", nick: "The Robins", city: "Cheltenham", stadium: "Whaddon Road", colors: ["#D2122E", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "crl", name: "Carlisle United", short: "CRL", nick: "The Cumbrians", city: "Carlisle", stadium: "Brunton Park", colors: ["#0033A0", "#FFFFFF"], tier: 1, squad: [] },
    ];
 
    // ---- EFL LEAGUE TWO (fourth tier — no relegation below it) ---------------
@@ -322,6 +330,10 @@
      { id: "acc", name: "Accrington Stanley", short: "ACC", nick: "Stanley", city: "Accrington", stadium: "Wham Stadium", colors: ["#D2122E", "#000000"], tier: 0, squad: [] },
      { id: "mor", name: "Morecambe", short: "MOR", nick: "The Shrimps", city: "Morecambe", stadium: "Mazuma Stadium", colors: ["#D2122E", "#000000"], tier: 0, squad: [] },
      { id: "fle", name: "Fleetwood Town", short: "FLE", nick: "The Cod Army", city: "Fleetwood", stadium: "Highbury Stadium", colors: ["#D2122E", "#FFFFFF"], tier: 0, squad: [] },
+     { id: "wim", name: "AFC Wimbledon", short: "WIM", nick: "The Dons", city: "London", stadium: "Plough Lane", colors: ["#003399", "#FFCC00"], tier: 0, squad: [] },
+     { id: "brm", name: "Bromley", short: "BRM", nick: "The Ravens", city: "Bromley", stadium: "Hayes Lane", colors: ["#FFFFFF", "#000000"], tier: 0, squad: [] },
+     { id: "stv", name: "Stevenage", short: "STV", nick: "Boro", city: "Stevenage", stadium: "Lamex Stadium", colors: ["#D2122E", "#FFFFFF"], tier: 0, squad: [] },
+     { id: "sut", name: "Sutton United", short: "SUT", nick: "The U's", city: "Sutton", stadium: "Gander Green Lane", colors: ["#FFCC00", "#000000"], tier: 0, squad: [] },
    ];
 
    // Attach league tag, club reference & ids onto every club / player.
