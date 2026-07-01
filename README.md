@@ -77,8 +77,14 @@ js/main.js           App controller, event wiring, live match player
   and play on. **League Two has no relegation** (there's nothing below it);
   instead its bottom four is a *sacking zone* — finish there and the board
   dismiss you, ending the career.
-- **Shared transfer market**: one market spans both divisions, so you can buy
-  from and sell to clubs in either league.
+- **Shared transfer market**: one market spans all divisions, so you can buy
+  from and sell to clubs in any league. Rival AI clubs also **trade among
+  themselves** while a window is open — squads churn, money changes hands, and
+  players (with their stats and career records) move between clubs — so the
+  world isn't static around you. Your own club is never touched automatically.
+- **Squad development is league-wide**: every club's players — not just yours —
+  gain or lose overall rating each off-season based on the same
+  performance-relative model (`Aging.advanceSeason` + `Stats.performanceIndex`).
 - **Two domestic cups** run *through* the season as knockouts, not at the end,
   and every entrant is a real club (no placeholders). On a cup week you play
   your league game *and*, if still in, your cup tie — two live matches with

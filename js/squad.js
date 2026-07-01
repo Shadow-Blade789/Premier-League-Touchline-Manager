@@ -124,6 +124,7 @@ const Market = {
 
     if (openNow && !openBefore) {
       this.reroll(state);
+      this.aiTransfers(state, 8 + Math.floor(Math.random() * 8)); // opening flurry
       return { transition: "opened", name: TransferWindow.current(state.week).name };
     }
     if (!openNow && openBefore) {
@@ -135,8 +136,52 @@ const Market = {
       const keep = state.market.filter(() => Math.random() > 0.3);
       const need = Math.max(10, state.market.length) - keep.length;
       state.market = keep.concat(this.buildListings(state, need));
+      this.aiTransfers(state, 3 + Math.floor(Math.random() * 4)); // ongoing rival business
     }
     return { transition: "none" };
+  },
+
+  // ---- AI-to-AI transfer activity -------------------------------------------
+  // While a window is open, rival clubs trade players among themselves so
+  // squads churn realistically (money changes hands too). Never touches the
+  // user's club — their business stays manual.
+  aiTransfers(state, moves) {
+    const others = () => state.clubs.filter(c => c.id !== state.clubId);
+    for (let i = 0; i < moves; i++) {
+      const sellers = others().filter(c => c.squad.length > 16);
+      if (!sellers.length) break;
+      const seller = sellers[Math.floor(Math.random() * sellers.length)];
+
+      // Mostly fringe/squad players are sold; occasionally a marquee name.
+      const sorted = seller.squad.slice().sort((a, b) => a.rating - b.rating);
+      const player = Math.random() < 0.12
+        ? sorted[sorted.length - 1]
+        : sorted[Math.floor(Math.random() * Math.max(1, Math.round(sorted.length * 0.5)))];
+      if (!player) continue;
+      if (player.pos === "GK" && seller.squad.filter(p => p.pos === "GK").length <= 1) continue;
+
+      // A buyer whose level fits the player, with room and money for the deal.
+      const candidates = others().filter(c => c.id !== seller.id && c.squad.length < 32);
+      const weights = candidates.map(c => {
+        const expected = 54 + c.tier * 6;
+        return 1 / (1 + Math.abs(player.rating - expected));
+      });
+      const buyer = weightedPick(candidates, weights);
+      if (!buyer) continue;
+
+      const fee = Math.max(0.2, Math.round(player.value * (0.75 + buyer.tier * 0.06) * 10) / 10);
+      if (buyer.budget < fee) continue;
+
+      buyer.budget = Math.round((buyer.budget - fee) * 10) / 10;
+      seller.budget = Math.round((seller.budget + fee) * 10) / 10;
+      seller.squad = seller.squad.filter(p => p.id !== player.id);
+      this.guardMinimum(seller);
+      Stats.ensure(player);
+      buyer.squad.push({ ...player, club: buyer.id, stats: { ...player.stats }, bonus: { ...player.bonus }, career: { ...player.career } });
+      seller.lineup = null; buyer.lineup = null;
+      // Drop any user-market listing referencing a player who's just moved.
+      state.market = (state.market || []).filter(l => l.player.id !== player.id);
+    }
   },
 
   guardMinimum(club) {
@@ -216,9 +261,18 @@ const Market = {
       club.lineup.bench = club.lineup.bench.filter(id => id !== playerId);
     }
     Stats.ensure(player);
-    buyer.squad.push({ ...player, club: buyer.id, stats: { ...player.stats }, bonus: { ...player.bonus } });
+    buyer.squad.push({ ...player, club: buyer.id, stats: { ...player.stats }, bonus: { ...player.bonus }, career: { ...player.career } });
     buyer.lineup = null;
 
     return { ok: true, fee, buyerName: buyer.name };
   },
 };
+
+// Weighted random pick from a parallel list of items and weights.
+function weightedPick(items, weights) {
+  const total = weights.reduce((s, w) => s + w, 0);
+  if (!items.length || total <= 0) return items[0] || null;
+  let r = Math.random() * total;
+  for (let i = 0; i < items.length; i++) { r -= weights[i]; if (r <= 0) return items[i]; }
+  return items[items.length - 1];
+}
