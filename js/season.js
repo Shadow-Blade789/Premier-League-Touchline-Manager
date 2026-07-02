@@ -112,7 +112,8 @@
     advanceWeek(state) {
       state.week++;
       const transition = Market.weeklyUpdate(state);
-      Coaching.weeklyMarket(state); // fresh coach shortlist every matchweek
+      Coaching.weeklyMarket(state); // fresh staff shortlist every matchweek
+      Academy.weekly(state);        // scout intake, youth development, graduations
       return transition;
     },
   
@@ -271,6 +272,8 @@
       // Club fortunes: reputations shift, squads/coaches follow, and the
       // chasing pack keeps a runaway leader honest.
       Dynamics.apply(state, tables);
+      // Academy prospects age; 18-year-olds line up to graduate next season.
+      Academy.seasonRollover(state);
 
       // Apply the swaps: relegated clubs drop a division, promoted clubs rise.
       // Clubs keep their squads and reputation tier; only their league changes.

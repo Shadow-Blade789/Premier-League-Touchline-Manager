@@ -233,6 +233,7 @@
        Vertu.initSeason(this.state);
        Market.weeklyUpdate(this.state);
        Coaching.weeklyMarket(this.state);
+       Academy.ensure(this.state);
        this.save();
      },
      myClub() {
@@ -305,6 +306,7 @@
      // Coaching staff + coaches market are newer than some saves.
      Coaching.ensureAll(state);
      if (!Array.isArray(state.coachMarket) || !state.coachMarket.length) Coaching.weeklyMarket(state);
+     Academy.ensure(state); // youth academy is newer than some saves
 
      ensureCareers(state);
    }

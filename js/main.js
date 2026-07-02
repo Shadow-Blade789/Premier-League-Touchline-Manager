@@ -103,7 +103,7 @@
       if (name === "hub") UI.renderHub(Game.state);
       if (name === "squad") UI.renderSquad(Game.state);
       if (name === "market") UI.renderMarket(Game.state);
-      if (name === "coaches") UI.renderCoaches(Game.state);
+      if (name === "coaches") { UI.renderCoaches(Game.state); UI.renderAcademy(Game.state); }
       if (name === "lineup") UI.renderLineup(Game.state);
       if (name === "table") {
         // Default the Table tab to the user's own division each visit.
@@ -112,17 +112,34 @@
       }
     },
 
-    // ---------------- Coaches ----------------
+    // ---------------- Staff & Academy ----------------
     wireCoaches() {
       document.getElementById("coachMarketList").addEventListener("click", e => {
         const btn = e.target.closest("button[data-hirecoach]");
         if (!btn) return;
         const res = Coaching.hire(Game.state, btn.dataset.hirecoach);
         if (!res.ok) { UI.toast(res.reason); return; }
-        UI.toast(`Hired ${res.name} as ${res.pos} coach for ${UI.money(res.price)}`);
+        UI.toast(`Hired ${res.name} — ${Coaching.ROLE_LABEL[res.role]} (${UI.money(res.price)})`);
         Game.save();
         UI.renderCoaches(Game.state);
+        UI.renderAcademy(Game.state);
         this.refreshChrome();
+      });
+      // Academy: promote or release graduates/prospects.
+      document.getElementById("screen-coaches").addEventListener("click", e => {
+        const prom = e.target.closest("button[data-promote]");
+        if (prom) {
+          const res = Academy.promote(Game.state, prom.dataset.promote);
+          if (!res.ok) { UI.toast(res.reason); return; }
+          UI.toast(`${res.name} promoted to the senior squad`);
+          Game.save(); UI.renderAcademy(Game.state); this.refreshChrome();
+          return;
+        }
+        const rel = e.target.closest("button[data-release]");
+        if (rel) {
+          const res = Academy.release(Game.state, rel.dataset.release);
+          if (res.ok) { UI.toast(`${res.name} released from the academy`); Game.save(); UI.renderAcademy(Game.state); }
+        }
       });
     },
 
@@ -461,6 +478,7 @@
         this.showTab("hub");
         if (t && t.transition === "opened") UI.toast(`🔁 ${t.name} transfer window is now open!`);
         else if (t && t.transition === "closed") UI.toast("🔒 Transfer window has closed.");
+        (state.academyNews || []).forEach(m => UI.toast(m));
       }
     },
 

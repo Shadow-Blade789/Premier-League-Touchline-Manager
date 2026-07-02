@@ -44,7 +44,8 @@ js/cup.js            Domestic cups (FA + Carabao): generic staged-entry knockout
 js/vertu.js          Vertu Trophy: League One & Two group stage + knockout
 js/season.js         Per-league fixtures & tables, promotion/relegation between divisions
 js/squad.js          Transfer market (buy/sell) + AI-to-AI transfers
-js/coaches.js        Coaching staff, coaches market, development multipliers
+js/coaches.js        Coaching + youth staff, the Staff market, development multipliers
+js/academy.js        Youth academy: scout intake, youth development, graduation
 js/dynamics.js       Dynamic club fortunes: reputation drift + chasing-pack catch-up
 js/ui.js             Rendering functions
 js/main.js           App controller, event wiring, live match player
@@ -95,10 +96,20 @@ js/main.js           App controller, event wiring, live match player
   quality is the **primary** driver of how fast a club's players grow toward
   (or hold off decline from) their potential — the season result is only a
   small nudge, *except* a dramatic overachievement (a relegation-tipped side
-  finishing top five) still earns big growth. You upgrade your staff from a
-  **coaches market** (the Coaches tab) that refreshes on its own every
-  matchweek — there's no reroll, you wait for next week's names. Lives in
-  `js/coaches.js`; growth is applied in `Aging.advanceSeason` (`js/state.js`).
+  finishing top five) still earns big growth. You upgrade your staff from the
+  **Staff market** (the Staff tab) that refreshes on its own every matchweek —
+  there's no reroll, you wait for next week's names. Lives in `js/coaches.js`;
+  growth is applied in `Aging.advanceSeason` (`js/state.js`).
+- **Youth academy** (`js/academy.js`): an autonomous talent pipeline. A youth
+  **scout** unearths a prospect four times a season (aged 10–16, ceiling set by
+  the scout's rating) and a youth **coach** develops them week by week (by the
+  coach's rating) — both hired from the Staff market, where top youth staff are
+  expensive. At 18 a prospect graduates: with a squad place free you promote
+  them; if the squad is full you get three matchweeks to sell someone or the
+  talent leaves on a free, and you can always decline a graduate (they sign
+  elsewhere for nothing). The academy runs itself — hands-off, graduates
+  auto-resolve at the deadline (promoted if there's room). Only your club runs
+  one.
 - **Squad development is league-wide**: every club's players — not just yours —
   develop or decline each off-season under the same coaching + performance
   model, so rival squads strengthen and fade around you.

@@ -12,7 +12,14 @@ let _coachId = 1;
 
 function makeCoach(pos, rating) {
   const { name } = randomProspect();
-  return { id: "co" + (_coachId++), name, pos, rating: Math.max(40, Math.min(95, Math.round(rating))) };
+  return { id: "co" + (_coachId++), name, pos, role: pos, rating: Math.max(40, Math.min(95, Math.round(rating))) };
+}
+
+// Youth-academy staff: a scout (finds prospects) or a youth coach (develops
+// them). role is "scout" or "youthcoach".
+function makeYouthStaff(role, rating) {
+  const { name } = randomProspect();
+  return { id: "st" + (_coachId++), name, role, rating: Math.max(40, Math.min(96, Math.round(rating))) };
 }
 
 const Coaching = {
@@ -48,36 +55,42 @@ const Coaching = {
     return "Basic";
   },
 
-  cost(rating) {
-    return Math.max(0.3, Math.round(Math.pow(Math.max(0, rating - 45), 1.45) * 0.05 * 10) / 10);
+  ROLE_LABEL: { GK: "Goalkeeping", DF: "Defence", MF: "Midfield", FW: "Attack", scout: "Youth Scout", youthcoach: "Youth Coach" },
+  isYouth(role) { return role === "scout" || role === "youthcoach"; },
+
+  // Youth staff cost more than position coaches — a top scout/academy coach is
+  // a real investment.
+  cost(rating, role) {
+    const base = Math.max(0.3, Math.round(Math.pow(Math.max(0, rating - 45), 1.45) * 0.05 * 10) / 10);
+    return this.isYouth(role) ? Math.round(base * 1.4 * 10) / 10 : base;
   },
 
-  // Fresh candidates each matchweek — there's no reroll button.
+  // Fresh candidates each matchweek — position coaches plus youth staff. No
+  // reroll button; you wait for next week's names.
   weeklyMarket(state) {
     const list = [];
-    const n = 6 + Math.floor(Math.random() * 4); // 6–9 coaches
-    for (let i = 0; i < n; i++) {
-      const pos = POSITIONS[Math.floor(Math.random() * POSITIONS.length)];
-      const roll = Math.random();
-      const rating = roll < 0.08 ? 82 + Math.floor(Math.random() * 12)   // rare elite
-                   : roll < 0.4 ? 64 + Math.floor(Math.random() * 16)
-                   : 48 + Math.floor(Math.random() * 16);
-      list.push(makeCoach(pos, rating));
-    }
-    list.sort((a, b) => POSITIONS.indexOf(a.pos) - POSITIONS.indexOf(b.pos) || b.rating - a.rating);
+    const rate = () => { const r = Math.random(); return r < 0.08 ? 82 + Math.floor(Math.random() * 12) : r < 0.4 ? 64 + Math.floor(Math.random() * 16) : 48 + Math.floor(Math.random() * 16); };
+    const n = 6 + Math.floor(Math.random() * 4); // 6–9 position coaches
+    for (let i = 0; i < n; i++) list.push(makeCoach(POSITIONS[Math.floor(Math.random() * POSITIONS.length)], rate()));
+    const yn = 2 + Math.floor(Math.random() * 3); // 2–4 youth staff
+    for (let i = 0; i < yn; i++) list.push(makeYouthStaff(Math.random() < 0.5 ? "scout" : "youthcoach", rate()));
+    const order = ["GK", "DF", "MF", "FW", "scout", "youthcoach"];
+    list.sort((a, b) => order.indexOf(a.role) - order.indexOf(b.role) || b.rating - a.rating);
     state.coachMarket = list;
   },
 
   hire(state, coachId) {
     const club = Game.myClub();
     const idx = (state.coachMarket || []).findIndex(c => c.id === coachId);
-    if (idx === -1) return { ok: false, reason: "That coach is no longer available." };
-    const coach = state.coachMarket[idx];
-    const price = this.cost(coach.rating);
-    if (club.budget < price) return { ok: false, reason: "Not enough budget to hire this coach." };
+    if (idx === -1) return { ok: false, reason: "That staff member is no longer available." };
+    const staff = state.coachMarket[idx];
+    const price = this.cost(staff.rating, staff.role);
+    if (club.budget < price) return { ok: false, reason: "Not enough budget to hire this staff member." };
     club.budget = Math.round((club.budget - price) * 10) / 10;
-    club.coaches[coach.pos] = coach;
+    if (staff.role === "scout") { if (!club.academy) Academy.init(club); club.academy.scout = staff; }
+    else if (staff.role === "youthcoach") { if (!club.academy) Academy.init(club); club.academy.coach = staff; }
+    else club.coaches[staff.role] = staff; // position coach
     state.coachMarket.splice(idx, 1);
-    return { ok: true, name: coach.name, pos: coach.pos, price };
+    return { ok: true, name: staff.name, role: staff.role, price };
   },
 };

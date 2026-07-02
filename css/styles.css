@@ -262,6 +262,8 @@
    .coach-row .sub { color: var(--muted); font-size: 0.78rem; }
    .list-head.coach-head { grid-template-columns: 2.6em 1fr auto auto auto; }
    #coachStaff { margin-top: 0.6rem; }
+   .pos-chip.youth { color: var(--amber); border-color: var(--amber); }
+   .coach-row.grad { background: rgba(255,200,87,0.10); box-shadow: inset 3px 0 0 var(--amber); }
    
    /* ---------- Pitch / lineup ---------- */
    .pitch-wrap {

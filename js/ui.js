@@ -311,19 +311,67 @@
 
       const list = document.getElementById("coachMarketList");
       const mk = state.coachMarket || [];
-      if (!mk.length) { list.innerHTML = `<p class="muted">No coaches available — check back next matchweek.</p>`; return; }
+      if (!mk.length) { list.innerHTML = `<p class="muted">No staff available — check back next matchweek.</p>`; return; }
+      const a = club.academy || {};
       list.innerHTML = mk.map(c => {
-        const price = Coaching.cost(c.rating);
-        const cur = club.coaches[c.pos] ? club.coaches[c.pos].rating : 0;
+        const role = c.role || c.pos;
+        const price = Coaching.cost(c.rating, role);
+        const cur = role === "scout" ? (a.scout ? a.scout.rating : 0)
+          : role === "youthcoach" ? (a.coach ? a.coach.rating : 0)
+          : (club.coaches[role] ? club.coaches[role].rating : 0);
         const tag = c.rating > cur ? " · upgrade" : c.rating < cur ? " · downgrade" : "";
+        const chipClass = Coaching.isYouth(role) ? "youth" : role;
+        const chipText = role === "scout" ? "SCT" : role === "youthcoach" ? "YTH" : role;
         return `<div class="coach-row market">
-          <div class="pos-chip ${c.pos}">${c.pos}</div>
-          <div><div class="name">${c.name}</div><div class="sub">${Coaching.ratingLabel(c.rating)}${tag}</div></div>
+          <div class="pos-chip ${chipClass}">${chipText}</div>
+          <div><div class="name">${c.name}</div><div class="sub">${Coaching.ROLE_LABEL[role]} · ${Coaching.ratingLabel(c.rating)}${tag}</div></div>
           <div class="rating-pill">${c.rating}</div>
           <div class="mono">${this.money(price)}</div>
           <button class="small primary" data-hirecoach="${c.id}" ${club.budget < price ? "disabled" : ""}>Hire</button>
         </div>`;
       }).join("");
+    },
+
+    // The Youth Academy panel: staff, graduating players (with actions) and the
+    // developing prospect list.
+    renderAcademy(state) {
+      const club = Game.myClub();
+      const a = club.academy || {};
+      const staffRow = (label, s, desc) => `<div class="coach-row">
+        <div class="pos-chip youth">${label === "Youth Scout" ? "SCT" : "YTH"}</div>
+        <div><div class="name">${s ? s.name : "—"}</div><div class="sub">${label} · ${s ? Coaching.ratingLabel(s.rating) : "none"}</div></div>
+        <div class="rating-pill">${s ? s.rating : "—"}</div>
+        <div class="mono muted">${desc}</div>
+      </div>`;
+      document.getElementById("academyStaff").innerHTML =
+        staffRow("Youth Scout", a.scout, "4 intakes/season · sets potential") +
+        staffRow("Youth Coach", a.coach, "develops prospects weekly");
+
+      const grads = a.pending || [];
+      const roomFree = club.squad.length < 32;
+      document.getElementById("academyGraduates").innerHTML = grads.length
+        ? grads.map(g => `<div class="coach-row grad">
+            <div class="pos-chip ${g.pos}">${g.pos}</div>
+            <div><div class="name">${g.name} <span class="nat-tag">${g.nat || "ENG"}</span></div>
+              <div class="sub">Graduate ${g.rating} ovr · potential ${g.potential} · decide in ${Math.max(0, g.deadline - state.week)} wk · squad ${club.squad.length}/32</div></div>
+            <button class="small primary" data-promote="${g.id}" ${roomFree ? "" : "disabled"}>Promote</button>
+            <button class="small danger" data-release="${g.id}">Release</button>
+          </div>`).join("")
+        : `<p class="muted" style="font-size:0.82rem;">No players graduating right now.</p>`;
+
+      const prospects = (a.prospects || []).slice().sort((x, y) => y.potential - x.potential);
+      document.getElementById("academyProspects").innerHTML = prospects.length
+        ? prospects.map(p => {
+          const yrs = 18 - p.age;
+          return `<div class="coach-row">
+            <div class="pos-chip ${p.pos}">${p.pos}</div>
+            <div><div class="name">${p.name} <span class="nat-tag">${p.nat || "ENG"}</span></div>
+              <div class="sub">Age ${p.age} · ${p.rating} ovr → ${p.potential} pot · graduates in ${yrs} yr${yrs === 1 ? "" : "s"}</div></div>
+            <div class="rating-pill">${p.rating}</div>
+            <button class="small danger" data-release="${p.id}">Release</button>
+          </div>`;
+        }).join("")
+        : `<p class="muted" style="font-size:0.82rem;">No prospects yet — your scout is working on it.</p>`;
     },
 
     formationOptions(current) {
