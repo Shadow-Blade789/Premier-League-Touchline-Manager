@@ -219,6 +219,25 @@
      border: 1px solid var(--hairline); padding: 0.1em 0.35em; margin-left: 0.3em;
      letter-spacing: 0.04em; vertical-align: middle;
    }
+   /* ---------- Transfer listing & offers ---------- */
+   .squad-entry { border-bottom: 1px solid var(--hairline); }
+   .squad-entry:last-child { border-bottom: none; }
+   .squad-entry .player-row { border-bottom: none; }
+   .player-row.listed { background: rgba(255,159,94,0.12); box-shadow: inset 3px 0 0 #ff9f5e; }
+   .offers-badge {
+     font-family: var(--font-display); font-size: 0.62rem; letter-spacing: 0.04em;
+     padding: 0.15em 0.5em; margin-left: 0.4em; vertical-align: middle;
+     background: var(--amber); color: var(--amber-ink); border: none; border-radius: 0; text-transform: none;
+   }
+   .offers-badge:hover:not(:disabled) { background: var(--chalk); color: var(--ink); }
+   .offers-panel { background: rgba(0,0,0,0.22); border-top: 1px dashed var(--hairline); padding: 0.4rem 0.6rem 0.6rem; }
+   .offer-row {
+     display: grid; grid-template-columns: 1fr auto auto auto; gap: 0.6rem; align-items: center;
+     padding: 0.35rem 0.2rem; border-bottom: 1px solid rgba(244,247,242,0.06); font-size: 0.84rem;
+   }
+   .offer-row:last-child { border-bottom: none; }
+   .offer-row .offer-fee { color: var(--amber); font-weight: 600; }
+
    .window-banner {
      padding: 0.6em 0.9em; margin-bottom: 0.9rem; font-size: 0.82rem;
      border-left: 3px solid var(--amber); background: rgba(255,200,87,0.07);

@@ -125,10 +125,12 @@ const Market = {
     if (openNow && !openBefore) {
       this.reroll(state);
       this.aiTransfers(state, 8 + Math.floor(Math.random() * 8)); // opening flurry
+      this.generateOffers(state);
       return { transition: "opened", name: TransferWindow.current(state.week).name };
     }
     if (!openNow && openBefore) {
       state.market = [];
+      this.clearOffers(state); // outstanding bids lapse when the window shuts
       return { transition: "closed" };
     }
     if (openNow) {
@@ -137,8 +139,76 @@ const Market = {
       const need = Math.max(10, state.market.length) - keep.length;
       state.market = keep.concat(this.buildListings(state, need));
       this.aiTransfers(state, 3 + Math.floor(Math.random() * 4)); // ongoing rival business
+      this.generateOffers(state); // rivals bid for your players
     }
     return { transition: "none" };
+  },
+
+  // ---- offers for the user's players -----------------------------------------
+  // While a window is open, rival clubs bid for your squad — far more often for
+  // anyone you've transfer-listed. Each bid is within ±25% of market value.
+  generateOffers(state) {
+    const club = state.clubs.find(c => c.id === state.clubId);
+    if (!club) return;
+    const rivals = state.clubs.filter(c => c.id !== state.clubId);
+    club.squad.forEach(p => {
+      p.offers = p.offers || [];
+      const cap = p.transferListed ? 5 : 2;
+      if (p.offers.length >= cap) return;
+      const desire = clamp((p.rating - 60) / 50, 0, 0.25); // better players draw interest anyway
+      const chance = clamp((p.transferListed ? 0.65 : 0.06) + desire, 0, 0.92);
+      if (Math.random() > chance) return;
+      const fee = Math.max(0.2, Math.round(p.value * (0.75 + Math.random() * 0.5) * 10) / 10); // ±25%
+      const weights = rivals.map(c => { const exp = 54 + c.tier * 6; return 1 / (1 + Math.abs(p.rating - exp)); });
+      // Find an interested club that can actually afford the fee (a few tries).
+      let buyer = null;
+      for (let t = 0; t < 6 && !buyer; t++) { const c = weightedPick(rivals, weights); if (c && c.budget >= fee && c.id !== (p.offers[0] && p.offers[0].clubId)) buyer = c; }
+      if (!buyer) return;
+      p.offers.push({ clubId: buyer.id, clubShort: buyer.short, clubName: buyer.name, fee, week: state.week });
+    });
+  },
+
+  clearOffers(state) {
+    const club = state.clubs.find(c => c.id === state.clubId);
+    if (club) club.squad.forEach(p => { p.offers = []; });
+  },
+
+  toggleTransferList(state, playerId) {
+    const club = Game.myClub();
+    const player = club.squad.find(p => p.id === playerId);
+    if (!player) return { ok: false };
+    player.transferListed = !player.transferListed;
+    return { ok: true, listed: player.transferListed, name: player.name };
+  },
+
+  declineOffer(state, playerId, offerIdx) {
+    const player = Game.myClub().squad.find(p => p.id === playerId);
+    if (player && player.offers) player.offers.splice(offerIdx, 1);
+    return { ok: true };
+  },
+
+  // Accept a specific offer — this is now the only way to sell a player.
+  acceptOffer(state, playerId, offerIdx) {
+    if (!TransferWindow.isOpen(state.week)) return { ok: false, reason: "The transfer window is closed." };
+    const club = Game.myClub();
+    const player = club.squad.find(p => p.id === playerId);
+    if (!player || !player.offers || !player.offers[offerIdx]) return { ok: false, reason: "That offer is no longer on the table." };
+    const offer = player.offers[offerIdx];
+    if (player.pos === "GK" && club.squad.filter(p => p.pos === "GK").length <= 1) return { ok: false, reason: "You can't sell your only goalkeeper." };
+    if (club.squad.length <= 14) return { ok: false, reason: "Your squad is too thin to sell anyone else." };
+    const buyer = state.clubs.find(c => c.id === offer.clubId);
+    if (!buyer) return { ok: false, reason: "The buying club has withdrawn." };
+
+    club.budget = Math.round((club.budget + offer.fee) * 10) / 10;
+    club.squad = club.squad.filter(p => p.id !== playerId);
+    if (club.lineup) {
+      POSITIONS.forEach(pos => { club.lineup.slots[pos] = club.lineup.slots[pos].map(id => id === playerId ? null : id); });
+      club.lineup.bench = club.lineup.bench.filter(id => id !== playerId);
+    }
+    Stats.ensure(player);
+    buyer.squad.push({ ...player, club: buyer.id, transferListed: false, offers: [], stats: { ...player.stats }, bonus: { ...player.bonus }, career: { ...player.career } });
+    buyer.lineup = null;
+    return { ok: true, fee: offer.fee, buyerName: offer.clubName };
   },
 
   // ---- AI-to-AI transfer activity -------------------------------------------
@@ -224,47 +294,10 @@ const Market = {
       state.market = state.market.filter(l => l.player.id !== listing.player.id);
     }
     Stats.ensure(listing.player);
-    const player = { ...listing.player, club: club.id, stats: { ...listing.player.stats }, bonus: { ...listing.player.bonus } };
+    const player = { ...listing.player, club: club.id, transferListed: false, offers: [], stats: { ...listing.player.stats }, bonus: { ...listing.player.bonus }, career: { ...listing.player.career } };
     club.squad.push(player);
     club.lineup = null;
     return { ok: true, name: listing.player.name, origin: listing.originName };
-  },
-
-  sell(state, playerId) {
-    if (!TransferWindow.isOpen(state.week)) return { ok: false, reason: "The transfer window is closed." };
-    const club = Game.myClub();
-    const player = club.squad.find(p => p.id === playerId);
-    if (!player) return { ok: false, reason: "Player not found in your squad." };
-    const sameGK = club.squad.filter(p => p.pos === "GK").length;
-    if (player.pos === "GK" && sameGK <= 1) return { ok: false, reason: "You can't sell your only goalkeeper." };
-    if (club.squad.length <= 14) return { ok: false, reason: "Your squad is too thin to sell anyone else." };
-
-    // Pick a plausible buying club: weight by how close the player's rating
-    // sits to that club's level (tier-based), so stars go to big clubs and
-    // squad players go to mid/lower-table sides.
-    const candidates = state.clubs.filter(c => c.id !== club.id);
-    const weights = candidates.map(c => {
-      const expected = 58 + c.tier * 7;
-      return 1 / (1 + Math.abs(player.rating - expected));
-    });
-    const total = weights.reduce((s, w) => s + w, 0);
-    let r = Math.random() * total;
-    let buyer = candidates[candidates.length - 1];
-    for (let i = 0; i < candidates.length; i++) { r -= weights[i]; if (r <= 0) { buyer = candidates[i]; break; } }
-
-    const feeMultiplier = 0.75 + buyer.tier * 0.06;
-    const fee = Math.max(0.2, Math.round(player.value * feeMultiplier * 10) / 10);
-    club.budget = Math.round((club.budget + fee) * 10) / 10;
-    club.squad = club.squad.filter(p => p.id !== playerId);
-    if (club.lineup) {
-      POSITIONS.forEach(pos => { club.lineup.slots[pos] = club.lineup.slots[pos].map(id => id === playerId ? null : id); });
-      club.lineup.bench = club.lineup.bench.filter(id => id !== playerId);
-    }
-    Stats.ensure(player);
-    buyer.squad.push({ ...player, club: buyer.id, stats: { ...player.stats }, bonus: { ...player.bonus }, career: { ...player.career } });
-    buyer.lineup = null;
-
-    return { ok: true, fee, buyerName: buyer.name };
   },
 };
 

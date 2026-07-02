@@ -168,14 +168,38 @@
     // ---------------- Squad ----------------
     wireSquad() {
       document.getElementById("squadList").addEventListener("click", e => {
-        const btn = e.target.closest("button[data-sell]");
-        if (!btn) return;
-        const res = Market.sell(Game.state, btn.dataset.sell);
-        if (!res.ok) { UI.toast(res.reason); return; }
-        UI.toast(`Sold to ${res.buyerName} for ${UI.money(res.fee)}`);
-        Game.save();
-        UI.renderSquad(Game.state);
-        this.refreshChrome();
+        // Expand/collapse a player's offers.
+        const badge = e.target.closest("button[data-offers]");
+        if (badge) {
+          const panel = document.getElementById("offers-" + badge.dataset.offers);
+          if (panel) panel.classList.toggle("hidden");
+          return;
+        }
+        // Transfer-list / unlist.
+        const listBtn = e.target.closest("button[data-list]");
+        if (listBtn) {
+          const res = Market.toggleTransferList(Game.state, listBtn.dataset.list);
+          if (res.ok) { UI.toast(res.listed ? `${res.name} transfer-listed` : `${res.name} taken off the list`); Game.save(); UI.renderSquad(Game.state); }
+          return;
+        }
+        // Accept an offer.
+        const acc = e.target.closest("button[data-accept]");
+        if (acc) {
+          const res = Market.acceptOffer(Game.state, acc.dataset.accept, Number(acc.dataset.idx));
+          if (!res.ok) { UI.toast(res.reason); return; }
+          UI.toast(`Sold to ${res.buyerName} for ${UI.money(res.fee)}`);
+          Game.save();
+          UI.renderSquad(Game.state);
+          this.refreshChrome();
+          return;
+        }
+        // Decline an offer.
+        const dec = e.target.closest("button[data-decline]");
+        if (dec) {
+          Market.declineOffer(Game.state, dec.dataset.decline, Number(dec.dataset.idx));
+          Game.save();
+          UI.renderSquad(Game.state);
+        }
       });
     },
   

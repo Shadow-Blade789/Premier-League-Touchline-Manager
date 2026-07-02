@@ -211,10 +211,10 @@
     renderPlayerRow(p, opts = {}) {
       const actionHTML = opts.action || "";
       return `
-        <div class="player-row">
+        <div class="player-row ${opts.rowClass || ""}">
           <div class="pos-chip ${p.pos}">${p.pos}</div>
           <div>
-            <div class="name">${p.wonderkid ? "⭐ " : ""}${p.name} <span class="nat-tag">${p.nat || "ENG"}</span></div>
+            <div class="name">${p.wonderkid ? "⭐ " : ""}${p.name} <span class="nat-tag">${p.nat || "ENG"}</span>${opts.badge || ""}</div>
             <div class="sub">${opts.subLabel || (p.club ? clubShortLookup(p.club) : "Free agent")}</div>
             ${opts.careerLabel ? `<div class="career-sub mono">${opts.careerLabel}</div>` : ""}
           </div>
@@ -241,12 +241,35 @@
       const open = TransferWindow.isOpen(state.week);
       document.getElementById("squadWindowBanner").innerHTML = this.windowBanner(state);
       const sorted = club.squad.slice().sort((a, b) => POSITIONS.indexOf(a.pos) - POSITIONS.indexOf(b.pos) || b.rating - a.rating);
-      document.getElementById("squadList").innerHTML = sorted.map(p => this.renderPlayerRow(p, {
-        subLabel: this.wage(p.wage),
-        careerLabel: Stats.careerSquadLine(p), // lifetime apps/goals/assists etc.
-        potentialLabel: String(p.potential), // your own players: exact potential
-        action: `<button class="small danger" data-sell="${p.id}" ${open ? "" : "disabled"}>Sell</button>`,
-      })).join("");
+      document.getElementById("squadList").innerHTML = sorted.map(p => {
+        const offers = p.offers || [];
+        const badge = offers.length
+          ? `<button class="offers-badge" data-offers="${p.id}" type="button">💰 ${offers.length} offer${offers.length > 1 ? "s" : ""} ▾</button>`
+          : "";
+        const listBtn = `<button class="small ${p.transferListed ? "" : "ghost"}" data-list="${p.id}">${p.transferListed ? "Listed ✓" : "List"}</button>`;
+        const row = this.renderPlayerRow(p, {
+          subLabel: this.wage(p.wage),
+          careerLabel: Stats.careerSquadLine(p),
+          potentialLabel: String(p.potential),
+          badge,
+          rowClass: p.transferListed ? "listed" : "",
+          action: listBtn,
+        });
+        const panel = offers.length ? `<div class="offers-panel hidden" id="offers-${p.id}">${this.offersHTML(p, open)}</div>` : "";
+        return `<div class="squad-entry">${row}${panel}</div>`;
+      }).join("");
+    },
+
+    offersHTML(p, open) {
+      const rows = (p.offers || []).map((o, i) => `
+        <div class="offer-row">
+          <span class="offer-club">${o.clubName}</span>
+          <span class="offer-fee mono">${this.money(o.fee)}</span>
+          <button class="small primary" data-accept="${p.id}" data-idx="${i}" ${open ? "" : "disabled"}>Accept</button>
+          <button class="small ghost" data-decline="${p.id}" data-idx="${i}">Decline</button>
+        </div>`).join("");
+      const note = open ? "" : `<p class="muted" style="font-size:0.74rem;margin:0.3rem 0 0;">Bids can only be accepted while the window is open.</p>`;
+      return rows + note;
     },
   
     renderMarket(state) {

@@ -58,6 +58,12 @@ js/main.js           App controller, event wiring, live match player
   `squad` arrays in `js/data.js` whenever you want to refresh a club.
 - **Transfer market** listings are freshly generated free agents/loanees
   each reroll, priced off the same rating curve used for your own squad.
+- **Selling is offer-based**: you no longer sell instantly. Rival clubs bid for
+  your players during a window (each bid within ±25% of market value). A 💰
+  badge by a player's name expands to show every offer — accept, decline, or
+  just ignore it. **Transfer-list** a player (their row turns amber) to draw
+  far more offers. Bids only stand while the window is open, and lapse when it
+  shuts.
 - **Four divisions**: a 20-club Premier League plus a 24-club Championship,
   League One and League Two — 92 real clubs. Each runs its own separate season
   (a 20-team league is 38 games, a 24-team league 46), table, stats,
