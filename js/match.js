@@ -108,9 +108,16 @@
     // gaps stay close to fair. Clamped so even huge mismatches keep a small
     // chance of an upset rather than becoming a foregone conclusion.
     goalRatio(att, def) {
-      return clamp(Math.pow(1.05, att - def), 0.2, 4.5);
+      // Compressed vs. before so even a big favourite can't run up cricket
+      // scores every week — dominance shows over a season, not in one blowout.
+      return clamp(Math.pow(1.045, att - def), 0.25, 3.6);
     },
-  
+
+    // A per-match "form" swing (±20%) applied to each side, so a strong team can
+    // have an off day and an underdog can catch fire — the source of the odd
+    // dropped point and giant-killing that make a perfect season very hard.
+    form() { return 0.8 + Math.random() * 0.4; },
+
     // Fast result for AI-vs-AI matches: no commentary, just a scoreline.
     simulateQuick(home, away) {
       const hStarters = Lineup.starters(home);
@@ -119,10 +126,10 @@
       const hDef = this.defenseRating(hStarters);
       const aAtt = this.attackRating(aStarters);
       const aDef = this.defenseRating(aStarters);
-  
-      const hxg = clamp(1.28 * this.goalRatio(hAtt, aDef), 0.15, 6.5);
-      const axg = clamp(1.05 * this.goalRatio(aAtt, hDef), 0.12, 6.0);
-  
+
+      const hxg = clamp(1.28 * this.goalRatio(hAtt, aDef) * this.form(), 0.2, 5.2);
+      const axg = clamp(1.05 * this.goalRatio(aAtt, hDef) * this.form(), 0.22, 4.8);
+
       const hg = poisson(hxg);
       const ag = poisson(axg);
       return { hg, ag };
@@ -137,8 +144,8 @@
       const aAtt = this.attackRating(aStarters);
       const aDef = this.defenseRating(aStarters);
   
-      const pHomeGoal = clamp(0.0130 * this.goalRatio(hAtt, aDef), 0.003, 0.075);
-      const pAwayGoal = clamp(0.0110 * this.goalRatio(aAtt, hDef), 0.003, 0.07);
+      const pHomeGoal = clamp(0.0130 * this.goalRatio(hAtt, aDef) * this.form(), 0.004, 0.062);
+      const pAwayGoal = clamp(0.0110 * this.goalRatio(aAtt, hDef) * this.form(), 0.004, 0.058);
   
       const timeline = [];
       let hg = 0, ag = 0;

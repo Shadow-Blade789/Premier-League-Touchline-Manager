@@ -268,6 +268,9 @@
 
       // Off-season development for every club in all four divisions.
       const ageingNews = Aging.advanceSeason(state);
+      // Club fortunes: reputations shift, squads/coaches follow, and the
+      // chasing pack keeps a runaway leader honest.
+      Dynamics.apply(state, tables);
 
       // Apply the swaps: relegated clubs drop a division, promoted clubs rise.
       // Clubs keep their squads and reputation tier; only their league changes.

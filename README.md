@@ -45,6 +45,7 @@ js/vertu.js          Vertu Trophy: League One & Two group stage + knockout
 js/season.js         Per-league fixtures & tables, promotion/relegation between divisions
 js/squad.js          Transfer market (buy/sell) + AI-to-AI transfers
 js/coaches.js        Coaching staff, coaches market, development multipliers
+js/dynamics.js       Dynamic club fortunes: reputation drift + chasing-pack catch-up
 js/ui.js             Rendering functions
 js/main.js           App controller, event wiring, live match player
 ```
@@ -101,6 +102,17 @@ js/main.js           App controller, event wiring, live match player
 - **Squad development is league-wide**: every club's players — not just yours —
   develop or decline each off-season under the same coaching + performance
   model, so rival squads strengthen and fade around you.
+- **Dynamic club fortunes** keep the league from going stale (`js/dynamics.js`).
+  Between seasons a club's reputation drifts with its results, and its squad and
+  coaching follow — so a fallen giant sheds quality and slides to mid-table
+  while an overachieving minnow builds into a force (Arsenal can fade; Burnley
+  can rise to contention). If you pull well clear of the field, only the top
+  few clubs in your division (the title-race pack) chase your level — and only
+  when you're clearly ahead — so a handful of genuine rivals always exist while
+  the rest stay beatable. Match results also carry a per-game "form" swing, so
+  even a dominant side drops the odd point: winning the league five years
+  running is a real achievement, not a formality, but very doable with a
+  clearly superior squad.
 - **Two domestic cups** run *through* the season as knockouts, not at the end,
   and every entrant is a real club (no placeholders). On a cup week you play
   your league game *and*, if still in, your cup tie — two live matches with
