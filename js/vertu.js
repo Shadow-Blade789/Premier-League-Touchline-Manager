@@ -26,6 +26,8 @@ const Vertu = {
   clubName(state, id) { const c = this.clubById(state, id); return c ? c.name : id; },
 
   initSeason(state) {
+    // The Vertu Trophy is an English League One & Two competition only.
+    if (Game.myCountry() !== "ENG") { state.vertu = { skipped: true, groups: [], userGroup: -1 }; return; }
     const pool = Cup.shuffle(state.clubs.filter(c => c.league === "L1" || c.league === "L2").map(c => c.id));
     const groups = [];
     for (let i = 0; i + 2 < pool.length + 1 && i < pool.length; i += 3) groups.push(pool.slice(i, i + 3));

@@ -35,12 +35,12 @@ zero-config setup as the original NRL game this was modeled on.
 ```
 index.html          All screens (start, hub, squad, market, lineup, match, table)
 css/styles.css       Design tokens + all styling
-js/data.js           Club & player data (all four leagues), career estimation, formations, name pools
+js/data.js           Club & player data (England's 4 + Spain's 2 leagues), country/chain constants, career estimation, formations, name pools
 js/state.js          Career state, save/load + migration, squad-depth helper
 js/lineup.js         Formation handling, best-XI auto-pick
 js/match.js          Match engine: quick AI sim + full live commentary timeline
 js/stats.js          Player stats, per-league leaderboards, season awards & bonuses
-js/cup.js            Domestic cups (FA + Carabao): generic staged-entry knockout engine
+js/cup.js            Domestic cups (FA, Carabao, Copa del Rey): generic country-gated staged-entry knockout engine
 js/vertu.js          Vertu Trophy: League One & Two group stage + knockout
 js/season.js         Per-league fixtures & tables, promotion/relegation between divisions
 js/squad.js          Transfer market (buy/sell) + AI-to-AI transfers
@@ -66,31 +66,37 @@ js/main.js           App controller, event wiring, live match player
   just ignore it. **Transfer-list** a player (their row turns amber) to draw
   far more offers. Bids only stand while the window is open, and lapse when it
   shuts.
-- **Four divisions**: a 20-club Premier League plus a 24-club Championship,
-  League One and League Two — 92 real clubs. Each runs its own separate season
-  (a 20-team league is 38 games, a 24-team league 46), table, stats,
+- **Two countries, six divisions**: England's four-tier pyramid (a 20-club
+  Premier League plus a 24-club Championship, League One and League Two — 92
+  real clubs) *and* Spain's top two tiers (a 20-club La Liga and a 22-club
+  Segunda División — 42 clubs). Each division runs its own separate season (a
+  20-team league is 38 games, a 22-team 42, a 24-team 46), table, stats,
   leaderboards and awards. You can start a career in any of them (the club
-  picker is grouped by league). The season lasts as long as *your* league;
-  divisions that run longer are completed before promotions are worked out.
-  Every matchweek your own match is played live and every other game across
-  all four divisions is quick-simmed. The lower leagues run on far smaller
-  budgets and weaker squads.
-- **Promotion & relegation** flow up and down a closed chain
-  (PL ⇄ CH ⇄ L1 ⇄ L2). The Championship promotes 3 directly; League One and
-  League Two promote 3 directly **plus one play-off winner** from the next
-  four (positions 4–7, semis + final, quick-simmed and reported at season's
-  end). Relegation counts keep every league at its size. The Premier League
-  has European spots; the lower leagues show automatic-promotion, play-off and
-  relegation zones. Clubs keep their squads when they change division.
+  picker is grouped by country, then league). The season lasts as long as
+  *your* league; divisions that run longer are completed before promotions are
+  worked out. Every matchweek your own match is played live and every other
+  game across **all six divisions in both countries** is quick-simmed. The
+  lower leagues run on far smaller budgets and weaker squads.
+- **Promotion & relegation** flow up and down each country's own closed chain
+  (England: PL ⇄ CH ⇄ L1 ⇄ L2; Spain: LL ⇄ SG). The Championship promotes 3
+  directly; League One and League Two promote 3 directly **plus one play-off
+  winner** from the next four (positions 4–7, semis + final, quick-simmed and
+  reported at season's end). Segunda promotes its top 3 directly. Relegation
+  counts keep every league at its size. Top flights (Premier League, La Liga)
+  have European spots; the lower leagues show automatic-promotion, play-off and
+  relegation zones. Clubs keep their squads when they change division. Careers
+  stay within their country's pyramid.
 - **Careers survive relegation** all the way down — you just drop a division
   and play on. **League Two has no relegation** (there's nothing below it);
   instead its bottom four is a *sacking zone* — finish there and the board
   dismiss you, ending the career.
-- **Shared transfer market**: one market spans all divisions, so you can buy
-  from and sell to clubs in any league. Rival AI clubs also **trade among
-  themselves** while a window is open — squads churn, money changes hands, and
-  players (with their stats and career records) move between clubs — so the
-  world isn't static around you. Your own club is never touched automatically.
+- **Universal transfer market**: one market spans every division in **both
+  countries**, so a Spanish club can sign an English player and vice versa —
+  and rival clubs bid across borders for your squad too. Rival AI clubs also
+  **trade among themselves** while a window is open — squads churn, money
+  changes hands, and players (with their stats and career records) move between
+  clubs — so the world isn't static around you. Your own club is never touched
+  automatically.
 - **Coaching staff** drive player development. Every club fields a position
   coach for each unit (GK, DF, MF, FW), scaled to reputation at kick-off. Coach
   quality is the **primary** driver of how fast a club's players grow toward
@@ -150,9 +156,23 @@ js/main.js           App controller, event wiring, live match player
   Premier League champions vs the FA Cup winners (the FA Cup runner-up
   deputises if they're the same club). You play it live if your club is one of
   the two; it doesn't count for the leagues, just the honours board.
+- **Spanish cups** mirror the English framework for a La Liga or Segunda save
+  (the English cups sit out, and vice versa):
+  - **Copa del Rey** — Spain's premier knockout, comparable to the FA Cup: all
+    42 Spanish clubs enter (the weakest open the First Round, the strongest are
+    seeded straight into a clean 32-team bracket), running through the season to
+    the Final. Same generic engine as the English cups (`js/cup.js`).
+  - **Supercopa de España** — a season-opening (matchweek 1) *final four*
+    contested by the winners and runners-up of La Liga and the Copa del Rey: two
+    semi-finals (La Liga champion v Copa runner-up, Copa winner v La Liga
+    runner-up) and a final. If a club qualifies twice, the berth passes to the
+    next-best La Liga side so it's always four distinct teams. You play your own
+    tie(s) live; the rest are simmed. Draws go to penalties; it counts only for
+    the honours board.
 - **Trophy cabinet**: the 🏆 button in the top bar opens your manager's honours
-  — league titles, FA Cup, Carabao Cup, Vertu Trophy and Community Shields,
-  each with a count and the seasons you won them.
+  — league titles (English and Spanish), FA Cup, Carabao Cup, Vertu Trophy,
+  Community Shield, Copa del Rey and Supercopa de España, each with a count and
+  the seasons you won them.
 - **Career records**: every player carries lifetime totals — appearances,
   goals, assists, clean sheets, saves — that accumulate across seasons.
   Made-up players are seeded with a plausible history estimated from their

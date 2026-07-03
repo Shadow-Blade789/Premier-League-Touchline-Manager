@@ -132,24 +132,28 @@
       return rows;
     },
 
-    // Promotion / relegation rules per division. The chain is closed
-    // (PL ⇄ CH ⇄ L1 ⇄ L2): the Championship promotes 3 directly; League One and
-    // Two promote 3 directly plus one play-off winner from the next four.
-    // League Two has no relegation — its bottom four is a sacking zone.
+    // Promotion / relegation rules per division. Each country's chain is closed
+    // (England PL⇄CH⇄L1⇄L2, Spain LaLiga⇄Segunda). The top tier has European
+    // places and relegation; second tiers promote (some with a play-off); the
+    // lowest tier of a country has no relegation — its bottom is a sacking zone.
     LEAGUE_RULES: {
       PL: { autoPromote: 0, playoff: 0, relegate: 3 },
       CH: { autoPromote: 3, playoff: 0, relegate: 4 },
       L1: { autoPromote: 3, playoff: 1, relegate: 4 },
       L2: { autoPromote: 3, playoff: 1, relegate: 0, sacking: 4 },
+      LL: { autoPromote: 0, playoff: 0, relegate: 3 },            // La Liga
+      SG: { autoPromote: 3, playoff: 0, relegate: 0, sacking: 3 }, // Segunda (bottom Spanish tier)
     },
-    ORDER: ["PL", "CH", "L1", "L2"],
-    leagueAbove(lg) { const i = this.ORDER.indexOf(lg); return i > 0 ? this.ORDER[i - 1] : null; },
-    leagueBelow(lg) { const i = this.ORDER.indexOf(lg); return i >= 0 && i < this.ORDER.length - 1 ? this.ORDER[i + 1] : null; },
+    leagueAbove(lg) { const ch = chainFor(lg); const i = ch.indexOf(lg); return i > 0 ? ch[i - 1] : null; },
+    leagueBelow(lg) { const ch = chainFor(lg); const i = ch.indexOf(lg); return i >= 0 && i < ch.length - 1 ? ch[i + 1] : null; },
 
-    // Coloured table zones, sized to the league (20 or 24 clubs).
+    // Coloured table zones, sized to the league, and shaped by where it sits in
+    // its country's pyramid.
     zoneFor(pos, league = "PL", size = 20) {
       const r = this.LEAGUE_RULES[league] || {};
-      if (league === "PL") {
+      const isTop = this.leagueAbove(league) === null;
+      const isBottom = this.leagueBelow(league) === null;
+      if (isTop) { // European places + relegation (PL, La Liga)
         if (pos === 1) return "champion";
         if (pos <= 4) return "ucl";
         if (pos === 5) return "uel";
@@ -159,7 +163,7 @@
       }
       if (pos <= r.autoPromote) return "promotion";
       if (r.playoff && pos <= r.autoPromote + 4) return "playoff";
-      if (league === "L2") { if (pos > size - (r.sacking || 3)) return "sacking"; return ""; }
+      if (isBottom) { if (pos > size - (r.sacking || 3)) return "sacking"; return ""; }
       if (pos > size - r.relegate) return "relegation";
       return "";
     },
@@ -181,11 +185,6 @@
       return Math.random() < ra / (ra + rb) ? aId : bId;
     },
   
-    // League ladder, top → bottom.
-    ORDER: ["PL", "CH", "L1", "L2"],
-    leagueAbove(lg) { const i = this.ORDER.indexOf(lg); return i > 0 ? this.ORDER[i - 1] : null; },
-    leagueBelow(lg) { const i = this.ORDER.indexOf(lg); return i >= 0 && i < this.ORDER.length - 1 ? this.ORDER[i + 1] : null; },
-
     endOfSeason(state) {
       // Finish any divisions that run longer than the user's before ranking.
       this.finishRemainingLeagues(state);
@@ -201,6 +200,7 @@
       const awards = awardsByLeague[userLeague]; // the user sees their own league's awards
       const faCup = Cup.seasonSummary(state, state.faCup, Cup.CUPS.fa);
       const eflCup = Cup.seasonSummary(state, state.eflCup, Cup.CUPS.efl);
+      const copa = Cup.seasonSummary(state, state.copaCup, Cup.CUPS.copa);
       Vertu.autoResolve(state); // guarantee a Vertu Trophy winner
       const vertu = Vertu.seasonSummary(state);
 
@@ -237,7 +237,9 @@
       const isChampion = champion.id === state.clubId;
       const userPromoted = !!(promoteIds[userLeague] && promoteIds[userLeague].includes(state.clubId));
       const userRelegated = !!(relegateIds[userLeague] && relegateIds[userLeague].includes(state.clubId));
-      const userSacked = userLeague === "L2" && myFinalPos > size - (rules.sacking || 4); // no floor below
+      // The bottom tier of a country has no division below — its bottom is a
+      // sacking zone.
+      const userSacked = this.leagueBelow(userLeague) === null && myFinalPos > size - (rules.sacking || 3);
       const toLeague = userPromoted ? this.leagueAbove(userLeague)
         : userRelegated ? this.leagueBelow(userLeague) : userLeague;
 
@@ -246,7 +248,7 @@
         champion: isChampion, promoted: userPromoted, relegated: userRelegated || userSacked,
         club: clubNameLookup(state, state.clubId),
       });
-      if (isChampion && userLeague === "PL") state.titles++;
+      if (isChampion && this.leagueAbove(userLeague) === null) state.titles++; // top-flight title
 
       // Trophy cabinet: record everything the manager won this season.
       state.honours = state.honours || [];
@@ -255,11 +257,12 @@
       if (faCup && faCup.userWon) state.honours.push({ type: "facup", season: seasonPlayed });
       if (eflCup && eflCup.userWon) state.honours.push({ type: "carabao", season: seasonPlayed });
       if (vertu && vertu.userWon) state.honours.push({ type: "vertu", season: seasonPlayed });
+      if (copa && copa.userWon) state.honours.push({ type: "copa", season: seasonPlayed });
 
       const resultBase = {
         userLeague, toLeague, myFinalPos, champion, isChampion,
         userPromoted, userRelegated, userSacked, userPlayoff,
-        awards, tables, faCup, eflCup, vertu,
+        awards, tables, faCup, eflCup, vertu, copa,
       };
 
       if (userSacked) {
@@ -292,15 +295,34 @@
         c.points = 0; c.played = 0; c.won = 0; c.drawn = 0; c.lost = 0; c.gf = 0; c.ga = 0;
       });
 
-      // Community Shield for the coming season: the Premier League champions
-      // vs the FA Cup winners (the FA Cup runner-up deputises if they're the
-      // same club). Played on matchweek 1 of the new season.
-      const plChampionId = tables.PL[0].id;
-      const faWinnerId = state.faCup && state.faCup.winner;
-      const faRunnerUpId = state.faCup && state.faCup.runnerUp;
-      state.pendingShield = faWinnerId
-        ? { champion: plChampionId, faWinner: faWinnerId, faRunnerUp: faRunnerUpId }
-        : null;
+      // Super-cup curtain-raisers for the coming season, per the user's country.
+      // England — Community Shield: PL champions vs FA Cup winners (runner-up
+      // deputises if the same club).
+      const country = Game.myCountry();
+      state.pendingShield = null;
+      state.pendingSupercopa = null;
+      if (country === "ENG") {
+        const faWinnerId = state.faCup && state.faCup.winner;
+        if (faWinnerId) state.pendingShield = { champion: tables.PL[0].id, faWinner: faWinnerId, faRunnerUp: state.faCup.runnerUp };
+      } else if (country === "ESP") {
+        // Supercopa de España — a "final four": La Liga winners & runners-up vs
+        // Copa del Rey winners & runners-up.
+        const copaWinnerId = state.copaCup && state.copaCup.winner;
+        if (copaWinnerId) {
+          const llTable = tables.LL;
+          const llWinner = llTable[0].id, llRunnerUp = llTable[1].id;
+          const used = new Set([llWinner, llRunnerUp]);
+          // If a Copa side already qualified through the league, its berth
+          // passes to the next-best La Liga club — so the final four is always
+          // four distinct teams.
+          const nextLL = () => { for (const row of llTable) if (!used.has(row.id)) { used.add(row.id); return row.id; } return llWinner; };
+          let copaWinner = copaWinnerId;
+          if (used.has(copaWinner)) copaWinner = nextLL(); else used.add(copaWinner);
+          let copaRunnerUp = state.copaCup.runnerUp;
+          if (!copaRunnerUp || used.has(copaRunnerUp)) copaRunnerUp = nextLL(); else used.add(copaRunnerUp);
+          state.pendingSupercopa = { llWinner, llRunnerUp, copaWinner, copaRunnerUp };
+        }
+      }
 
       state.season++;
       state.week = 0;

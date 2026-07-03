@@ -16,8 +16,8 @@ const Dynamics = {
 
   // Where a club's reputation "wants" to be given where it just finished.
   targetTierFor(league, pos) {
-    if (league === "PL") return pos <= 4 ? 5 : pos <= 10 ? 4 : 3;
-    if (league === "CH") return pos <= 6 ? 3 : 2;
+    if (league === "PL" || league === "LL") return pos <= 4 ? 5 : pos <= 10 ? 4 : 3; // top flights
+    if (league === "CH" || league === "SG") return pos <= 6 ? 3 : 2;                  // second tiers
     if (league === "L1") return pos <= 6 ? 2 : 1;
     return pos <= 6 ? 1 : 0; // League Two
   },

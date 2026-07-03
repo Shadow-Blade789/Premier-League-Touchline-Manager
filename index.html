@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PLFC Touchline Manager</title>
 <meta name="description" content="A Premier League club-management sim — pick your club, run the transfer market, set your lineup, and live the season.">
-<link rel="stylesheet" href="css/styles.css?v=14">
+<link rel="stylesheet" href="css/styles.css?v=15">
 </head>
 <body>
 
@@ -112,16 +112,16 @@
     </div>
     <div class="grid-2">
       <div class="panel" id="hubCupPanel">
-        <h3>FA Cup</h3>
+        <h3 id="hubCupTitle">FA Cup</h3>
         <div id="hubCupBody" class="muted">—</div>
       </div>
       <div class="panel" id="hubCarabaoPanel">
-        <h3>Carabao Cup</h3>
+        <h3 id="hubCarabaoTitle">Carabao Cup</h3>
         <div id="hubCarabaoBody" class="muted">—</div>
       </div>
     </div>
     <div class="panel" id="hubVertuPanel">
-      <h3>Vertu Trophy</h3>
+      <h3 id="hubVertuTitle">Vertu Trophy</h3>
       <div id="hubVertuBody" class="muted">—</div>
     </div>
   </section>
@@ -211,6 +211,8 @@
           <button class="scope-btn table-league-btn" data-league="CH" type="button">Champ</button>
           <button class="scope-btn table-league-btn" data-league="L1" type="button">League One</button>
           <button class="scope-btn table-league-btn" data-league="L2" type="button">League Two</button>
+          <button class="scope-btn table-league-btn" data-league="LL" type="button">La Liga</button>
+          <button class="scope-btn table-league-btn" data-league="SG" type="button">Segunda</button>
         </div>
       </div>
       <table class="ladder">
@@ -266,19 +268,19 @@
 
 </div>
 
-<script src="js/data.js?v=14"></script>
-<script src="js/state.js?v=14"></script>
-<script src="js/lineup.js?v=14"></script>
-<script src="js/match.js?v=14"></script>
-<script src="js/stats.js?v=14"></script>
-<script src="js/cup.js?v=14"></script>
-<script src="js/vertu.js?v=14"></script>
-<script src="js/season.js?v=14"></script>
-<script src="js/squad.js?v=14"></script>
-<script src="js/coaches.js?v=14"></script>
-<script src="js/academy.js?v=14"></script>
-<script src="js/dynamics.js?v=14"></script>
-<script src="js/ui.js?v=14"></script>
-<script src="js/main.js?v=14"></script>
+<script src="js/data.js?v=15"></script>
+<script src="js/state.js?v=15"></script>
+<script src="js/lineup.js?v=15"></script>
+<script src="js/match.js?v=15"></script>
+<script src="js/stats.js?v=15"></script>
+<script src="js/cup.js?v=15"></script>
+<script src="js/vertu.js?v=15"></script>
+<script src="js/season.js?v=15"></script>
+<script src="js/squad.js?v=15"></script>
+<script src="js/coaches.js?v=15"></script>
+<script src="js/academy.js?v=15"></script>
+<script src="js/dynamics.js?v=15"></script>
+<script src="js/ui.js?v=15"></script>
+<script src="js/main.js?v=15"></script>
 </body>
 </html>

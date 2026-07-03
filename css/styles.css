@@ -190,6 +190,12 @@
      border-bottom: 1px solid var(--hairline); padding-bottom: 0.3rem;
    }
    .club-group-head:first-child { margin-top: 0; }
+   .club-country-head {
+     grid-column: 1 / -1; margin-top: 1.1rem;
+     font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.14em;
+     font-size: 1rem; color: var(--chalk);
+   }
+   .club-country-head:first-child { margin-top: 0; }
    .club-tile:hover, .club-tile.selected { border-color: var(--amber); background: rgba(255,200,87,0.08); }
    .club-tile .name { font-family: var(--font-display); font-size: 0.82rem; line-height: 1.15; }
    .club-tile .tag { display:block; font-size: 0.65rem; color: var(--muted); margin-top:0.1em; }

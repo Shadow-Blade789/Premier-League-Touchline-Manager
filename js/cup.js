@@ -33,18 +33,26 @@ const CARABAO_ROUNDS = [
   { key: "SF", name: "Semi-Final",    short: "SF",    week: 27 },
   { key: "F",  name: "Final",         short: "Final", week: 33 },
 ];
+const COPA_ROUNDS = [
+  { key: "R1",  name: "First Round",    short: "R1",    week: 3 },
+  { key: "R32", name: "Round of 32",    short: "R32",   week: 8 },
+  { key: "R16", name: "Round of 16",    short: "R16",   week: 14 },
+  { key: "QF",  name: "Quarter-Final",  short: "QF",    week: 20 },
+  { key: "SF",  name: "Semi-Final",     short: "SF",    week: 26 },
+  { key: "F",   name: "Final",          short: "Final", week: 33 },
+];
 
 const Cup = {
   // Build functions return { participants: <round-0 field ids>, entrantsByRound:
-  // { roundIndex: [ids joining at that round] } }.
+  // { roundIndex: [ids joining at that round] } }. Each cup belongs to a country.
   CUPS: {
     fa: {
-      key: "fa", stateKey: "faCup", name: "FA Cup", rounds: FA_CUP_ROUNDS,
+      key: "fa", stateKey: "faCup", name: "FA Cup", country: "ENG", rounds: FA_CUP_ROUNDS,
       build(state) {
         // Weakest 16 open the First Round; the next tier joins the Second
         // Round; the strongest 44 are seeded into the 64-team Third Round.
-        // (16 → 8) + M → (8+M)/2 winners; + seeded = 64 at the Third Round.
-        const ranked = state.clubs.slice().sort((a, b) => Stats.clubStrength(a) - Stats.clubStrength(b));
+        const eng = state.clubs.filter(c => LEAGUE_COUNTRY[c.league] === "ENG");
+        const ranked = eng.slice().sort((a, b) => Stats.clubStrength(a) - Stats.clubStrength(b));
         const total = ranked.length;
         const r1 = 16;
         const m = Math.max(0, 2 * (total - 76)); // clubs entering the Second Round (32 for 92)
@@ -55,7 +63,7 @@ const Cup = {
       },
     },
     efl: {
-      key: "efl", stateKey: "eflCup", name: "Carabao Cup", rounds: CARABAO_ROUNDS,
+      key: "efl", stateKey: "eflCup", name: "Carabao Cup", country: "ENG", rounds: CARABAO_ROUNDS,
       build(state) {
         const byStrength = list => list.slice().sort((a, b) => Stats.clubStrength(b) - Stats.clubStrength(a)).map(c => c.id);
         const efl = byStrength(state.clubs.filter(c => c.league === "CH" || c.league === "L1" || c.league === "L2"));
@@ -67,9 +75,29 @@ const Cup = {
         return { participants: round1, entrantsByRound: { 1: [...eflByes, ...nonEuroPL], 2: euroPL } };
       },
     },
+    copa: {
+      key: "copa", stateKey: "copaCup", name: "Copa del Rey", country: "ESP", rounds: COPA_ROUNDS,
+      build(state) {
+        // All Spanish clubs; the weakest open a First Round, the rest are seeded
+        // into a 32-team Round of 32.
+        const esp = state.clubs.filter(c => LEAGUE_COUNTRY[c.league] === "ESP");
+        const ranked = esp.slice().sort((a, b) => Stats.clubStrength(a) - Stats.clubStrength(b));
+        const prelim = Math.max(0, 2 * (ranked.length - 32)); // 20 for 42 clubs
+        const participants = ranked.slice(0, prelim).map(c => c.id);
+        const byes = ranked.slice(prelim).map(c => c.id);
+        return { participants, entrantsByRound: { 1: byes } };
+      },
+    },
   },
 
-  initAll(state) { Object.values(this.CUPS).forEach(cfg => this.init(state, cfg)); },
+  // Only the user's country's cups are live; the rest stay dormant.
+  initAll(state) {
+    const country = Game.myCountry();
+    Object.values(this.CUPS).forEach(cfg => {
+      if (cfg.country === country) this.init(state, cfg);
+      else state[cfg.stateKey] = { skipped: true, participants: [], entrantsByRound: {}, ties: [], winner: null };
+    });
+  },
   initCareer(state) { this.initAll(state); },
   initSeason(state) { this.initAll(state); },
 

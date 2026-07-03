@@ -336,6 +336,56 @@
      { id: "sut", name: "Sutton United", short: "SUT", nick: "The U's", city: "Sutton", stadium: "Gander Green Lane", colors: ["#FFCC00", "#000000"], tier: 0, squad: [] },
    ];
 
+   // ---- SPAIN: LA LIGA (20) --------------------------------------------------
+   const RAW_LALIGA = [
+     { id: "rma", name: "Real Madrid", short: "RMA", nick: "Los Blancos", city: "Madrid", stadium: "Santiago Bernabéu", colors: ["#FEBE10", "#00529F"], tier: 5, squad: [] },
+     { id: "fcb", name: "FC Barcelona", short: "BAR", nick: "Blaugrana", city: "Barcelona", stadium: "Spotify Camp Nou", colors: ["#A50044", "#004D98"], tier: 5, squad: [] },
+     { id: "atm", name: "Atlético Madrid", short: "ATM", nick: "Los Colchoneros", city: "Madrid", stadium: "Metropolitano", colors: ["#CB3524", "#FFFFFF"], tier: 5, squad: [] },
+     { id: "ath", name: "Athletic Club", short: "ATH", nick: "Los Leones", city: "Bilbao", stadium: "San Mamés", colors: ["#EE2523", "#FFFFFF"], tier: 4, squad: [] },
+     { id: "rso", name: "Real Sociedad", short: "RSO", nick: "La Real", city: "San Sebastián", stadium: "Reale Arena", colors: ["#0067B1", "#FFFFFF"], tier: 4, squad: [] },
+     { id: "bet", name: "Real Betis", short: "BET", nick: "Los Verdiblancos", city: "Seville", stadium: "Benito Villamarín", colors: ["#00954C", "#FFFFFF"], tier: 4, squad: [] },
+     { id: "vil", name: "Villarreal", short: "VIL", nick: "El Submarino Amarillo", city: "Villarreal", stadium: "Estadio de la Cerámica", colors: ["#FFE667", "#004C99"], tier: 4, squad: [] },
+     { id: "sev", name: "Sevilla", short: "SEV", nick: "Los Nervionenses", city: "Seville", stadium: "Ramón Sánchez-Pizjuán", colors: ["#D8010F", "#FFFFFF"], tier: 4, squad: [] },
+     { id: "vlc", name: "Valencia", short: "VLC", nick: "Los Che", city: "Valencia", stadium: "Mestalla", colors: ["#FF7C00", "#000000"], tier: 3, squad: [] },
+     { id: "gir", name: "Girona", short: "GIR", nick: "Blanquivermells", city: "Girona", stadium: "Montilivi", colors: ["#CD1719", "#FFFFFF"], tier: 3, squad: [] },
+     { id: "cel", name: "Celta Vigo", short: "CEL", nick: "Os Celestes", city: "Vigo", stadium: "Balaídos", colors: ["#8AC3EE", "#FFFFFF"], tier: 3, squad: [] },
+     { id: "osa", name: "Osasuna", short: "OSA", nick: "Los Rojillos", city: "Pamplona", stadium: "El Sadar", colors: ["#0A346F", "#D91A21"], tier: 3, squad: [] },
+     { id: "ray", name: "Rayo Vallecano", short: "RAY", nick: "Los Franjirrojos", city: "Madrid", stadium: "Vallecas", colors: ["#FFFFFF", "#E53027"], tier: 3, squad: [] },
+     { id: "get", name: "Getafe", short: "GET", nick: "Los Azulones", city: "Getafe", stadium: "Coliseum", colors: ["#005999", "#FFFFFF"], tier: 3, squad: [] },
+     { id: "mll", name: "Mallorca", short: "MLL", nick: "Los Bermellones", city: "Palma", stadium: "Son Moix", colors: ["#E20613", "#000000"], tier: 2, squad: [] },
+     { id: "esn", name: "Espanyol", short: "ESP", nick: "Los Pericos", city: "Barcelona", stadium: "RCDE Stadium", colors: ["#007FC8", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "alv", name: "Alavés", short: "ALV", nick: "El Glorioso", city: "Vitoria-Gasteiz", stadium: "Mendizorroza", colors: ["#0761AF", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "elc", name: "Elche", short: "ELC", nick: "Los Franjiverdes", city: "Elche", stadium: "Martínez Valero", colors: ["#00913F", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "lev", name: "Levante", short: "LEV", nick: "Los Granotas", city: "Valencia", stadium: "Ciutat de València", colors: ["#9E1C31", "#004B9F"], tier: 2, squad: [] },
+     { id: "ovi", name: "Real Oviedo", short: "OVI", nick: "Los Carbayones", city: "Oviedo", stadium: "Carlos Tartiere", colors: ["#0033A0", "#FFFFFF"], tier: 2, squad: [] },
+   ];
+
+   // ---- SPAIN: SEGUNDA DIVISIÓN (22 — the lowest Spanish tier here) ----------
+   const RAW_SEGUNDA = [
+     { id: "dep", name: "Deportivo La Coruña", short: "DEP", nick: "Depor", city: "A Coruña", stadium: "Riazor", colors: ["#0067B1", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "rac", name: "Racing Santander", short: "RAC", nick: "Los Verdiblancos", city: "Santander", stadium: "El Sardinero", colors: ["#009B48", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "zar", name: "Real Zaragoza", short: "ZAR", nick: "Los Maños", city: "Zaragoza", stadium: "La Romareda", colors: ["#FFFFFF", "#004B9F"], tier: 2, squad: [] },
+     { id: "spg", name: "Sporting Gijón", short: "SPG", nick: "Los Rojiblancos", city: "Gijón", stadium: "El Molinón", colors: ["#E30613", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "vld", name: "Real Valladolid", short: "VLD", nick: "Pucela", city: "Valladolid", stadium: "José Zorrilla", colors: ["#7A1E7A", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "lpa", name: "Las Palmas", short: "LPA", nick: "Los Amarillos", city: "Las Palmas", stadium: "Gran Canaria", colors: ["#FFE400", "#0055A5"], tier: 2, squad: [] },
+     { id: "leg", name: "Leganés", short: "LEG", nick: "Los Pepineros", city: "Leganés", stadium: "Butarque", colors: ["#005BAC", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "alm", name: "Almería", short: "ALM", nick: "Los Rojiblancos", city: "Almería", stadium: "Power Horse Stadium", colors: ["#E30613", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "gra", name: "Granada", short: "GRA", nick: "Los Nazaríes", city: "Granada", stadium: "Nuevo Los Cármenes", colors: ["#C4122E", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "cad", name: "Cádiz", short: "CAD", nick: "El Submarino Amarillo", city: "Cádiz", stadium: "Nuevo Mirandilla", colors: ["#FFE400", "#0055A5"], tier: 1, squad: [] },
+     { id: "eib", name: "Eibar", short: "EIB", nick: "Los Armeros", city: "Eibar", stadium: "Ipurua", colors: ["#0A2340", "#E30613"], tier: 1, squad: [] },
+     { id: "mag", name: "Málaga", short: "MAG", nick: "Los Boquerones", city: "Málaga", stadium: "La Rosaleda", colors: ["#0088CE", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "hue", name: "Huesca", short: "HUE", nick: "Los Oscenses", city: "Huesca", stadium: "El Alcoraz", colors: ["#0055A5", "#E30613"], tier: 1, squad: [] },
+     { id: "alb", name: "Albacete", short: "ALB", nick: "Los Manchegos", city: "Albacete", stadium: "Carlos Belmonte", colors: ["#FFFFFF", "#0055A5"], tier: 1, squad: [] },
+     { id: "bgs", name: "Burgos", short: "BGS", nick: "Los Blanquinegros", city: "Burgos", stadium: "El Plantío", colors: ["#000000", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "cor", name: "Córdoba", short: "COR", nick: "El Califa", city: "Córdoba", stadium: "El Arcángel", colors: ["#00913F", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "cst", name: "Castellón", short: "CST", nick: "Los Orelluts", city: "Castellón", stadium: "Castalia", colors: ["#000000", "#FFA300"], tier: 1, squad: [] },
+     { id: "mir", name: "Mirandés", short: "MIR", nick: "Los Jabatos", city: "Miranda de Ebro", stadium: "Anduva", colors: ["#E30613", "#000000"], tier: 1, squad: [] },
+     { id: "fer", name: "Racing Ferrol", short: "FER", nick: "Los Departamentales", city: "Ferrol", stadium: "A Malata", colors: ["#00913F", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "ctg", name: "Cartagena", short: "CTG", nick: "El Efesé", city: "Cartagena", stadium: "Cartagonova", colors: ["#000000", "#E30613"], tier: 1, squad: [] },
+     { id: "ten", name: "Tenerife", short: "TEN", nick: "Los Chicharreros", city: "Santa Cruz", stadium: "Heliodoro Rodríguez", colors: ["#0055A5", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "and", name: "FC Andorra", short: "AND", nick: "Els Tricolors", city: "Andorra la Vella", stadium: "Estadi Nacional", colors: ["#E30613", "#FDD000"], tier: 1, squad: [] },
+   ];
+
    // Attach league tag, club reference & ids onto every club / player.
    const CLUBS = [
      ...RAW_CLUBS.map(c => {
@@ -347,15 +397,25 @@
      ...RAW_CHAMPIONSHIP.map(c => { c.league = "CH"; c.crestInitials = c.short; return c; }),
      ...RAW_LEAGUEONE.map(c => { c.league = "L1"; c.crestInitials = c.short; return c; }),
      ...RAW_LEAGUETWO.map(c => { c.league = "L2"; c.crestInitials = c.short; return c; }),
+     ...RAW_LALIGA.map(c => { c.league = "LL"; c.crestInitials = c.short; return c; }),
+     ...RAW_SEGUNDA.map(c => { c.league = "SG"; c.crestInitials = c.short; return c; }),
    ];
 
    function clubById(id) { return CLUBS.find(c => c.id === id); }
 
-   const LEAGUES = ["PL", "CH", "L1", "L2"];
-   const LEAGUE_NAMES = { PL: "Premier League", CH: "Championship", L1: "League One", L2: "League Two" };
-   const LEAGUE_SHORT = { PL: "Prem", CH: "Champ", L1: "Lg 1", L2: "Lg 2" };
+   const LEAGUES = ["PL", "CH", "L1", "L2", "LL", "SG"];
+   const LEAGUE_NAMES = { PL: "Premier League", CH: "Championship", L1: "League One", L2: "League Two", LL: "La Liga", SG: "Segunda División" };
+   const LEAGUE_SHORT = { PL: "Prem", CH: "Champ", L1: "Lg 1", L2: "Lg 2", LL: "La Liga", SG: "Segunda" };
    // Per-division economy multiplier — the lower leagues are far poorer.
-   const LEAGUE_ECON = { PL: 1, CH: 1, L1: 0.4, L2: 0.18 };
+   const LEAGUE_ECON = { PL: 1, CH: 1, L1: 0.4, L2: 0.18, LL: 1, SG: 0.6 };
+
+   // Country structure. Each country has its own promotion/relegation chain and
+   // its own domestic cups; the transfer market spans everyone.
+   const COUNTRIES = ["ENG", "ESP"];
+   const COUNTRY_NAMES = { ENG: "England", ESP: "Spain" };
+   const LEAGUE_COUNTRY = { PL: "ENG", CH: "ENG", L1: "ENG", L2: "ENG", LL: "ESP", SG: "ESP" };
+   const LEAGUE_CHAINS = { ENG: ["PL", "CH", "L1", "L2"], ESP: ["LL", "SG"] };
+   function chainFor(league) { return LEAGUE_CHAINS[LEAGUE_COUNTRY[league]] || LEAGUE_CHAINS.ENG; }
 
    const POSITIONS = ["GK", "DF", "MF", "FW"];
    

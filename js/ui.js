@@ -34,9 +34,12 @@
           </span>
         </button>
       `;
-      grid.innerHTML = LEAGUES.map(lg => `
-        <div class="club-group-head">${LEAGUE_NAMES[lg]}</div>
-        ${CLUBS.filter(c => c.league === lg).map(tile).join("")}
+      grid.innerHTML = COUNTRIES.map(country => `
+        <div class="club-country-head">${COUNTRY_NAMES[country]}</div>
+        ${LEAGUE_CHAINS[country].map(lg => `
+          <div class="club-group-head">${LEAGUE_NAMES[lg]}</div>
+          ${CLUBS.filter(c => c.league === lg).map(tile).join("")}
+        `).join("")}
       `).join("");
     },
   
@@ -94,9 +97,42 @@
         }).join("<br>");
       }
       this.renderHubStats(state, App.hubStatScope, club.league);
-      this.renderCupPanel(state, Cup.CUPS.fa, "hubCupBody");
-      this.renderCupPanel(state, Cup.CUPS.efl, "hubCarabaoBody");
-      this.renderVertuPanel(state);
+      const setTitle = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+      const vertuPanel = document.getElementById("hubVertuPanel");
+      if (Game.myCountry() === "ESP") {
+        setTitle("hubCupTitle", "Copa del Rey");
+        setTitle("hubCarabaoTitle", "Supercopa de España");
+        this.renderCupPanel(state, Cup.CUPS.copa, "hubCupBody");
+        this.renderSupercopaPanel(state);
+        if (vertuPanel) vertuPanel.classList.add("hidden");
+      } else {
+        setTitle("hubCupTitle", "FA Cup");
+        setTitle("hubCarabaoTitle", "Carabao Cup");
+        this.renderCupPanel(state, Cup.CUPS.fa, "hubCupBody");
+        this.renderCupPanel(state, Cup.CUPS.efl, "hubCarabaoBody");
+        if (vertuPanel) vertuPanel.classList.remove("hidden");
+        this.renderVertuPanel(state);
+      }
+    },
+
+    // Hub Supercopa panel — the season-opening final four for Spanish saves.
+    renderSupercopaPanel(state) {
+      const body = document.getElementById("hubCarabaoBody");
+      if (!body) return;
+      const short = id => Cup.clubShort(state, id);
+      const ps = state.pendingSupercopa;
+      const holders = (state.honours || []).some(h => h.type === "supercopa");
+      if (ps) {
+        body.innerHTML =
+          `<div class="cup-status in">Season curtain-raiser — a final four (MW1).</div>` +
+          `<div class="eyebrow" style="margin-top:0.6rem;margin-bottom:0.3rem;">Semi-finals</div>` +
+          `<ul class="stat-list">
+             <li class="stat-row"><span class="nm">${short(ps.llWinner)} <span class="muted">v</span> ${short(ps.copaRunnerUp)}</span></li>
+             <li class="stat-row"><span class="nm">${short(ps.copaWinner)} <span class="muted">v</span> ${short(ps.llRunnerUp)}</span></li>
+           </ul>`;
+      } else {
+        body.innerHTML = `<span class="muted">A final-four curtain-raiser contested by the winners &amp; runners-up of La Liga and the Copa del Rey. It opens each new season.${holders ? " You've lifted it before. 🏆" : ""}</span>`;
+      }
     },
 
     // Hub Vertu Trophy panel — a group mini-table + knockout progress for
@@ -138,10 +174,14 @@
         { type: "CH", label: "Championship Winners", icon: "🏆" },
         { type: "L1", label: "League One Winners", icon: "🏆" },
         { type: "L2", label: "League Two Winners", icon: "🏆" },
+        { type: "LL", label: "La Liga Champions", icon: "🏆" },
+        { type: "SG", label: "Segunda División Winners", icon: "🏆" },
         { type: "facup", label: "FA Cup", icon: "🏆" },
         { type: "carabao", label: "Carabao Cup", icon: "🏆" },
         { type: "vertu", label: "Vertu Trophy", icon: "🏆" },
+        { type: "copa", label: "Copa del Rey", icon: "🏆" },
         { type: "shield", label: "Community Shield", icon: "🛡️" },
+        { type: "supercopa", label: "Supercopa de España", icon: "🛡️" },
       ];
       const lines = defs.map(d => {
         const seasons = honours.filter(h => h.type === d.type).map(h => h.season).sort((a, b) => a - b);
@@ -444,7 +484,11 @@
     renderTable(state, league) {
       league = league || Game.myLeague();
       document.getElementById("tableTitle").textContent = LEAGUE_NAMES[league] + " Table";
-      document.querySelectorAll(".table-league-btn").forEach(b => b.classList.toggle("active", b.dataset.league === league));
+      const myLeagues = chainFor(Game.myLeague());
+      document.querySelectorAll(".table-league-btn").forEach(b => {
+        b.classList.toggle("hidden", !myLeagues.includes(b.dataset.league));
+        b.classList.toggle("active", b.dataset.league === league);
+      });
       const rows = Season.table(state, league);
       document.getElementById("ladderBody").innerHTML = rows.map(r => {
         const zone = Season.zoneFor(r.pos, league, rows.length);
@@ -470,6 +514,11 @@
         return `
           <span><i style="background:#4ad991;"></i>Automatic promotion</span>
           <span><i style="background:#5ec2ff;"></i>Play-offs</span>
+          <span><i style="background:var(--alert-red);"></i>Sacking zone (no relegation)</span>`;
+      }
+      if (league === "SG") {
+        return `
+          <span><i style="background:#4ad991;"></i>Automatic promotion</span>
           <span><i style="background:var(--alert-red);"></i>Sacking zone (no relegation)</span>`;
       }
       return `

@@ -29,8 +29,9 @@
      const need = { GK: 2, DF: 7, MF: 6, FW: 4 };
      const have = { GK: 0, DF: 0, MF: 0, FW: 0 };
      club.squad.forEach(p => have[p.pos]++);
-     // Gradient by tier so squads step down PL → CH → L1 → L2.
-     const baseRating = Math.max(46, 54 + club.tier * 3);
+     // Gradient by reputation tier: elite generated sides (a tier-5 La Liga
+     // club) are genuinely strong, lower tiers step down toward the fourth tier.
+     const baseRating = Math.max(46, 52 + club.tier * 6);
      for (const pos of POSITIONS) {
        while (have[pos] < need[pos]) {
          // Skew young: most fill-ins are academy-aged depth, with a handful of
@@ -83,6 +84,7 @@
        honours: [],           // trophy cabinet: [{type, season}]
        coachMarket: [],       // hireable coaches, refreshed each matchweek
        pendingShield: null,   // Community Shield participants for the coming season
+       pendingSupercopa: null, // Supercopa de España final-four for the coming season
        pendingMatch: null,    // result payload waiting to be viewed live
        windowWasOpen: false,
      };
@@ -243,6 +245,9 @@
        const c = this.myClub();
        return c ? c.league : "PL";
      },
+     myCountry() {
+       return LEAGUE_COUNTRY[this.myLeague()] || "ENG";
+     },
    };
 
    // Brings any older save up to the current world: four divisions at their
@@ -250,7 +255,7 @@
    // stats. Missing clubs are injected fresh; newly-added clubs play out the
    // rest of the current season alongside the existing ones.
    function migrateSave(state) {
-     const LEAGUE_TEMPLATES = { CH: RAW_CHAMPIONSHIP, L1: RAW_LEAGUEONE, L2: RAW_LEAGUETWO };
+     const LEAGUE_TEMPLATES = { CH: RAW_CHAMPIONSHIP, L1: RAW_LEAGUEONE, L2: RAW_LEAGUETWO, LL: RAW_LALIGA, SG: RAW_SEGUNDA };
      state.clubs.forEach(c => { if (!c.league) c.league = "PL"; });
 
      let injected = false;
