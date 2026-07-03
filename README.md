@@ -42,6 +42,7 @@ js/match.js          Match engine: quick AI sim + full live commentary timeline
 js/stats.js          Player stats, per-league leaderboards, season awards & bonuses
 js/cup.js            Domestic cups (FA, Carabao, Copa del Rey): generic country-gated staged-entry knockout engine
 js/vertu.js          Vertu Trophy: League One & Two group stage + knockout
+js/europe.js         Champions/Europa/Conference League: 36-team league phase + two-legged knockouts
 js/season.js         Per-league fixtures & tables, promotion/relegation between divisions
 js/squad.js          Transfer market (buy/sell) + AI-to-AI transfers
 js/coaches.js        Coaching + youth staff, the Staff market, development multipliers
@@ -170,10 +171,28 @@ js/main.js           App controller, event wiring, live match player
     next-best La Liga side so it's always four distinct teams. You play your own
     tie(s) live; the rest are simmed. Draws go to penalties; it counts only for
     the honours board.
+- **European competitions** (`js/europe.js`) run through the season for clubs
+  that qualified on **last season's league finish**: the top four of each top
+  flight enter the **Champions League**, 5th the **Europa League**, 6th the
+  **Conference League**. Each uses the modern **36-team League Phase** — one big
+  Swiss-style table where every club plays **eight** different opponents (two
+  from each of four coefficient pots, four home and four away). Final standings
+  decide everything: **1–8** go straight to the Round of 16, **9–24** contest a
+  two-legged knockout playoff for the last eight R16 spots, and **25–36** are
+  eliminated outright (no drop into a lesser competition). The knockouts are
+  two-legged — away goals abolished, level aggregate goes to extra time and
+  penalties — up to a single-leg Final. You play **your** competition in full
+  (the whole 36-team table fills alongside your eight live matchdays, then your
+  knockout ties are played leg by leg); the other two are resolved in the
+  background to a champion. Because the world currently holds only England +
+  Spain, each 36-team field is completed with the strongest remaining clubs by
+  coefficient, standing in for the wider continent — as more countries are added
+  the fields fill with genuine foreign qualifiers instead. The hub shows a
+  European panel with your league-phase position (or knockout tie) and holders.
 - **Trophy cabinet**: the 🏆 button in the top bar opens your manager's honours
-  — league titles (English and Spanish), FA Cup, Carabao Cup, Vertu Trophy,
-  Community Shield, Copa del Rey and Supercopa de España, each with a count and
-  the seasons you won them.
+  — league titles (English and Spanish), the Champions/Europa/Conference League,
+  FA Cup, Carabao Cup, Vertu Trophy, Community Shield, Copa del Rey and Supercopa
+  de España, each with a count and the seasons you won them.
 - **Career records**: every player carries lifetime totals — appearances,
   goals, assists, clean sheets, saves — that accumulate across seasons.
   Made-up players are seeded with a plausible history estimated from their

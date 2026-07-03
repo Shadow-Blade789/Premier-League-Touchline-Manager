@@ -85,6 +85,8 @@
        coachMarket: [],       // hireable coaches, refreshed each matchweek
        pendingShield: null,   // Community Shield participants for the coming season
        pendingSupercopa: null, // Supercopa de España final-four for the coming season
+       euro: null,            // this season's European competitions (set by Euro.initSeason)
+       pendingEuro: null,     // next season's European qualification (by league finish)
        pendingMatch: null,    // result payload waiting to be viewed live
        windowWasOpen: false,
      };
@@ -233,6 +235,7 @@
        Season.buildFixtures(this.state);
        Cup.initCareer(this.state);
        Vertu.initSeason(this.state);
+       Euro.initSeason(this.state);
        Market.weeklyUpdate(this.state);
        Coaching.weeklyMarket(this.state);
        Academy.ensure(this.state);
@@ -307,6 +310,15 @@
      }
      if (!Array.isArray(state.honours)) state.honours = [];
      if (state.pendingShield === undefined) state.pendingShield = null;
+     if (state.pendingSupercopa === undefined) state.pendingSupercopa = null;
+
+     // European competitions are newer than some saves. Mid-season they sit out
+     // the current campaign and begin fresh next season.
+     if (state.pendingEuro === undefined) state.pendingEuro = null;
+     if (!state.euro || injected) {
+       if (state.week > 0) state.euro = { season: state.season, userComp: null, champions: {}, user: null };
+       else Euro.initSeason(state);
+     }
 
      // Coaching staff + coaches market are newer than some saves.
      Coaching.ensureAll(state);

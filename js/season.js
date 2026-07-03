@@ -203,6 +203,7 @@
       const copa = Cup.seasonSummary(state, state.copaCup, Cup.CUPS.copa);
       Vertu.autoResolve(state); // guarantee a Vertu Trophy winner
       const vertu = Vertu.seasonSummary(state);
+      const euro = Euro.seasonSummary(state); // the European campaign just played
 
       // Movement per league: N automatic promotions (+ a play-off winner where
       // applicable) go up; the bottom few go down.
@@ -258,11 +259,12 @@
       if (eflCup && eflCup.userWon) state.honours.push({ type: "carabao", season: seasonPlayed });
       if (vertu && vertu.userWon) state.honours.push({ type: "vertu", season: seasonPlayed });
       if (copa && copa.userWon) state.honours.push({ type: "copa", season: seasonPlayed });
+      if (euro && euro.userWon) state.honours.push({ type: euro.comp, season: seasonPlayed });
 
       const resultBase = {
         userLeague, toLeague, myFinalPos, champion, isChampion,
         userPromoted, userRelegated, userSacked, userPlayoff,
-        awards, tables, faCup, eflCup, vertu, copa,
+        awards, tables, faCup, eflCup, vertu, copa, euro,
       };
 
       if (userSacked) {
@@ -324,12 +326,17 @@
         }
       }
 
+      // European qualification for the coming season, from this season's final
+      // top-flight tables (top 4 → UCL, 5th → UEL, 6th → UECL).
+      state.pendingEuro = Euro.qualificationFromTables(state, tables);
+
       state.season++;
       state.week = 0;
       state.results = [];
       this.buildFixtures(state);
       Cup.initSeason(state); // fresh FA Cup + Carabao Cup brackets
       Vertu.initSeason(state); // fresh Vertu Trophy
+      Euro.initSeason(state); // fresh Champions/Europa/Conference League
       state.windowWasOpen = false; // force the season-opening "window just opened" transition
       Market.weeklyUpdate(state);
       Coaching.weeklyMarket(state);

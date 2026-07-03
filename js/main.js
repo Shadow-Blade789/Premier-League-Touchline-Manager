@@ -346,6 +346,9 @@
       // Vertu Trophy (League One & Two): a group game or a knockout tie.
       this.queueVertu(state, club);
 
+      // European competition (Champions/Europa/Conference League).
+      this.queueEuro(state, club);
+
       this.weekInProgress = true;
       document.getElementById("screen-lineup").classList.add("hidden");
       document.getElementById("screen-hub").classList.add("hidden");
@@ -445,6 +448,36 @@
       }
     },
 
+    // European competition: a League-Phase matchday or a two-legged knockout
+    // leg. The Euro helpers quick-sim every non-user match in the background.
+    queueEuro(state, club) {
+      if (!Euro.isActive(state)) return;
+      Euro.simBackgroundMatchday(state, state.week); // fill the table alongside the user
+      const lf = Euro.userLeagueFixtureThisWeek(state);
+      if (lf) {
+        const eh = Euro.club(state, lf.home), ea = Euro.club(state, lf.away);
+        const foe = eh.id === club.id ? ea : eh;
+        Lineup.autoPick(foe, foe.formation || "4-4-2");
+        const md = Euro.MD_WEEKS.indexOf(lf.week) + 1;
+        this.weekQueue.push({
+          type: "euro-league", fixture: lf, home: eh, away: ea, full: MatchEngine.simulateFull(eh, ea),
+          recorded: false, label: Euro.COMPS[state.euro.userComp].name + " · Matchday " + md,
+        });
+        return;
+      }
+      const ko = Euro.userKoLegThisWeek(state, club);
+      if (ko) {
+        const eh = Euro.club(state, ko.legFix.home), ea = Euro.club(state, ko.legFix.away);
+        const foe = eh.id === club.id ? ea : eh;
+        Lineup.autoPick(foe, foe.formation || "4-4-2");
+        const legTag = ko.meta.twoLeg ? " (" + (ko.legIndex === 0 ? "1st" : "2nd") + " leg)" : "";
+        this.weekQueue.push({
+          type: "euro-ko", euro: ko, home: eh, away: ea, full: MatchEngine.simulateFull(eh, ea),
+          recorded: false, label: Euro.COMPS[ko.comp].name + " · " + ko.meta.name + legTag,
+        });
+      }
+    },
+
     // Load the next queued match into the player, or wrap up the week.
     playNextInQueue() {
       if (!this.weekQueue.length) { this.finalizeWeek(); return; }
@@ -502,6 +535,11 @@
         }
         document.getElementById("matchStatus").textContent =
           (item.full.hg === item.full.ag ? "Pens · " : "") + Cup.clubShort(state, w) + " win the Supercopa";
+      } else if (item.type === "euro-league") {
+        Euro.recordUserLeagueGame(state, item.fixture, item.full.hg, item.full.ag);
+      } else if (item.type === "euro-ko") {
+        const status = Euro.recordUserKoLeg(state, item.euro, item.full.hg, item.full.ag);
+        if (status) document.getElementById("matchStatus").textContent = status;
       } else if (item.type === "vertu-group") {
         Vertu.recordUserGroupGame(state, item.game, item.full.hg, item.full.ag);
       } else if (item.type === "vertu-ko") {
@@ -670,6 +708,7 @@
           ${cupLine(result.faCup)}
           ${cupLine(result.eflCup)}
           ${cupLine(result.copa)}
+          ${result.euro && result.euro.eligible ? cupLine(result.euro) : ""}
           ${result.vertu && result.vertu.eligible ? cupLine(result.vertu) : ""}
           <p class="muted">${fromLeagueName} champions: ${result.champion.name} · New budget: ${UI.money(club.budget)}</p>
           <button class="primary" id="btnSeasonContinue">Continue to Next Season</button>

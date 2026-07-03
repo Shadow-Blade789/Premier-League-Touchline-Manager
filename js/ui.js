@@ -118,6 +118,68 @@
         if (vertuPanel) vertuPanel.classList.remove("hidden");
         this.renderVertuPanel(state);
       }
+      this.renderEuroPanel(state);
+    },
+
+    // Hub European panel — your Champions/Europa/Conference League campaign, or a
+    // note on how to qualify plus the reigning holders.
+    renderEuroPanel(state) {
+      const body = document.getElementById("hubEuroBody");
+      const titleEl = document.getElementById("hubEuroTitle");
+      if (!body) return;
+      const e = state.euro;
+      const holdersHTML = champs => champs
+        ? Object.keys(Euro.COMPS).filter(k => champs[k]).map(k =>
+            `${Euro.COMPS[k].short}: <strong>${Cup.clubShort(state, champs[k])}</strong>`).join(" · ")
+        : "";
+      if (!e || !e.userComp) {
+        if (titleEl) titleEl.textContent = "European Football";
+        const holders = holdersHTML(e && e.champions);
+        body.innerHTML = `<span class="muted">Not in Europe this season. Finish in your league's top six to qualify — top 4 → Champions League, 5th → Europa League, 6th → Conference League.</span>` +
+          (holders ? `<div class="eyebrow" style="margin-top:0.7rem;margin-bottom:0.2rem;">Reigning champions</div><div>${holders}</div>` : "");
+        return;
+      }
+      const eu = e.user;
+      const meta = Euro.COMPS[e.userComp];
+      if (titleEl) titleEl.textContent = meta.name;
+      let head;
+      if (eu.winner === state.clubId) head = `<div class="cup-status win">🏆 ${meta.short} Winners — Champions of Europe!</div>`;
+      else if (eu.winner) head = `<div class="cup-status">Won by <strong>${Cup.clubName(state, eu.winner)}</strong>.</div>`;
+      else if (eu.userOut) head = `<div class="cup-status out">Out in the ${eu.userExitStage}.</div>`;
+      else if (eu.stage === "league") {
+        const pos = Euro.ordinalPos(state, eu);
+        const played = eu.fixtures.filter(f => f.played).length;
+        const fate = pos <= 8 ? "Round of 16 places" : pos <= 24 ? "playoff places" : "elimination zone";
+        head = `<div class="cup-status in">League Phase — <strong>${ordinal(pos)}</strong> of 36 (${played}/8 played), in the ${fate}.</div>`;
+      } else {
+        // Knockout: find the user's current, unresolved tie.
+        let line = "In the knockouts.";
+        const ko = eu.ko && eu.ko.stages;
+        if (ko) {
+          for (const key of eu.ko.order) {
+            const st = ko[key]; if (!st) continue;
+            const t = st.ties.find(t => (t.hi === state.clubId || t.lo === state.clubId) && !t.winner);
+            if (t) {
+              const oppId = t.hi === state.clubId ? t.lo : t.hi;
+              line = `${Euro.stageName(key)} — vs <strong>${Cup.clubShort(state, oppId)}</strong>`;
+              break;
+            }
+          }
+        }
+        head = `<div class="cup-status in">${line}</div>`;
+      }
+      // League-phase fixture list (compact) while it's on.
+      let rows = "";
+      if (eu.stage === "league") {
+        rows = `<div class="eyebrow" style="margin-top:0.6rem;margin-bottom:0.3rem;">Your matchdays</div><ol class="stat-list">` +
+          eu.fixtures.map(f => {
+            const home = f.home === state.clubId;
+            const oppId = home ? f.away : f.home;
+            const score = f.played ? `${f.hg}–${f.ag}` : `MW${f.week + 1}`;
+            return `<li class="stat-row${f.played ? "" : " me"}"><span class="nm">${home ? "vs" : "@"} ${Cup.clubShort(state, oppId)}</span><span class="vl mono">${score}</span></li>`;
+          }).join("") + `</ol>`;
+      }
+      body.innerHTML = head + rows;
     },
 
     // Hub Supercopa panel — the season-opening final four for Spanish saves.
@@ -181,6 +243,9 @@
         { type: "L2", label: "League Two Winners", icon: "🏆" },
         { type: "LL", label: "La Liga Champions", icon: "🏆" },
         { type: "SG", label: "Segunda División Winners", icon: "🏆" },
+        { type: "ucl", label: "UEFA Champions League", icon: "⭐" },
+        { type: "uel", label: "UEFA Europa League", icon: "⭐" },
+        { type: "uecl", label: "UEFA Conference League", icon: "⭐" },
         { type: "facup", label: "FA Cup", icon: "🏆" },
         { type: "carabao", label: "Carabao Cup", icon: "🏆" },
         { type: "vertu", label: "Vertu Trophy", icon: "🏆" },
