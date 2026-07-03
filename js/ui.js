@@ -23,7 +23,15 @@
       return `<div class="crest ${size}" style="background:linear-gradient(160deg, ${c1} 55%, ${c2} 55%); color:${textColor};">${initials}</div>`;
     },
   
-    renderClubGrid(selectedId) {
+    renderClubGrid(selectedId, country) {
+      country = country || COUNTRIES[0];
+      // Country selector bar — clicking one filters the clubs below to it.
+      const bar = document.getElementById("countryBar");
+      if (bar) {
+        bar.innerHTML = COUNTRIES.map(co =>
+          `<button class="country-btn ${co === country ? "active" : ""}" data-country="${co}" type="button">${COUNTRY_NAMES[co]}</button>`
+        ).join("");
+      }
       const grid = document.getElementById("clubGrid");
       const tile = c => `
         <button class="club-tile ${c.id === selectedId ? "selected" : ""}" data-club="${c.id}" type="button">
@@ -34,12 +42,9 @@
           </span>
         </button>
       `;
-      grid.innerHTML = COUNTRIES.map(country => `
-        <div class="club-country-head">${COUNTRY_NAMES[country]}</div>
-        ${LEAGUE_CHAINS[country].map(lg => `
-          <div class="club-group-head">${LEAGUE_NAMES[lg]}</div>
-          ${CLUBS.filter(c => c.league === lg).map(tile).join("")}
-        `).join("")}
+      grid.innerHTML = (LEAGUE_CHAINS[country] || []).map(lg => `
+        <div class="club-group-head">${LEAGUE_NAMES[lg]}</div>
+        ${CLUBS.filter(c => c.league === lg).map(tile).join("")}
       `).join("");
     },
   

@@ -5,6 +5,7 @@
 
    const App = {
     selectedClubId: null,
+    selectedCountry: null,  // which country's clubs the picker is showing
     hubStatScope: "league", // "league" | "team" toggle on the hub stats panel
     tableLeague: null,      // which division the Table tab is showing
     weekQueue: [],          // the user's remaining live matches this week (league, then cup)
@@ -13,7 +14,8 @@
     windowTransition: null,
 
     init() {
-      UI.renderClubGrid(null);
+      this.selectedCountry = COUNTRIES[0];
+      UI.renderClubGrid(null, this.selectedCountry);
       this.wireStartScreen();
       this.wireTabs();
       this.wireHub();
@@ -37,11 +39,19 @@
   
     // ---------------- Start screen ----------------
     wireStartScreen() {
+      document.getElementById("countryBar").addEventListener("click", e => {
+        const btn = e.target.closest(".country-btn");
+        if (!btn || btn.dataset.country === this.selectedCountry) return;
+        this.selectedCountry = btn.dataset.country;
+        this.selectedClubId = null; // don't carry a hidden pick across countries
+        UI.renderClubGrid(this.selectedClubId, this.selectedCountry);
+        this.validateStart();
+      });
       document.getElementById("clubGrid").addEventListener("click", e => {
         const tile = e.target.closest(".club-tile");
         if (!tile) return;
         this.selectedClubId = tile.dataset.club;
-        UI.renderClubGrid(this.selectedClubId);
+        UI.renderClubGrid(this.selectedClubId, this.selectedCountry);
         this.validateStart();
       });
       document.getElementById("managerNameInput").addEventListener("input", () => this.validateStart());
@@ -594,10 +604,11 @@
           Game.clearSave();
           Game.state = null;
           this.selectedClubId = null;
+          this.selectedCountry = COUNTRIES[0];
           document.getElementById("topbar").classList.add("hidden");
           document.getElementById("continuePanel").classList.add("hidden");
           document.getElementById("managerNameInput").value = "";
-          UI.renderClubGrid(null);
+          UI.renderClubGrid(null, this.selectedCountry);
           screen.classList.add("hidden");
           document.getElementById("screen-start").classList.remove("hidden");
         });

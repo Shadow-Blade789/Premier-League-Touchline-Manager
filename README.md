@@ -71,8 +71,9 @@ js/main.js           App controller, event wiring, live match player
   real clubs) *and* Spain's top two tiers (a 20-club La Liga and a 22-club
   Segunda División — 42 clubs). Each division runs its own separate season (a
   20-team league is 38 games, a 22-team 42, a 24-team 46), table, stats,
-  leaderboards and awards. You can start a career in any of them (the club
-  picker is grouped by country, then league). The season lasts as long as
+  leaderboards and awards. You can start a career in any of them — the club
+  picker has a country bar at the top (England / Spain); pick a country and
+  only that nation's clubs are shown, grouped by league. The season lasts as long as
   *your* league; divisions that run longer are completed before promotions are
   worked out. Every matchweek your own match is played live and every other
   game across **all six divisions in both countries** is quick-simmed. The

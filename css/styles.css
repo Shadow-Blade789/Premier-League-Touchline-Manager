@@ -196,6 +196,20 @@
      font-size: 1rem; color: var(--chalk);
    }
    .club-country-head:first-child { margin-top: 0; }
+   .country-bar {
+     display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem;
+     border-bottom: 1px solid var(--hairline); padding-bottom: 0.9rem;
+   }
+   .country-btn {
+     font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.08em;
+     font-size: 0.9rem; padding: 0.55rem 1.3rem; border-radius: 999px;
+     background: var(--navy-panel-2); color: var(--muted);
+     border: 1px solid var(--hairline); cursor: pointer; transition: all 0.12s ease;
+   }
+   .country-btn:hover:not(.active) { color: var(--chalk); border-color: var(--chalk); }
+   .country-btn.active {
+     background: var(--amber); color: var(--amber-ink); border-color: var(--amber); font-weight: 600;
+   }
    .club-tile:hover, .club-tile.selected { border-color: var(--amber); background: rgba(255,200,87,0.08); }
    .club-tile .name { font-family: var(--font-display); font-size: 0.82rem; line-height: 1.15; }
    .club-tile .tag { display:block; font-size: 0.65rem; color: var(--muted); margin-top:0.1em; }
