@@ -175,6 +175,15 @@
         ? Object.keys(Euro.COMPS).filter(k => champs[k]).map(k =>
             `${Euro.COMPS[k].short}: <strong>${Cup.clubShort(state, champs[k])}</strong>`).join(" · ")
         : "";
+      if (e && e.qual && !e.qual.resolved) {
+        if (titleEl) titleEl.textContent = "Champions League Qualifying";
+        const q = e.qual;
+        const oppId = q.opponents[q.round];
+        const remaining = q.total - q.round;
+        body.innerHTML = `<div class="cup-status in">${q.roundNames[q.round]}${oppId ? ` — vs <strong>${Cup.clubShort(state, oppId)}</strong>` : ""}</div>` +
+          `<div class="muted" style="font-size:0.8rem;margin-top:0.4rem;">Win ${remaining} more tie${remaining > 1 ? "s" : ""} to reach the league phase — played at the start of the season. Lose and you drop into the Europa League.</div>`;
+        return;
+      }
       if (!e || !e.userComp) {
         if (titleEl) titleEl.textContent = "European Football";
         const holders = holdersHTML(e && e.champions);

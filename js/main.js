@@ -311,6 +311,8 @@
       // Build the user's live-match queue for the week.
       this.weekQueue = [];
 
+      // Champions League qualifying — played live at the very start of the season.
+      this.queueQualifying(state, club);
       // Season curtain-raisers on matchweek 1 (per country).
       this.queueCommunityShield(state, club);
       this.queueSupercopa(state, club);
@@ -448,6 +450,24 @@
       }
     },
 
+    // Build a single-leg qualifying tie against the user's next opponent
+    // (venue alternates round to round).
+    qualItem(me, opp, q) {
+      const userHome = (q.round % 2) === 0;
+      const home = userHome ? me : opp, away = userHome ? opp : me;
+      Lineup.autoPick(opp, opp.formation || "4-4-2");
+      return { type: "qual", home, away, full: MatchEngine.simulateFull(home, away), recorded: false, label: q.roundNames[q.round] };
+    },
+
+    // Queue the user's current Champions League qualifying tie (start of season).
+    queueQualifying(state, club) {
+      const q = state.euro && state.euro.qual;
+      if (!q || q.resolved || state.week !== 0) return;
+      const opp = state.clubs.find(c => c.id === q.opponents[q.round]);
+      if (!opp) { q.madeIt = true; Euro.finalizeUserQual(state); return; } // no opponent → walkover through
+      this.weekQueue.push(this.qualItem(club, opp, q));
+    },
+
     queueVertu(state, club) {
       if (!Vertu.isActive(state)) return;
       const v = state.vertu;
@@ -571,6 +591,30 @@
         }
         document.getElementById("matchStatus").textContent =
           (item.full.hg === item.full.ag ? "Pens · " : "") + Cup.clubShort(state, w) + " win the Super Cup";
+      } else if (item.type === "qual") {
+        const q = state.euro.qual;
+        const userIsHome = item.home.id === state.clubId;
+        const uG = userIsHome ? item.full.hg : item.full.ag;
+        const oG = userIsHome ? item.full.ag : item.full.hg;
+        const userWon = uG > oG ? true : oG > uG ? false : Cup.penaltyWinner(item.home, item.away) === state.clubId;
+        const statusEl = document.getElementById("matchStatus");
+        const pens = uG === oG ? "Pens · " : "";
+        if (userWon) {
+          q.round++;
+          if (q.round >= q.total) {
+            q.madeIt = true; Euro.finalizeUserQual(state);
+            if (statusEl) statusEl.textContent = pens + "🎉 Qualified for the Champions League!";
+          } else {
+            if (statusEl) statusEl.textContent = pens + "Through to the next round!";
+            const me = Game.myClub();
+            const opp = state.clubs.find(c => c.id === q.opponents[q.round]);
+            if (opp && me) this.weekQueue.unshift(this.qualItem(me, opp, q));
+            else { q.madeIt = true; Euro.finalizeUserQual(state); }
+          }
+        } else {
+          q.madeIt = false; Euro.finalizeUserQual(state);
+          if (statusEl) statusEl.textContent = pens + "Knocked out — into the Europa League.";
+        }
       } else if (item.type === "euro-league") {
         Euro.recordUserLeagueGame(state, item.fixture, item.full.hg, item.full.ag);
       } else if (item.type === "euro-ko") {

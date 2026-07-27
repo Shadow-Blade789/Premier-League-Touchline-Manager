@@ -211,44 +211,93 @@ const Euro = {
     fill(uel, [pe && pe.cupWinner, ...A.uel, ...champ.losers, ...league.losers].filter(Boolean));
     fill(uecl, [...A.uecl]);
 
-    // Route the user, guaranteeing a Europa berth if they lost CL qualifying.
-    let userComp = null, qualNote = null;
-    if (ucl.includes(userId)) {
-      userComp = "ucl";
-      qualNote = A.directLP.includes(userId) ? null
-        : userInCP ? "Came through the Champions Path qualifiers."
-        : userInLP ? "Came through the League Path qualifiers." : null;
-    } else if ((userInCP || userInLP)) {
-      // Knocked out in CL qualifying → Europa League.
-      if (!uel.includes(userId)) { uel[uel.length - 1] = userId; }
-      userComp = "uel";
-      qualNote = "Knocked out in Champions League qualifying — parachuted into the Europa League.";
-    } else if (uel.includes(userId)) userComp = "uel";
-    else if (uecl.includes(userId)) userComp = "uecl";
+    // Route the user. If they entered a qualifying path, they PLAY it live at the
+    // start of the season — leave their competition pending until it's decided.
+    let userComp = null, qualNote = null, qual = null;
+    if (userInCP || userInLP) {
+      qual = this.buildUserQual(state, A);
+      qualNote = qual && qual.introNote;
+    }
+    if (!qual) {
+      if (ucl.includes(userId)) userComp = "ucl";
+      else if (uel.includes(userId)) userComp = "uel";
+      else if (uecl.includes(userId)) userComp = "uecl";
+    }
+    return { fields: { ucl, uel, uecl }, userComp, qualNote, qual };
+  },
 
-    return { fields: { ucl, uel, uecl }, userComp, qualNote };
+  // The user's live qualifying journey: how many ties they must win from their
+  // entry round, and a progressively tougher opponent for each.
+  buildUserQual(state, A) {
+    const userId = state.clubId;
+    let path, total, roundNames;
+    if (A.cp.r1.includes(userId)) { path = "cp"; total = 4; roundNames = ["Champions Path — Round 1", "Champions Path — Round 2", "Champions Path — Round 3", "Champions Path — Play-off"]; }
+    else if (A.cp.r2.includes(userId)) { path = "cp"; total = 3; roundNames = ["Champions Path — Round 2", "Champions Path — Round 3", "Champions Path — Play-off"]; }
+    else if (A.cp.po.includes(userId)) { path = "cp"; total = 1; roundNames = ["Champions Path — Play-off"]; }
+    else if (A.lp.r2.includes(userId)) { path = "lp"; total = 3; roundNames = ["League Path — Round 2", "League Path — Round 3", "League Path — Play-off"]; }
+    else if (A.lp.r3.includes(userId)) { path = "lp"; total = 2; roundNames = ["League Path — Round 3", "League Path — Play-off"]; }
+    else return null;
+    const pool = (path === "cp" ? [...A.cp.r1, ...A.cp.r2, ...A.cp.po] : [...A.lp.r2, ...A.lp.r3])
+      .filter(id => id !== userId)
+      .sort((a, b) => this.coeff(this.club(state, a)) - this.coeff(this.club(state, b))); // weakest first
+    const opponents = [];
+    for (let i = 0; i < total; i++) opponents.push(pool.length ? pool[Math.min(Math.floor(i * pool.length / total), pool.length - 1)] : null);
+    return {
+      comp: "ucl", path, total, round: 0, opponents, roundNames,
+      resolved: false, madeIt: false,
+      introNote: `Champions League ${path === "cp" ? "Champions" : "League"} Path — win ${total} qualifying tie${total > 1 ? "s" : ""} to reach the league phase.`,
+    };
+  },
+
+  // Once the user's live qualifying is decided, slot them into the Champions
+  // League (won) or Europa League (lost) and finish setting up their season.
+  finalizeUserQual(state) {
+    const q = state.euro.qual;
+    const userId = state.clubId;
+    const fields = state.euro._pendingFields || { ucl: [], uel: [], uecl: [] };
+    const ranked = state.clubs.slice().sort((a, b) => this.coeff(b) - this.coeff(a)).map(c => c.id);
+    const inField = new Set([].concat(fields.ucl, fields.uel, fields.uecl));
+    EURO_COMP_KEYS.forEach(k => { const i = fields[k].indexOf(userId); if (i >= 0) fields[k].splice(i, 1); });
+    inField.delete(userId);
+    const target = q.madeIt ? "ucl" : "uel";
+    if (fields[target].length >= 36) { const dropped = fields[target].pop(); inField.delete(dropped); }
+    fields[target].push(userId); inField.add(userId);
+    EURO_COMP_KEYS.forEach(k => { for (const id of ranked) { if (fields[k].length >= 36) break; if (!inField.has(id)) { fields[k].push(id); inField.add(id); } } });
+    q.resolved = true;
+    state.euro.userComp = target;
+    state.euro.qualNote = q.madeIt
+      ? `Came through the ${q.path === "cp" ? "Champions" : "League"} Path — into the Champions League!`
+      : "Knocked out in Champions League qualifying — into the Europa League.";
+    EURO_COMP_KEYS.forEach(k => { if (k !== target) state.euro.champions[k] = this.resolveBackgroundChampion(state, fields[k]); });
+    this.setupUserComp(state, target, fields[target]);
+    delete state.euro._pendingFields;
   },
 
   // ---- season init ---------------------------------------------------------
 
   initSeason(state) {
-    state.euro = { season: state.season, userComp: null, champions: {}, user: null, qualNote: null };
+    state.euro = { season: state.season, userComp: null, champions: {}, user: null, qualNote: null, qual: null };
     const pe = state.pendingEuro || this.bootstrapStandings(state);
     state.pendingEuro = null;
 
     const built = this.buildEuroFields(state, pe);
-    const fields = built.fields;
-    const userComp = built.userComp;
-    state.euro.userComp = userComp;
     state.euro.qualNote = built.qualNote;
 
-    // Background champions for the competitions the user isn't playing.
+    if (built.qual) {
+      // The user plays the Champions League qualifiers live at the season's
+      // start; their competition and the background champions are settled then.
+      state.euro.qual = built.qual;
+      state.euro._pendingFields = built.fields;
+      return;
+    }
+
+    const userComp = built.userComp;
+    state.euro.userComp = userComp;
     EURO_COMP_KEYS.forEach(k => {
       if (k === userComp) return;
-      state.euro.champions[k] = this.resolveBackgroundChampion(state, fields[k]);
+      state.euro.champions[k] = this.resolveBackgroundChampion(state, built.fields[k]);
     });
-
-    if (userComp) this.setupUserComp(state, userComp, fields[userComp]);
+    if (userComp) this.setupUserComp(state, userComp, built.fields[userComp]);
   },
 
   // A lightweight seeded knockout among a field's 16 strongest, to name a winner.
