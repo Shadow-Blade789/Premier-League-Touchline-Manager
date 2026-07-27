@@ -636,6 +636,17 @@
       return `<span class="fit-tag ${Fitness.level(p)}" title="Match fitness">${Fitness.label(p)}</span>`;
     },
 
+    // Pitch-token colour from match fitness: green (fresh) → amber → bright red
+    // (spent), so you can read the squad's freshness at a glance.
+    fitnessColor(p) {
+      if (!p) return "#4a5568";
+      if (p.injuryWeeks) return "#7a4b52";
+      const f = Math.max(0, Math.min(100, p.fitness ?? 100));
+      const hue = Math.round(1.28 * f);          // 0 = red, ~128 = green
+      const light = Math.round(46 + f * 0.08);   // a touch brighter when fresh
+      return `hsl(${hue}, 85%, ${light}%)`;
+    },
+
     formationOptions(current) {
       return Object.keys(FORMATIONS).map(f => `<option value="${f}" ${f === current ? "selected" : ""}>${f}</option>`).join("");
     },
@@ -645,7 +656,6 @@
       const ids = Lineup.starterIds(club.lineup);
       const pitch = document.getElementById("pitch");
       pitch.querySelectorAll(".token").forEach(t => t.remove());
-      const [c1] = club.colors;
       ids.forEach((id, i) => {
         const p = club.squad.find(pl => pl.id === id);
         const [x, y] = layout[i] || [50, 50];
@@ -654,7 +664,8 @@
         token.style.left = x + "%";
         token.style.top = y + "%";
         const initials = p ? p.name.split(" ").slice(-1)[0] : "—";
-        token.innerHTML = `<div class="dot" style="background:${p ? c1 : "#555"};">${p ? p.rating : ""}</div><div class="lbl">${initials}</div>`;
+        const fitTitle = p ? `${p.name} · ${Math.round(p.fitness ?? 100)}% fit` : "";
+        token.innerHTML = `<div class="dot" title="${fitTitle}" style="background:${this.fitnessColor(p)};">${p ? p.rating : ""}</div><div class="lbl">${initials}</div>`;
         pitch.appendChild(token);
       });
     },
