@@ -203,6 +203,7 @@
       const transition = Market.weeklyUpdate(state);
       Coaching.weeklyMarket(state); // fresh staff shortlist every matchweek
       Academy.weekly(state);        // scout intake, youth development, graduations
+      Scouting.weekly(state);       // talent scouts return from assignments
       return transition;
     },
   
@@ -469,6 +470,7 @@
       Dynamics.apply(state, tables);
       // Academy prospects age; 18-year-olds line up to graduate next season.
       Academy.seasonRollover(state);
+      Scouting.seasonRollover(state); // scrap old scouting reports, recall scouts
 
       // Apply the swaps: relegated clubs drop a division, promoted clubs rise.
       // Clubs keep their squads and reputation tier; only their league changes.

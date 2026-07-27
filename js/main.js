@@ -120,7 +120,7 @@
       if (name === "hub") UI.renderHub(Game.state);
       if (name === "squad") UI.renderSquad(Game.state);
       if (name === "market") UI.renderMarket(Game.state);
-      if (name === "coaches") { UI.renderCoaches(Game.state); UI.renderAcademy(Game.state); }
+      if (name === "coaches") { UI.renderCoaches(Game.state); UI.renderAcademy(Game.state); UI.renderScouting(Game.state); }
       if (name === "lineup") UI.renderLineup(Game.state);
       if (name === "table") {
         // Default the Table tab to the user's own division each visit.
@@ -140,9 +140,11 @@
         Game.save();
         UI.renderCoaches(Game.state);
         UI.renderAcademy(Game.state);
+        UI.renderScouting(Game.state);
         this.refreshChrome();
       });
-      // Academy: promote or release graduates/prospects.
+      // Academy: promote or release graduates/prospects. Scouting: assign,
+      // recall, sign a target, or dismiss a report.
       document.getElementById("screen-coaches").addEventListener("click", e => {
         const prom = e.target.closest("button[data-promote]");
         if (prom) {
@@ -156,6 +158,38 @@
         if (rel) {
           const res = Academy.release(Game.state, rel.dataset.release);
           if (res.ok) { UI.toast(`${res.name} released from the academy`); Game.save(); UI.renderAcademy(Game.state); }
+          return;
+        }
+        const send = e.target.closest("button[data-scoutsend]");
+        if (send) {
+          const row = send.closest(".scout-row");
+          const pos = row.querySelector("select[data-scoutpos]").value;
+          const profile = row.querySelector("select[data-scoutprofile]").value;
+          const res = Scouting.assign(Game.state, send.dataset.scoutsend, pos, profile);
+          if (!res.ok) { UI.toast(res.reason); return; }
+          UI.toast(`${res.name} sent to scout ${posLabel(pos)} — back in ${res.weeks} matchweek${res.weeks === 1 ? "" : "s"}`);
+          Game.save(); UI.renderScouting(Game.state);
+          return;
+        }
+        const recall = e.target.closest("button[data-scoutrecall]");
+        if (recall) {
+          const res = Scouting.recall(Game.state, recall.dataset.scoutrecall);
+          if (res.ok) { UI.toast(`${res.name} recalled`); Game.save(); UI.renderScouting(Game.state); }
+          return;
+        }
+        const sign = e.target.closest("button[data-scoutsign]");
+        if (sign) {
+          const [repId, listingId] = sign.dataset.scoutsign.split("|");
+          const res = Scouting.sign(Game.state, repId, listingId);
+          if (!res.ok) { UI.toast(res.reason); UI.renderScouting(Game.state); return; }
+          UI.toast(`Signed ${res.name} for ${UI.money(res.price)} (scouted)`);
+          Game.save(); UI.renderScouting(Game.state); this.refreshChrome();
+          return;
+        }
+        const dis = e.target.closest("button[data-scoutdismiss]");
+        if (dis) {
+          Scouting.dismiss(Game.state, dis.dataset.scoutdismiss);
+          Game.save(); UI.renderScouting(Game.state);
         }
       });
     },
@@ -671,6 +705,7 @@
         if (t && t.transition === "opened") UI.toast(`🔁 ${t.name} transfer window is now open!`);
         else if (t && t.transition === "closed") UI.toast("🔒 Transfer window has closed.");
         (state.academyNews || []).forEach(m => UI.toast(m));
+        (state.scoutNews || []).forEach(m => UI.toast(m));
       }
     },
 

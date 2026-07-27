@@ -55,14 +55,16 @@ const Coaching = {
     return "Basic";
   },
 
-  ROLE_LABEL: { GK: "Goalkeeping", DF: "Defence", MF: "Midfield", FW: "Attack", scout: "Youth Scout", youthcoach: "Youth Coach" },
+  ROLE_LABEL: { GK: "Goalkeeping", DF: "Defence", MF: "Midfield", FW: "Attack", scout: "Youth Scout", youthcoach: "Youth Coach", talentscout: "Talent Scout" },
   isYouth(role) { return role === "scout" || role === "youthcoach"; },
+  // Backroom staff (youth staff + recruitment scouts) cost the "investment" premium.
+  isBackroom(role) { return this.isYouth(role) || role === "talentscout"; },
 
   // Youth staff cost more than position coaches — a top scout/academy coach is
   // a real investment.
   cost(rating, role) {
     const base = Math.max(0.3, Math.round(Math.pow(Math.max(0, rating - 45), 1.45) * 0.05 * 10) / 10);
-    return this.isYouth(role) ? Math.round(base * 1.4 * 10) / 10 : base;
+    return this.isBackroom(role) ? Math.round(base * 1.4 * 10) / 10 : base;
   },
 
   // Fresh candidates each matchweek — position coaches plus youth staff. No
@@ -74,7 +76,8 @@ const Coaching = {
     for (let i = 0; i < n; i++) list.push(makeCoach(POSITIONS[Math.floor(Math.random() * POSITIONS.length)], rate()));
     const yn = 2 + Math.floor(Math.random() * 3); // 2–4 youth staff
     for (let i = 0; i < yn; i++) list.push(makeYouthStaff(Math.random() < 0.5 ? "scout" : "youthcoach", rate()));
-    const order = ["GK", "DF", "MF", "FW", "scout", "youthcoach"];
+    if (Math.random() < 0.6) list.push(makeYouthStaff("talentscout", rate())); // a recruitment scout most weeks
+    const order = ["GK", "DF", "MF", "FW", "scout", "youthcoach", "talentscout"];
     list.sort((a, b) => order.indexOf(a.role) - order.indexOf(b.role) || b.rating - a.rating);
     state.coachMarket = list;
   },
@@ -89,6 +92,13 @@ const Coaching = {
     club.budget = Math.round((club.budget - price) * 10) / 10;
     if (staff.role === "scout") { if (!club.academy) Academy.init(club); club.academy.scout = staff; }
     else if (staff.role === "youthcoach") { if (!club.academy) Academy.init(club); club.academy.coach = staff; }
+    else if (staff.role === "talentscout") {
+      Scouting.ensure(state);
+      const team = club.scouting.scouts;
+      const hired = { id: staff.id, name: staff.name, rating: staff.rating, busyUntil: null, assignment: null };
+      if (team.length < Scouting.CAP) team.push(hired);
+      else { team.sort((a, b) => a.rating - b.rating); team[0] = hired; } // swap out the weakest
+    }
     else club.coaches[staff.role] = staff; // position coach
     state.coachMarket.splice(idx, 1);
     return { ok: true, name: staff.name, role: staff.role, price };

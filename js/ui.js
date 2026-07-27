@@ -485,12 +485,17 @@
       list.innerHTML = mk.map(c => {
         const role = c.role || c.pos;
         const price = Coaching.cost(c.rating, role);
+        const scoutTeam = (club.scouting && club.scouting.scouts) || [];
+        const bestScout = scoutTeam.reduce((m, s) => Math.max(m, s.rating), 0);
         const cur = role === "scout" ? (a.scout ? a.scout.rating : 0)
           : role === "youthcoach" ? (a.coach ? a.coach.rating : 0)
+          : role === "talentscout" ? (scoutTeam.length < Scouting.CAP ? 0 : bestScout)
           : (club.coaches[role] ? club.coaches[role].rating : 0);
-        const tag = c.rating > cur ? " · upgrade" : c.rating < cur ? " · downgrade" : "";
-        const chipClass = Coaching.isYouth(role) ? "youth" : role;
-        const chipText = role === "scout" ? "SCT" : role === "youthcoach" ? "YTH" : role;
+        const tag = role === "talentscout"
+          ? (scoutTeam.length < Scouting.CAP ? " · adds to team" : " · swaps weakest")
+          : c.rating > cur ? " · upgrade" : c.rating < cur ? " · downgrade" : "";
+        const chipClass = Coaching.isBackroom(role) ? "youth" : role;
+        const chipText = role === "scout" ? "SCT" : role === "youthcoach" ? "YTH" : role === "talentscout" ? "TAL" : role;
         return `<div class="coach-row market">
           <div class="pos-chip ${chipClass}">${chipText}</div>
           <div><div class="name">${c.name}</div><div class="sub">${Coaching.ROLE_LABEL[role]} · ${Coaching.ratingLabel(c.rating)}${tag}</div></div>
@@ -541,6 +546,63 @@
           </div>`;
         }).join("")
         : `<p class="muted" style="font-size:0.82rem;">No prospects yet — your scout is working on it.</p>`;
+    },
+
+    // The Scouting panel: your scout team (with assignment controls) and the
+    // reports they've brought back (each candidate signable, window permitting).
+    renderScouting(state) {
+      const club = Game.myClub();
+      const sc = club.scouting || { scouts: [], reports: [] };
+      const posOpts = POSITIONS.map(p => `<option value="${p}">${posLabel(p)}</option>`).join("");
+      const profOpts = Scouting.PROFILES.map(p => `<option value="${p.key}">${p.label}</option>`).join("");
+
+      document.getElementById("scoutTeam").innerHTML = (sc.scouts || []).map(s => {
+        const busy = s.busyUntil != null && s.assignment;
+        const status = busy
+          ? `<div class="sub">Out scouting <strong>${posLabel(s.assignment.pos)}</strong> · ${Scouting.profileLabel(s.assignment.profile)} · back in ${Math.max(0, s.busyUntil - state.week)} wk</div>`
+          : `<div class="sub">${Coaching.ratingLabel(s.rating)} · ${Scouting.duration(s.rating)}-wk trips · ${Math.round(Scouting.discount(s.rating) * 100)}% signing discount</div>`;
+        const control = busy
+          ? `<button class="small ghost" data-scoutrecall="${s.id}">Recall</button>`
+          : `<div class="scout-assign">
+               <select data-scoutpos>${posOpts}</select>
+               <select data-scoutprofile>${profOpts}</select>
+               <button class="small primary" data-scoutsend="${s.id}">Scout ▸</button>
+             </div>`;
+        return `<div class="coach-row scout-row">
+          <div class="pos-chip youth">TAL</div>
+          <div><div class="name">${s.name}</div>${status}</div>
+          <div class="rating-pill">${s.rating}</div>
+          ${control}
+        </div>`;
+      }).join("") || `<p class="muted" style="font-size:0.82rem;">No scouts on your books — hire a Talent Scout from the Staff Market.</p>`;
+
+      const windowOpen = TransferWindow.isOpen(state.week);
+      const reps = sc.reports || [];
+      document.getElementById("scoutReports").innerHTML = reps.length
+        ? reps.map(r => {
+          const rows = r.candidates.map(c => {
+            const off = c.fullPrice && c.fullPrice > c.price ? ` <span class="strike mono">${this.money(c.fullPrice)}</span>` : "";
+            const priceLabel = `${this.money(c.price)}${off}`;
+            const affordable = club.budget >= c.price && club.squad.length < 32;
+            const btn = windowOpen
+              ? `<button class="small primary" data-scoutsign="${r.id}|${c.listingId}" ${affordable ? "" : "disabled"}>Sign</button>`
+              : `<button class="small" disabled title="Opens in the transfer window">Sign</button>`;
+            return this.renderPlayerRow(c.player, {
+              subLabel: `${Stats.signingLine(c.player)} · ${c.origin ? "from " + c.originName : c.originName}`,
+              priceLabel,
+              potentialLabel: this.potentialRange(c.player.potential),
+              action: btn,
+            });
+          }).join("");
+          return `<div class="scout-report">
+            <div class="scout-report-head">
+              <span><strong>${posLabel(r.pos)}</strong> · ${Scouting.profileLabel(r.profile)} <span class="muted">— ${r.scoutName}${r.discount > 0 ? ` · ${Math.round(r.discount * 100)}% off` : ""}</span></span>
+              <button class="small ghost" data-scoutdismiss="${r.id}">Dismiss</button>
+            </div>
+            ${rows}
+          </div>`;
+        }).join("")
+        : `<p class="muted" style="font-size:0.82rem;">No reports yet — send a scout out and check back in a few matchweeks.${windowOpen ? "" : " You can scout any time; sign when the window opens."}</p>`;
     },
 
     formationOptions(current) {

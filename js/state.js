@@ -265,6 +265,7 @@
        Market.weeklyUpdate(this.state);
        Coaching.weeklyMarket(this.state);
        Academy.ensure(this.state);
+       Scouting.ensure(this.state);
        this.save();
      },
      myClub() {
@@ -413,6 +414,7 @@
      Coaching.ensureAll(state);
      if (!Array.isArray(state.coachMarket) || !state.coachMarket.length) Coaching.weeklyMarket(state);
      Academy.ensure(state); // youth academy is newer than some saves
+     Scouting.ensure(state); // recruitment scouting is newer than some saves
 
      ensureCareers(state);
    }
