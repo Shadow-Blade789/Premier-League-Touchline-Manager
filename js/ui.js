@@ -649,12 +649,24 @@
           <span><i style="background:#4ad991;"></i>Automatic promotion</span>
           <span><i style="background:var(--alert-red);"></i>Sacking zone (no relegation)</span>`;
       }
-      return `
-        <span><i style="background:var(--amber);"></i>Champions</span>
-        <span><i style="background:#5ec2ff;"></i>Champions League</span>
-        <span><i style="background:#ff9f5e;"></i>Europa League</span>
-        <span><i style="background:#b58cff;"></i>Conference League</span>
-        <span><i style="background:var(--alert-red);"></i>Relegation</span>`;
+      // Top flight — European places depend on the association's UEFA rank.
+      const co = LEAGUE_COUNTRY[league];
+      const rank = (Euro.ASSOC_RANK.indexOf(co) + 1) || 0;
+      const has = { ucl: false, uclq: false, uel: false, ecl: false };
+      for (let p = 1; p <= 6; p++) {
+        const e = Euro.entryFor(co, p);
+        if (!e) continue;
+        if (e.comp === "ucl") { if (e.path === "direct" && p > 1) has.ucl = true; else if (e.path !== "direct") has.uclq = true; }
+        else if (e.comp === "uel") has.uel = true;
+        else if (e.comp === "uecl") has.ecl = true;
+      }
+      let items = `<span><i style="background:var(--amber);"></i>Champions</span>`;
+      if (has.ucl) items += `<span><i style="background:#5ec2ff;"></i>Champions League</span>`;
+      if (has.uclq) items += `<span><i style="background:transparent;border:1px dashed #5ec2ff;"></i>Champions League qualifying</span>`;
+      if (has.uel) items += `<span><i style="background:#ff9f5e;"></i>Europa League</span>`;
+      if (has.ecl) items += `<span><i style="background:#b58cff;"></i>Conference League</span>`;
+      items += `<span><i style="background:var(--alert-red);"></i>Relegation</span>`;
+      return (rank ? `<span class="eyebrow" style="width:100%;flex-basis:100%;color:var(--muted);margin-bottom:0.2rem;">UEFA association rank #${rank}</span>` : "") + items;
     },
   
     // ---------- Season stats: leaderboards & awards ----------
@@ -760,7 +772,8 @@
   function posLabel(pos) { return { GK: "Goalkeeper", DF: "Defenders", MF: "Midfielders", FW: "Forwards" }[pos]; }
   function zoneLabel(zone) {
     return {
-      champion: "Champions", ucl: "Champions League", uel: "Europa League", ecl: "Conference League",
+      champion: "Champions", ucl: "Champions League", uclq: "Champions League qualifying",
+      uel: "Europa League", ecl: "Conference League",
       relegation: "Relegation zone", promotion: "Automatic promotion", playoff: "Play-off place",
       sacking: "Sacking zone",
     }[zone] || "";

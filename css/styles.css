@@ -366,6 +366,7 @@
    table.ladder td.club-cell { font-family: var(--font-body); display: flex; align-items: center; gap: 0.5em; }
    table.ladder tr.me { background: rgba(255,200,87,0.1); }
    table.ladder tr.zone-ucl td:first-child { border-left: 3px solid #5ec2ff; }
+   table.ladder tr.zone-uclq td:first-child { border-left: 3px dashed #5ec2ff; }
    table.ladder tr.zone-uel td:first-child { border-left: 3px solid #ff9f5e; }
    table.ladder tr.zone-ecl td:first-child { border-left: 3px solid #b58cff; }
    table.ladder tr.zone-relegation td:first-child { border-left: 3px solid var(--alert-red); }

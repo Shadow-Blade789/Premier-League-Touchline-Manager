@@ -331,12 +331,20 @@
       const r = this.LEAGUE_RULES[league] || {};
       const isTop = this.leagueAbove(league) === null;
       const isBottom = this.leagueBelow(league) === null;
-      if (isTop) { // European places + relegation (PL, La Liga)
+      if (isTop) {
+        // European places follow the UEFA access list for THIS association's
+        // coefficient rank — a top-5 nation sends four straight to the Champions
+        // League league phase, a mid nation's champion enters CL qualifying,
+        // a small nation gets only a qualifying place. (Euro.entryFor is the
+        // shared source of truth with how the fields are actually built.)
         if (pos === 1) return "champion";
-        if (pos <= 4) return "ucl";
-        if (pos === 5) return "uel";
-        if (pos === 6) return "ecl";
-        if (pos > size - r.relegate) return "relegation";
+        const e = Euro.entryFor(LEAGUE_COUNTRY[league], pos);
+        if (e) {
+          if (e.comp === "ucl") return e.path === "direct" ? "ucl" : "uclq";
+          if (e.comp === "uel") return "uel";
+          if (e.comp === "uecl") return "ecl";
+        }
+        if (r.relegate && pos > size - r.relegate) return "relegation";
         return "";
       }
       if (pos <= r.autoPromote) return "promotion";

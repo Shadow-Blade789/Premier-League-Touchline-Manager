@@ -109,29 +109,49 @@ const Euro = {
     return listed.concat(rest);
   },
 
-  // Split every qualifier into direct league-phase entrants and the two
-  // qualifying paths, keyed by the round they enter at.
+  // THE ACCESS LIST — the single source of truth for where a top-flight
+  // finishing position goes, by association coefficient rank. Used both to
+  // build the fields AND to colour the league table (Season.euroZone), so the
+  // two always agree. Returns { comp, path, round } or null.
+  //   comp: "ucl" | "uel" | "uecl"
+  //   path: "direct" (straight to league phase) | "cp" (Champions Path) | "lp" (League Path)
+  //   round: which qualifying round the path club enters at
+  entryFor(country, pos) {
+    const r = (this.ASSOC_RANK.indexOf(country) + 1) || 99;
+    if (pos === 1) { // champions
+      if (r <= 10) return { comp: "ucl", path: "direct" };
+      if (r <= 14) return { comp: "ucl", path: "cp", round: "po" };
+      if (r <= 23) return { comp: "ucl", path: "cp", round: "r2" };
+      return { comp: "ucl", path: "cp", round: "r1" };
+    }
+    // non-champions
+    if (r <= 5)  { if (pos <= 4) return { comp: "ucl", path: "direct" }; if (pos === 5) return { comp: "uel" }; if (pos === 6) return { comp: "uecl" }; return null; }
+    if (r === 6) { if (pos === 2) return { comp: "ucl", path: "direct" }; if (pos === 3) return { comp: "ucl", path: "lp", round: "r3" }; if (pos === 4) return { comp: "uel" }; if (pos === 5) return { comp: "uecl" }; return null; }
+    if (r <= 9)  { if (pos === 2) return { comp: "ucl", path: "lp", round: "r3" }; if (pos === 3) return { comp: "uel" }; if (pos === 4) return { comp: "uecl" }; return null; }
+    if (r <= 15) { if (pos === 2) return { comp: "ucl", path: "lp", round: "r2" }; if (pos === 3) return { comp: "uel" }; if (pos === 4) return { comp: "uecl" }; return null; }
+    if (r === 16) { if (pos === 2) return { comp: "ucl", path: "lp", round: "r3" }; if (pos === 3) return { comp: "uel" }; return null; }
+    if (pos === 2) return { comp: "uel" }; if (pos === 3) return { comp: "uecl" }; return null;
+  },
+
+  // Split every qualifier into direct league-phase entrants, the two CL
+  // qualifying paths, and the Europa/Conference direct entrants.
   buildAccessList(state, pe) {
     const standings = (pe && pe.standings) || {};
-    const rank = this.associationRank(state);
-    const at = (co, i) => (standings[co] || [])[i];
-    const directLP = [], cp = { r1: [], r2: [], po: [] }, lp = { r2: [], r3: [] };
-    rank.forEach((co, idx) => {
-      const r = idx + 1; // association rank, 1 = strongest
-      const p0 = at(co, 0), p1 = at(co, 1), p2 = at(co, 2), p3 = at(co, 3);
-      // Champions.
-      if (r <= 10) { if (p0) directLP.push(p0); }
-      else if (r <= 14) { if (p0) cp.po.push(p0); }   // Champions Path play-off
-      else if (r <= 23) { if (p0) cp.r2.push(p0); }   // Champions Path round 2
-      else { if (p0) cp.r1.push(p0); }                // Champions Path round 1
-      // Non-champions.
-      if (r <= 5) { [p1, p2, p3].forEach(id => id && directLP.push(id)); }
-      else if (r === 6) { if (p1) directLP.push(p1); if (p2) lp.r3.push(p2); }
-      else if (r <= 9) { if (p1) lp.r3.push(p1); }
-      else if (r <= 15) { if (p1) lp.r2.push(p1); }   // League Path round 2
-      else if (r === 16) { if (p1) lp.r3.push(p1); }  // League Path round 3
+    const directLP = [], cp = { r1: [], r2: [], po: [] }, lp = { r2: [], r3: [] }, uel = [], uecl = [];
+    COUNTRIES.forEach(co => {
+      const s = standings[co] || [];
+      for (let pos = 1; pos <= 6; pos++) {
+        const id = s[pos - 1]; if (!id) continue;
+        const e = this.entryFor(co, pos); if (!e) continue;
+        if (e.comp === "ucl") {
+          if (e.path === "direct") directLP.push(id);
+          else if (e.path === "cp") cp[e.round].push(id);
+          else if (e.path === "lp") lp[e.round].push(id);
+        } else if (e.comp === "uel") uel.push(id);
+        else if (e.comp === "uecl") uecl.push(id);
+      }
     });
-    return { directLP, cp, lp };
+    return { directLP, cp, lp, uel, uecl };
   },
 
   // One two-legged qualifying tie, strength-based (penalties settle a level tie).
@@ -186,10 +206,10 @@ const Euro = {
     };
     const ucl = [], uel = [], uecl = [];
     fill(ucl, [...A.directLP, ...champ.winners, ...league.winners]); // + performance spots by coefficient
-    // CL qualifying losers and the domestic cup winner drop into the Europa League.
-    const uelSeed = [pe && pe.cupWinner, ...champ.losers, ...league.losers].filter(Boolean);
-    fill(uel, uelSeed);
-    fill(uecl, []);
+    // Europa League: the domestic cup winner, the position-based Europa entrants,
+    // and CL qualifying losers drop in. Conference: the position-based entrants.
+    fill(uel, [pe && pe.cupWinner, ...A.uel, ...champ.losers, ...league.losers].filter(Boolean));
+    fill(uecl, [...A.uecl]);
 
     // Route the user, guaranteeing a Europa berth if they lost CL qualifying.
     let userComp = null, qualNote = null;
