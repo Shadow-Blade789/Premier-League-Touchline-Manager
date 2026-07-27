@@ -178,7 +178,7 @@
       if (!e || !e.userComp) {
         if (titleEl) titleEl.textContent = "European Football";
         const holders = holdersHTML(e && e.champions);
-        body.innerHTML = `<span class="muted">Not in Europe this season. Finish in your league's top six to qualify — top 4 → Champions League, 5th → Europa League, 6th → Conference League.</span>` +
+        body.innerHTML = `<span class="muted">Not in Europe this season. Qualification follows the UEFA access list by association rank — the top nations send up to four clubs straight to the Champions League league phase, while lower-ranked champions must come through the Champions Path qualifiers.</span>` +
           (holders ? `<div class="eyebrow" style="margin-top:0.7rem;margin-bottom:0.2rem;">Reigning champions</div><div>${holders}</div>` : "");
         return;
       }
@@ -222,7 +222,10 @@
             return `<li class="stat-row${f.played ? "" : " me"}"><span class="nm">${home ? "vs" : "@"} ${Cup.clubShort(state, oppId)}</span><span class="vl mono">${score}</span></li>`;
           }).join("") + `</ol>`;
       }
-      body.innerHTML = head + rows;
+      const qualNote = e.qualNote
+        ? `<div class="muted" style="font-size:0.78rem;margin-bottom:0.5rem;border-left:2px solid var(--amber);padding-left:0.5rem;">🎟️ ${e.qualNote}</div>`
+        : "";
+      body.innerHTML = qualNote + head + rows;
     },
 
     // Hub Supercopa panel — the season-opening final four for Spanish saves.

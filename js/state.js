@@ -401,6 +401,9 @@
      // European competitions are newer than some saves. Mid-season they sit out
      // the current campaign and begin fresh next season.
      if (state.pendingEuro === undefined) state.pendingEuro = null;
+     // Old berth-shaped pendingEuro ({ucl,uel,uecl}) → drop it; the access-list
+     // system (Euro.buildEuroFields) expects {standings, cupWinner}.
+     if (state.pendingEuro && !state.pendingEuro.standings) state.pendingEuro = null;
      if (!state.euro || injected) {
        if (state.week > 0) state.euro = { season: state.season, userComp: null, champions: {}, user: null };
        else Euro.initSeason(state);

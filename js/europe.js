@@ -62,86 +62,165 @@ const Euro = {
   coeff(club) { return Stats.clubStrength(club) + (club.tier || 0) * 0.4; },
   isActive(state) { return !!(state.euro && state.euro.userComp && state.euro.user); },
 
-  // ---- qualification -------------------------------------------------------
+  // ---- qualification (UEFA access list) ------------------------------------
+  // The Champions League league phase (36 clubs) is assembled the real way:
+  // direct entrants by association coefficient rank, plus survivors of the
+  // Champions Path (league champions of ranks 11–55) and the League Path
+  // (non-champions of ranks 6–16), each decided by two-legged qualifying that
+  // is simulated. Losers drop into the Europa League. See buildEuroFields.
 
-  // Positions 1–4 of each top flight → UCL, 5th → UEL, 6th → UECL. Stored as
-  // plain arrays so it survives JSON save/load.
-  // Assign a country's top-flight finishers to the three comps per its berths.
-  assignBerths(q, country, orderedIds) {
-    const b = EURO_BERTHS[country] || DEFAULT_BERTHS;
-    let i = 0;
-    for (let n = 0; n < b.ucl && orderedIds[i]; n++, i++) q.ucl.push(orderedIds[i]);
-    for (let n = 0; n < b.uel && orderedIds[i]; n++, i++) q.uel.push(orderedIds[i]);
-    for (let n = 0; n < b.uecl && orderedIds[i]; n++, i++) q.uecl.push(orderedIds[i]);
-  },
-
-  // The user's country's main domestic cup winner earns a Europa League place
-  // (only the user's country runs cups). Skipped if they already qualified.
-  addCupBerth(state, q) {
+  // Record each country's top-flight finishers + the user's cup winner, for the
+  // coming season's access list. (Stored on state.pendingEuro over save/load.)
+  standingsFromTables(state, tables) {
+    const standings = {};
+    COUNTRIES.forEach(co => {
+      const tbl = tables[LEAGUE_CHAINS[co][0]];
+      if (tbl) standings[co] = tbl.slice(0, 6).map(r => r.id);
+    });
     const cup = Object.values(Cup.CUPS).find(c => c.country === Game.myCountry() && Cup.isActive(state[c.stateKey]) && state[c.stateKey].winner);
-    if (!cup) return;
-    const w = state[cup.stateKey].winner;
-    if (!q.ucl.includes(w) && !q.uel.includes(w) && !q.uecl.includes(w)) q.uel.push(w);
+    return { standings, cupWinner: cup ? state[cup.stateKey].winner : null };
   },
+  // Kept for callers that still reference the old name.
+  qualificationFromTables(state, tables) { return this.standingsFromTables(state, tables); },
 
-  qualificationFromTables(state, tables) {
-    const q = { ucl: [], uel: [], uecl: [] };
+  // Season 1 has no prior finish — seed standings from current squad strength.
+  bootstrapStandings(state) {
+    const standings = {};
     COUNTRIES.forEach(co => {
-      const tbl = tables[LEAGUE_CHAINS[co][0]]; // the country's top flight
-      if (tbl) this.assignBerths(q, co, tbl.map(r => r.id));
+      standings[co] = state.clubs.filter(c => c.league === LEAGUE_CHAINS[co][0])
+        .sort((a, b) => Stats.clubStrength(b) - Stats.clubStrength(a)).slice(0, 6).map(c => c.id);
     });
-    this.addCupBerth(state, q);
-    return q;
+    return { standings, cupWinner: null };
   },
 
-  // Season 1 has no prior finish — seed qualification from current strength.
-  bootstrapQualification(state) {
-    const q = { ucl: [], uel: [], uecl: [] };
-    COUNTRIES.forEach(co => {
-      const order = state.clubs.filter(c => c.league === LEAGUE_CHAINS[co][0])
-        .sort((a, b) => Stats.clubStrength(b) - Stats.clubStrength(a)).map(c => c.id);
-      this.assignBerths(q, co, order);
-    });
-    return q;
+  // UEFA association coefficient order (2024-ish, Russia excluded). Drives the
+  // access list. Any country not listed falls in behind by squad strength.
+  ASSOC_RANK: [
+    "ENG", "ITA", "ESP", "GER", "FRA", "NED", "POR", "BEL", "TUR", "GRE",
+    "CZE", "NOR", "AUT", "SUI", "DEN", "SCO", "UKR", "ISR", "SRB", "POL",
+    "CYP", "SWE", "CRO", "HUN", "ROU", "AZE", "SVK", "BUL", "SVN", "KAZ",
+    "BIH", "FIN", "ISL", "MDA", "IRL", "MKD", "BLR", "ALB", "GEO", "ARM",
+    "LVA", "KVX", "LTU", "LUX", "NIR", "MNE", "MLT", "FRO", "WAL", "EST",
+    "GIB", "AND", "SMR",
+  ],
+  associationRank(state) {
+    const listed = this.ASSOC_RANK.filter(co => COUNTRIES.includes(co));
+    const rest = COUNTRIES.filter(co => !listed.includes(co));
+    return listed.concat(rest);
   },
 
-  // Partition the strongest clubs into three disjoint 36-team fields: guaranteed
-  // qualifiers first, then filled by coefficient (UCL gets the pick of the rest).
-  buildFields(state, q) {
-    const coeffOf = id => this.coeff(this.club(state, id));
+  // Split every qualifier into direct league-phase entrants and the two
+  // qualifying paths, keyed by the round they enter at.
+  buildAccessList(state, pe) {
+    const standings = (pe && pe.standings) || {};
+    const rank = this.associationRank(state);
+    const at = (co, i) => (standings[co] || [])[i];
+    const directLP = [], cp = { r1: [], r2: [], po: [] }, lp = { r2: [], r3: [] };
+    rank.forEach((co, idx) => {
+      const r = idx + 1; // association rank, 1 = strongest
+      const p0 = at(co, 0), p1 = at(co, 1), p2 = at(co, 2), p3 = at(co, 3);
+      // Champions.
+      if (r <= 10) { if (p0) directLP.push(p0); }
+      else if (r <= 14) { if (p0) cp.po.push(p0); }   // Champions Path play-off
+      else if (r <= 23) { if (p0) cp.r2.push(p0); }   // Champions Path round 2
+      else { if (p0) cp.r1.push(p0); }                // Champions Path round 1
+      // Non-champions.
+      if (r <= 5) { [p1, p2, p3].forEach(id => id && directLP.push(id)); }
+      else if (r === 6) { if (p1) directLP.push(p1); if (p2) lp.r3.push(p2); }
+      else if (r <= 9) { if (p1) lp.r3.push(p1); }
+      else if (r <= 15) { if (p1) lp.r2.push(p1); }   // League Path round 2
+      else if (r === 16) { if (p1) lp.r3.push(p1); }  // League Path round 3
+    });
+    return { directLP, cp, lp };
+  },
+
+  // One two-legged qualifying tie, strength-based (penalties settle a level tie).
+  qualTieWinner(state, a, b) {
+    const A = this.club(state, a), B = this.club(state, b);
+    if (!A) return b; if (!B) return a;
+    const l1 = MatchEngine.simulateQuick(A, B), l2 = MatchEngine.simulateQuick(B, A);
+    const aggA = l1.hg + l2.ag, aggB = l1.ag + l2.hg;
+    if (aggA > aggB) return a; if (aggB > aggA) return b;
+    return Cup.penaltyWinner(A, B);
+  },
+
+  // One qualifying round: seed by coefficient, pair strongest v weakest, return
+  // { winners, losers } (an odd club gets a bye).
+  simKoRound(state, ids) {
+    const sorted = ids.slice().sort((x, y) => this.coeff(this.club(state, y)) - this.coeff(this.club(state, x)));
+    const winners = [], losers = [], n = sorted.length;
+    for (let i = 0; i < Math.floor(n / 2); i++) {
+      const hi = sorted[i], lo = sorted[n - 1 - i];
+      const w = this.qualTieWinner(state, hi, lo);
+      winners.push(w); losers.push(w === hi ? lo : hi);
+    }
+    if (n % 2 === 1) winners.push(sorted[Math.floor(n / 2)]); // bye
+    return { winners, losers };
+  },
+
+  runPath(state, roundsEntrants) {
+    let alive = [], losers = [];
+    roundsEntrants.forEach(entrants => {
+      const r = this.simKoRound(state, alive.concat(entrants));
+      alive = r.winners; losers = losers.concat(r.losers);
+    });
+    return { winners: alive, losers };
+  },
+
+  // Assemble all three 36-club fields via the access list + qualifying.
+  buildEuroFields(state, pe) {
+    const A = this.buildAccessList(state, pe);
+    const userId = state.clubId;
+    const inArr = (...arrs) => arrs.some(a => a.includes(userId));
+    const userInCP = inArr(A.cp.r1, A.cp.r2, A.cp.po);
+    const userInLP = inArr(A.lp.r2, A.lp.r3);
+
+    const champ = this.runPath(state, [A.cp.r1, A.cp.r2, [], A.cp.po]); // 30→15, +9=24→12, →6, +4=10→5
+    const league = this.runPath(state, [A.lp.r2, A.lp.r3, []]);         // 6→3, +5=8→4, →2
+
     const ranked = state.clubs.slice().sort((a, b) => this.coeff(b) - this.coeff(a)).map(c => c.id);
     const assigned = new Set();
-    const fields = { ucl: [], uel: [], uecl: [] };
-    // Guaranteed qualifiers first — strongest first and capped at 36, so with many
-    // nations the weakest champions drop out (they'd be in real-life qualifying).
-    // The user's own club is prioritised so it's never squeezed out of its field.
-    EURO_COMP_KEYS.forEach(k => {
-      const guaranteed = (q[k] || []).slice().sort((a, b) =>
-        a === state.clubId ? -1 : b === state.clubId ? 1 : coeffOf(b) - coeffOf(a));
-      for (const id of guaranteed) {
-        if (fields[k].length >= 36) break;
-        if (!assigned.has(id)) { fields[k].push(id); assigned.add(id); }
-      }
-    });
-    EURO_COMP_KEYS.forEach(k => {
-      for (const id of ranked) {
-        if (fields[k].length >= 36) break;
-        if (!assigned.has(id)) { fields[k].push(id); assigned.add(id); }
-      }
-    });
-    return fields;
+    const fill = (field, seed) => {
+      seed.forEach(id => { if (id && !assigned.has(id) && field.length < 36) { field.push(id); assigned.add(id); } });
+      for (const id of ranked) { if (field.length >= 36) break; if (!assigned.has(id)) { field.push(id); assigned.add(id); } }
+    };
+    const ucl = [], uel = [], uecl = [];
+    fill(ucl, [...A.directLP, ...champ.winners, ...league.winners]); // + performance spots by coefficient
+    // CL qualifying losers and the domestic cup winner drop into the Europa League.
+    const uelSeed = [pe && pe.cupWinner, ...champ.losers, ...league.losers].filter(Boolean);
+    fill(uel, uelSeed);
+    fill(uecl, []);
+
+    // Route the user, guaranteeing a Europa berth if they lost CL qualifying.
+    let userComp = null, qualNote = null;
+    if (ucl.includes(userId)) {
+      userComp = "ucl";
+      qualNote = A.directLP.includes(userId) ? null
+        : userInCP ? "Came through the Champions Path qualifiers."
+        : userInLP ? "Came through the League Path qualifiers." : null;
+    } else if ((userInCP || userInLP)) {
+      // Knocked out in CL qualifying → Europa League.
+      if (!uel.includes(userId)) { uel[uel.length - 1] = userId; }
+      userComp = "uel";
+      qualNote = "Knocked out in Champions League qualifying — parachuted into the Europa League.";
+    } else if (uel.includes(userId)) userComp = "uel";
+    else if (uecl.includes(userId)) userComp = "uecl";
+
+    return { fields: { ucl, uel, uecl }, userComp, qualNote };
   },
 
   // ---- season init ---------------------------------------------------------
 
   initSeason(state) {
-    state.euro = { season: state.season, userComp: null, champions: {}, user: null };
-    const q = state.pendingEuro || this.bootstrapQualification(state);
+    state.euro = { season: state.season, userComp: null, champions: {}, user: null, qualNote: null };
+    const pe = state.pendingEuro || this.bootstrapStandings(state);
     state.pendingEuro = null;
 
-    const fields = this.buildFields(state, q);
-    const userComp = EURO_COMP_KEYS.find(k => (q[k] || []).includes(state.clubId)) || null;
+    const built = this.buildEuroFields(state, pe);
+    const fields = built.fields;
+    const userComp = built.userComp;
     state.euro.userComp = userComp;
+    state.euro.qualNote = built.qualNote;
 
     // Background champions for the competitions the user isn't playing.
     EURO_COMP_KEYS.forEach(k => {
