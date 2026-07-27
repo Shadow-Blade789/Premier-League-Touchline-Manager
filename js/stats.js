@@ -236,6 +236,11 @@ const Stats = {
   // Average of a club's eleven best ratings — a smooth strength proxy used to
   // derive where each club was *expected* to finish within its own league.
   clubStrength(club) {
+    // A strength-only foreign club (no stored squad) carries its rating
+    // directly; a squad club is the mean of its best XI.
+    if (club.strengthOnly || !club.squad || !club.squad.length) {
+      return typeof club.strength === "number" ? club.strength : 60;
+    }
     const top = club.squad.map(p => p.rating).sort((a, b) => b - a).slice(0, 11);
     return top.length ? top.reduce((s, r) => s + r, 0) / top.length : 60;
   },
@@ -250,6 +255,8 @@ const Stats = {
     LEAGUES.forEach(lg => {
       const clubs = state.clubs.filter(c => c.league === lg);
       if (!clubs.length) return;
+      // Foreign (strength-only) leagues have no player-level data to judge.
+      if (clubs.every(c => c.strengthOnly)) return;
 
       const posByClub = {};
       Season.table(state, lg).forEach(r => { posByClub[r.id] = r.pos; });

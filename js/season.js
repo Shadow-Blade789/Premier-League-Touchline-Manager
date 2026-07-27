@@ -6,19 +6,24 @@
    ========================================================================= */
 
    const Season = {
-    // Double round-robin schedule (38 rounds) for one set of 20 club ids.
+    // Double round-robin schedule for one set of club ids. Handles odd counts
+    // too (a phantom "bye" team sits one club out per round) — needed for the
+    // odd-sized championship/relegation groups a split league can create (e.g.
+    // a 7-team half). Byte-identical to the classic even-n schedule for leagues.
     roundRobin(ids) {
-      const n = ids.length; // 20
-      const rotation = ids.slice(1); // all but the fixed first team
+      const teams = ids.slice();
+      if (teams.length % 2 === 1) teams.push("__bye__"); // odd → add a phantom
+      const n = teams.length;
       const half = []; // first leg, n-1 rounds
 
-      let arr = rotation.slice();
+      let arr = teams.slice(1);
       for (let r = 0; r < n - 1; r++) {
         const round = [];
-        const teams = [ids[0], ...arr];
+        const lineup = [teams[0], ...arr];
         for (let i = 0; i < n / 2; i++) {
-          const a = teams[i];
-          const b = teams[n - 1 - i];
+          const a = lineup[i];
+          const b = lineup[n - 1 - i];
+          if (a === "__bye__" || b === "__bye__") continue; // this club sits out
           // Alternate which side is "home" round to round for balance.
           if (r % 2 === 0) round.push({ home: a, away: b });
           else round.push({ home: b, away: a });
@@ -29,6 +34,13 @@
       // Second leg: same fixtures, venues swapped.
       const secondHalf = half.map(round => round.map(m => ({ home: m.away, away: m.home })));
       return [...half, ...secondHalf];
+    },
+
+    // A single round-robin (each pair meets once) — used for the extra games a
+    // split league's groups play after the regular season.
+    singleRoundRobin(ids) {
+      const full = this.roundRobin(ids);
+      return full.slice(0, full.length / 2);
     },
 
     // Builds a separate schedule for each league.
@@ -52,23 +64,84 @@
     // before promotions and relegations are worked out.
     finishRemainingLeagues(state) {
       LEAGUES.forEach(lg => {
-        const sched = state.fixtures[lg] || [];
-        for (let w = state.week; w < sched.length; w++) {
-          sched[w].forEach(m => {
+        let w = state.week, guard = 0;
+        while (guard++ < 200) {
+          this.ensureSplit(state, lg); // a split league appends its split rounds once its regular season is done
+          const sched = state.fixtures[lg] || [];
+          if (w >= sched.length) break;
+          (sched[w] || []).forEach(m => {
             const home = state.clubs.find(c => c.id === m.home);
             const away = state.clubs.find(c => c.id === m.away);
             if (!home || !away) return;
             const { hg, ag } = MatchEngine.simulateQuick(home, away);
             this.recordResult(state, m.home, m.away, hg, ag);
-            Stats.recordMatch(Lineup.starters(home), Lineup.starters(away), hg, ag);
+            if (!home.strengthOnly && !away.strengthOnly) Stats.recordMatch(Lineup.starters(home), Lineup.starters(away), hg, ag);
           });
+          w++;
         }
       });
     },
 
     currentRound(state, league) {
+      this.ensureSplit(state, league); // append split-phase rounds once due
       const sched = state.fixtures[league];
       return (sched && sched[state.week]) || null;
+    },
+
+    // ---- championship/relegation split --------------------------------------
+    // Leagues with a `format.split` play a regular double round-robin, then the
+    // table splits into positional groups (top group = championship) that play
+    // extra games among themselves, optionally with points halved/reset. The
+    // split fixtures depend on the final regular-season table, so they can't be
+    // pre-built — they're generated here the moment the regular season ends.
+
+    ensureSplit(state, league) {
+      const fmt = leagueFormat(league);
+      if (!fmt || !fmt.split) return;
+      state.splitDone = state.splitDone || {};
+      if (state.splitDone[league]) return;
+      const clubs = state.clubs.filter(c => c.league === league);
+      if (clubs.length < 2) return;
+      const regularRounds = 2 * (clubs.length - 1);
+      if (Math.max(...clubs.map(c => c.played || 0)) < regularRounds) return; // regular season not done yet
+      this.applySplit(state, league, fmt.split, clubs);
+      state.splitDone[league] = true;
+    },
+
+    ensureAllSplits(state) { LEAGUES.forEach(lg => this.ensureSplit(state, lg)); },
+
+    applySplit(state, league, split, clubs) {
+      const table = this.table(state, league); // regular-season final order
+      const sizes = split.groups || [Math.ceil(clubs.length / 2), Math.floor(clubs.length / 2)];
+      const byId = id => clubs.find(c => c.id === id);
+      // Lock each club into a positional group (0 = championship group).
+      let idx = 0;
+      const groupIds = sizes.map(size => {
+        const ids = table.slice(idx, idx + size).map(r => r.id); idx += size; return ids;
+      });
+      table.slice(idx).forEach(r => groupIds[groupIds.length - 1].push(r.id)); // leftovers → last group
+      groupIds.forEach((ids, gi) => ids.forEach(id => { const c = byId(id); if (c) c.splitGroup = gi; }));
+
+      // Points transform — the signature tightener of some leagues.
+      const mode = split.points || "carry";
+      if (mode !== "carry") clubs.forEach(c => {
+        if (mode === "halveUp") c.points = Math.ceil(c.points / 2);
+        else if (mode === "halveDown") c.points = Math.floor(c.points / 2);
+        else if (mode === "reset") { c.points = 0; c.won = 0; c.drawn = 0; c.lost = 0; c.gf = 0; c.ga = 0; c.played = 0; }
+      });
+
+      // Each group plays a round-robin among itself; merge so all groups play in
+      // parallel each split week, then append to the league's schedule.
+      const legs = split.legs || 1;
+      const scheds = groupIds.map(ids => ids.length < 2 ? [] : (legs >= 2 ? this.roundRobin(ids) : this.singleRoundRobin(ids)));
+      const maxRounds = scheds.reduce((m, s) => Math.max(m, s.length), 0);
+      const splitRounds = [];
+      for (let r = 0; r < maxRounds; r++) {
+        let round = [];
+        scheds.forEach(s => { if (s[r]) round = round.concat(s[r]); });
+        splitRounds.push(round);
+      }
+      state.fixtures[league] = (state.fixtures[league] || []).concat(splitRounds);
     },
 
     userMatchThisRound(state) {
@@ -104,13 +177,15 @@
           const away = state.clubs.find(c => c.id === m.away);
           const { hg, ag } = MatchEngine.simulateQuick(home, away);
           this.recordResult(state, m.home, m.away, hg, ag);
-          Stats.recordMatch(Lineup.starters(home), Lineup.starters(away), hg, ag);
+          // Player-level stats only exist for the managed country's squad clubs.
+          if (!home.strengthOnly && !away.strengthOnly) Stats.recordMatch(Lineup.starters(home), Lineup.starters(away), hg, ag);
         });
       });
     },
-  
+
     advanceWeek(state) {
       state.week++;
+      this.ensureAllSplits(state); // extend split leagues' schedules the moment their regular season ends
       const transition = Market.weeklyUpdate(state);
       Coaching.weeklyMarket(state); // fresh staff shortlist every matchweek
       Academy.weekly(state);        // scout intake, youth development, graduations
@@ -125,9 +200,18 @@
       const rows = state.clubs.filter(c => c.league === league).map(c => ({
         id: c.id, name: c.name, short: c.short, colors: c.colors,
         played: c.played, won: c.won, drawn: c.drawn, lost: c.lost,
-        gf: c.gf, ga: c.ga, gd: c.gf - c.ga, points: c.points,
+        gf: c.gf, ga: c.ga, gd: c.gf - c.ga, points: c.points, splitGroup: c.splitGroup,
       }));
-      rows.sort((a, b) => b.points - a.points || b.gd - a.gd || b.gf - a.gf || a.name.localeCompare(b.name));
+      // After a championship/relegation split, a lower-group club can't rank
+      // above a higher-group one however many points it has: sort by group first.
+      const grouped = rows.some(r => r.splitGroup != null);
+      rows.sort((a, b) => {
+        if (grouped) {
+          const ga = a.splitGroup == null ? 99 : a.splitGroup, gb = b.splitGroup == null ? 99 : b.splitGroup;
+          if (ga !== gb) return ga - gb;
+        }
+        return b.points - a.points || b.gd - a.gd || b.gf - a.gf || a.name.localeCompare(b.name);
+      });
       rows.forEach((r, i) => r.pos = i + 1);
       return rows;
     },
@@ -143,6 +227,29 @@
       L2: { autoPromote: 3, playoff: 1, relegate: 0, sacking: 4 },
       LL: { autoPromote: 0, playoff: 0, relegate: 3 },            // La Liga
       SG: { autoPromote: 3, playoff: 0, relegate: 0, sacking: 3 }, // Segunda (bottom Spanish tier)
+      // Foreign nations (Phase 3): top flight relegates 3, second tier promotes
+      // 3 and is the sacking-zone bottom of its two-tier chain.
+      BL1: { autoPromote: 0, playoff: 0, relegate: 3 },
+      BL2: { autoPromote: 3, playoff: 0, relegate: 0, sacking: 3 },
+      SA:  { autoPromote: 0, playoff: 0, relegate: 3 },
+      SB:  { autoPromote: 3, playoff: 0, relegate: 0, sacking: 3 },
+      PP:  { autoPromote: 0, playoff: 0, relegate: 3 },
+      P2:  { autoPromote: 3, playoff: 0, relegate: 0, sacking: 3 },
+      ER:  { autoPromote: 0, playoff: 0, relegate: 3 },
+      EE:  { autoPromote: 3, playoff: 0, relegate: 0, sacking: 3 },
+      EK:  { autoPromote: 0, playoff: 0, relegate: 3 },
+      IL:  { autoPromote: 3, playoff: 0, relegate: 0, sacking: 3 },
+      SL:  { autoPromote: 0, playoff: 0, relegate: 3 },
+      T1:  { autoPromote: 3, playoff: 0, relegate: 0, sacking: 3 },
+      // Split-league nations (Phase 4): rules apply to FINAL post-split positions.
+      BPL: { autoPromote: 0, playoff: 0, relegate: 3 },
+      BCH: { autoPromote: 3, playoff: 0, relegate: 0, sacking: 3 },
+      ABL: { autoPromote: 0, playoff: 0, relegate: 3 },
+      A2L: { autoPromote: 3, playoff: 0, relegate: 0, sacking: 3 },
+      DSL: { autoPromote: 0, playoff: 0, relegate: 3 },
+      D1D: { autoPromote: 3, playoff: 0, relegate: 0, sacking: 3 },
+      GSL: { autoPromote: 0, playoff: 0, relegate: 3 },
+      GS2: { autoPromote: 3, playoff: 0, relegate: 0, sacking: 3 },
     },
     leagueAbove(lg) { const ch = chainFor(lg); const i = ch.indexOf(lg); return i > 0 ? ch[i - 1] : null; },
     leagueBelow(lg) { const ch = chainFor(lg); const i = ch.indexOf(lg); return i >= 0 && i < ch.length - 1 ? ch[i + 1] : null; },
@@ -295,7 +402,9 @@
 
       state.clubs.forEach(c => {
         c.points = 0; c.played = 0; c.won = 0; c.drawn = 0; c.lost = 0; c.gf = 0; c.ga = 0;
+        c.splitGroup = null; // clear championship/relegation split group for the new season
       });
+      state.splitDone = {}; // split leagues re-split next season
 
       // Super-cup curtain-raisers for the coming season, per the user's country.
       // England — Community Shield: PL champions vs FA Cup winners (runner-up

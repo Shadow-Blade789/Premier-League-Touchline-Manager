@@ -32,7 +32,7 @@ const Coaching = {
     club.coaches = {};
     POSITIONS.forEach(pos => { club.coaches[pos] = makeCoach(pos, this.tierCoachRating(club.tier)); });
   },
-  ensureAll(state) { state.clubs.forEach(c => { if (!c.coaches) this.initClubCoaches(c); }); },
+  ensureAll(state) { state.clubs.forEach(c => { if (!c.coaches && !c.strengthOnly) this.initClubCoaches(c); }); },
 
   ratingFor(club, pos) {
     const c = club && club.coaches && club.coaches[pos];

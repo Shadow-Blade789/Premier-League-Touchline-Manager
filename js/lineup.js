@@ -14,6 +14,9 @@
     },
   
     autoPick(club, formationKey) {
+      // Strength-only foreign clubs have no players to pick — they never field
+      // a stored XI (they're simulated from a single strength rating).
+      if (club.strengthOnly || !club.squad || !club.squad.length) return club.lineup || null;
       formationKey = formationKey || club.formation || "4-4-2";
       const req = FORMATIONS[formationKey];
       const lineup = this.emptyLineup(formationKey);
@@ -41,7 +44,9 @@
     },
   
     starters(club) {
+      if (club.strengthOnly || !club.squad || !club.squad.length) return [];
       const lineup = club.lineup || this.autoPick(club);
+      if (!lineup) return [];
       const ids = this.starterIds(lineup);
       return ids.map(id => club.squad.find(p => p.id === id)).filter(Boolean);
     },

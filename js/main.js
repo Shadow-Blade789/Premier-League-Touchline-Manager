@@ -5,7 +5,8 @@
 
    const App = {
     selectedClubId: null,
-    selectedCountry: null,  // which country's clubs the picker is showing
+    selectedLeague: null,   // which league's clubs the picker is showing
+    clubSearch: "",         // current picker search text
     hubStatScope: "league", // "league" | "team" toggle on the hub stats panel
     tableLeague: null,      // which division the Table tab is showing
     weekQueue: [],          // the user's remaining live matches this week (league, then cup)
@@ -14,8 +15,8 @@
     windowTransition: null,
 
     init() {
-      this.selectedCountry = COUNTRIES[0];
-      UI.renderClubGrid(null, this.selectedCountry);
+      this.selectedLeague = LEAGUES[0];
+      UI.renderClubGrid(null, this.selectedLeague, this.clubSearch);
       this.wireStartScreen();
       this.wireTabs();
       this.wireHub();
@@ -39,19 +40,25 @@
   
     // ---------------- Start screen ----------------
     wireStartScreen() {
-      document.getElementById("countryBar").addEventListener("click", e => {
-        const btn = e.target.closest(".country-btn");
-        if (!btn || btn.dataset.country === this.selectedCountry) return;
-        this.selectedCountry = btn.dataset.country;
-        this.selectedClubId = null; // don't carry a hidden pick across countries
-        UI.renderClubGrid(this.selectedClubId, this.selectedCountry);
+      document.getElementById("leagueBar").addEventListener("click", e => {
+        const btn = e.target.closest(".league-chip");
+        if (!btn) return;
+        if (btn.dataset.league === this.selectedLeague && !this.clubSearch) return;
+        this.selectedLeague = btn.dataset.league;
+        this.clubSearch = "";
+        const si = document.getElementById("clubSearch"); if (si) si.value = "";
+        UI.renderClubGrid(this.selectedClubId, this.selectedLeague, this.clubSearch);
         this.validateStart();
+      });
+      document.getElementById("clubSearch").addEventListener("input", e => {
+        this.clubSearch = e.target.value;
+        UI.renderClubGrid(this.selectedClubId, this.selectedLeague, this.clubSearch);
       });
       document.getElementById("clubGrid").addEventListener("click", e => {
         const tile = e.target.closest(".club-tile");
         if (!tile) return;
         this.selectedClubId = tile.dataset.club;
-        UI.renderClubGrid(this.selectedClubId, this.selectedCountry);
+        UI.renderClubGrid(this.selectedClubId, this.selectedLeague, this.clubSearch);
         this.validateStart();
       });
       document.getElementById("managerNameInput").addEventListener("input", () => this.validateStart());
@@ -642,11 +649,13 @@
           Game.clearSave();
           Game.state = null;
           this.selectedClubId = null;
-          this.selectedCountry = COUNTRIES[0];
+          this.selectedLeague = LEAGUES[0];
+          this.clubSearch = "";
           document.getElementById("topbar").classList.add("hidden");
           document.getElementById("continuePanel").classList.add("hidden");
           document.getElementById("managerNameInput").value = "";
-          UI.renderClubGrid(null, this.selectedCountry);
+          const si = document.getElementById("clubSearch"); if (si) si.value = "";
+          UI.renderClubGrid(null, this.selectedLeague, this.clubSearch);
           screen.classList.add("hidden");
           document.getElementById("screen-start").classList.remove("hidden");
         });

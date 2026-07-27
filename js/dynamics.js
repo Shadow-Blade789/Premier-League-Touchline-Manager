@@ -16,10 +16,15 @@ const Dynamics = {
 
   // Where a club's reputation "wants" to be given where it just finished.
   targetTierFor(league, pos) {
-    if (league === "PL" || league === "LL") return pos <= 4 ? 5 : pos <= 10 ? 4 : 3; // top flights
-    if (league === "CH" || league === "SG") return pos <= 6 ? 3 : 2;                  // second tiers
-    if (league === "L1") return pos <= 6 ? 2 : 1;
-    return pos <= 6 ? 1 : 0; // League Two
+    // By depth in the country's pyramid (0 = top flight), so every nation —
+    // England's four tiers, Spain's two, or a foreign two-tier chain — maps
+    // consistently without hardcoding league codes.
+    const chain = chainFor(league);
+    const depth = chain.indexOf(league);
+    if (depth <= 0) return pos <= 4 ? 5 : pos <= 10 ? 4 : 3; // top flights
+    if (depth === 1) return pos <= 6 ? 3 : 2;                // second tiers
+    if (depth === 2) return pos <= 6 ? 2 : 1;                // third tiers
+    return pos <= 6 ? 1 : 0;                                 // fourth tier and below
   },
 
   apply(state, tables) {
@@ -76,6 +81,12 @@ const Dynamics = {
     const cur = Stats.clubStrength(club);
     const step = clamp(target - cur, -2, 2);
     if (Math.abs(step) < 0.5) return;
+    // Strength-only foreign clubs have no players — nudge the rating itself,
+    // which is what all their simulation is driven from.
+    if (club.strengthOnly) {
+      club.strength = clamp(Math.round((club.strength || cur) + step), 45, 92);
+      return;
+    }
     club.squad.slice().sort((a, b) => b.rating - a.rating).slice(0, 14).forEach(p => {
       p.rating = clamp(Math.round(p.rating + step), 42, 93);
       if (p.potential < p.rating) p.potential = p.rating;

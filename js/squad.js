@@ -80,7 +80,7 @@ const Market = {
   sellablePoolAcrossLeague(state) {
     const pool = [];
     state.clubs.forEach(club => {
-      if (club.id === state.clubId) return;
+      if (club.id === state.clubId || club.strengthOnly) return; // foreign clubs have no player-level squad
       const sorted = club.squad.slice().sort((a, b) => a.rating - b.rating);
       const fringeCount = Math.max(2, Math.round(sorted.length * 0.45));
       sorted.slice(0, fringeCount).forEach(p => pool.push({ player: p, club }));
@@ -150,7 +150,7 @@ const Market = {
   generateOffers(state) {
     const club = state.clubs.find(c => c.id === state.clubId);
     if (!club) return;
-    const rivals = state.clubs.filter(c => c.id !== state.clubId);
+    const rivals = state.clubs.filter(c => c.id !== state.clubId && !c.strengthOnly);
     club.squad.forEach(p => {
       p.offers = p.offers || [];
       const cap = p.transferListed ? 5 : 2;
@@ -216,7 +216,7 @@ const Market = {
   // squads churn realistically (money changes hands too). Never touches the
   // user's club — their business stays manual.
   aiTransfers(state, moves) {
-    const others = () => state.clubs.filter(c => c.id !== state.clubId);
+    const others = () => state.clubs.filter(c => c.id !== state.clubId && !c.strengthOnly);
     for (let i = 0; i < moves; i++) {
       const sellers = others().filter(c => c.squad.length > 16);
       if (!sellers.length) break;

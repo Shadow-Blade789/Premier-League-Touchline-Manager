@@ -26,6 +26,7 @@
    };
    
    function ensureSquadDepth(club) {
+     if (club.strengthOnly) return; // foreign clubs are simulated from a strength rating, no squad
      const need = { GK: 2, DF: 7, MF: 6, FW: 4 };
      const have = { GK: 0, DF: 0, MF: 0, FW: 0 };
      club.squad.forEach(p => have[p.pos]++);
@@ -47,27 +48,37 @@
      }
    }
    
-   function freshClubsCopy() {
+   function freshClubsCopy(managedCountry) {
      // Deep-ish copy so a new career never mutates the shared template data.
-     const copy = CLUBS.map(c => ({
-       ...c,
-       // Clone stats/bonus/career too — a shallow {...p} would otherwise share
-       // those objects with the shared CLUBS template and leak across careers.
-       squad: c.squad.map(p => ({ ...p, stats: Stats.blank(), bonus: Stats.blankBonus(), career: { ...p.career } })),
-     }));
-     copy.forEach(ensureSquadDepth);
+     // Only the country you manage in gets real player squads; every other
+     // country's clubs are strength-only (a single rating, no stored players),
+     // which is what keeps the whole continent inside the browser save budget.
+     const copy = CLUBS.map(c => {
+       if (managedCountry && LEAGUE_COUNTRY[c.league] !== managedCountry) {
+         return { ...c, squad: [], strengthOnly: true, strength: baseStrengthForTier(c.tier) };
+       }
+       return {
+         ...c,
+         // Clone stats/bonus/career too — a shallow {...p} would otherwise share
+         // those objects with the shared CLUBS template and leak across careers.
+         squad: c.squad.map(p => ({ ...p, stats: Stats.blank(), bonus: Stats.blankBonus(), career: { ...p.career } })),
+       };
+     });
+     copy.forEach(ensureSquadDepth); // no-op for strength-only clubs
      return copy;
    }
    
    function newCareerState(managerName, clubId) {
-     const clubs = freshClubsCopy();
+     const seed = CLUBS.find(c => c.id === clubId);
+     const managedCountry = seed ? LEAGUE_COUNTRY[seed.league] : COUNTRIES[0];
+     const clubs = freshClubsCopy(managedCountry);
      clubs.forEach(c => {
        c.budget = Econ.startBudget(c.tier, c.league);
        c.points = 0; c.played = 0; c.won = 0; c.drawn = 0; c.lost = 0;
        c.gf = 0; c.ga = 0;
        c.formation = "4-4-2";
        c.lineup = null; // filled by auto-pick on first use
-       Coaching.initClubCoaches(c); // tier-appropriate starting staff
+       if (!c.strengthOnly) Coaching.initClubCoaches(c); // tier-appropriate starting staff
      });
 
      return {
@@ -89,6 +100,7 @@
        pendingEuro: null,     // next season's European qualification (by league finish)
        pendingMatch: null,    // result payload waiting to be viewed live
        windowWasOpen: false,
+       splitDone: {},         // which split leagues have had their split applied this season
      };
    }
    
@@ -126,6 +138,7 @@
        const perfIndex = Stats.performanceIndex(state);
 
        state.clubs.forEach(club => {
+         if (club.strengthOnly) return; // foreign clubs evolve via Dynamics (strength drift), not player ageing
          const survivors = [];
          club.squad.forEach(p => {
            p.age += 1;
@@ -258,8 +271,28 @@
    // stats. Missing clubs are injected fresh; newly-added clubs play out the
    // rest of the current season alongside the existing ones.
    function migrateSave(state) {
-     const LEAGUE_TEMPLATES = { CH: RAW_CHAMPIONSHIP, L1: RAW_LEAGUEONE, L2: RAW_LEAGUETWO, LL: RAW_LALIGA, SG: RAW_SEGUNDA };
+     const LEAGUE_TEMPLATES = {
+       CH: RAW_CHAMPIONSHIP, L1: RAW_LEAGUEONE, L2: RAW_LEAGUETWO, LL: RAW_LALIGA, SG: RAW_SEGUNDA,
+       BL1: RAW_DE_BL1, BL2: RAW_DE_BL2, SA: RAW_IT_SA, SB: RAW_IT_SB, PP: RAW_PT_PP, P2: RAW_PT_P2,
+       ER: RAW_NL_ER, EE: RAW_NL_EE, EK: RAW_PL_EK, IL: RAW_PL_IL, SL: RAW_TR_SL, T1: RAW_TR_T1,
+       BPL: RAW_BE_BPL, BCH: RAW_BE_BCH, ABL: RAW_AT_ABL, A2L: RAW_AT_A2L,
+       DSL: RAW_DK_DSL, D1D: RAW_DK_D1D, GSL: RAW_GR_GSL, GS2: RAW_GR_GS2,
+     };
      state.clubs.forEach(c => { if (!c.league) c.league = "PL"; });
+
+     // Lightweight rest-of-world: only the managed country keeps real squads.
+     // Convert every club outside it to strength-only (older saves stored full
+     // squads for both countries) — preserving its current XI strength, then
+     // dropping the stored players/coaches to keep the save small.
+     const seed = state.clubs.find(c => c.id === state.clubId);
+     const managedCountry = seed ? LEAGUE_COUNTRY[seed.league] : COUNTRIES[0];
+     state.clubs.forEach(c => {
+       if (LEAGUE_COUNTRY[c.league] === managedCountry || c.strengthOnly) return;
+       c.strength = Math.round(Stats.clubStrength(c));
+       c.strengthOnly = true;
+       c.squad = [];
+       delete c.coaches; delete c.academy; c.lineup = null;
+     });
 
      let injected = false;
      const existing = new Set(state.clubs.map(c => c.id));
@@ -273,7 +306,10 @@
            points: 0, played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0,
            formation: "4-4-2", lineup: null,
          };
-         ensureSquadDepth(club);
+         if (LEAGUE_COUNTRY[lg] !== managedCountry) {
+           club.strengthOnly = true; club.strength = baseStrengthForTier(template.tier);
+         }
+         ensureSquadDepth(club); // no-op for strength-only clubs
          club.squad.forEach(p => { p.club = club.id; });
          state.clubs.push(club);
          existing.add(template.id);
@@ -308,6 +344,7 @@
        Vertu.initSeason(state);
        if (state.week > 0) state.vertu.skipped = true;
      }
+     if (!state.splitDone) state.splitDone = {}; // championship/relegation split tracking (newer than some saves)
      if (!Array.isArray(state.honours)) state.honours = [];
      if (state.pendingShield === undefined) state.pendingShield = null;
      if (state.pendingSupercopa === undefined) state.pendingSupercopa = null;

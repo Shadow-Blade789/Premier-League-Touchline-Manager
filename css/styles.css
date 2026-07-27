@@ -213,6 +213,37 @@
    .club-tile:hover, .club-tile.selected { border-color: var(--amber); background: rgba(255,200,87,0.08); }
    .club-tile .name { font-family: var(--font-display); font-size: 0.82rem; line-height: 1.15; }
    .club-tile .tag { display:block; font-size: 0.65rem; color: var(--muted); margin-top:0.1em; }
+
+   /* League-centric picker: search + grouped league chips */
+   .club-search {
+     width: 100%; max-width: 360px; margin-bottom: 0.9rem;
+     padding: 0.5rem 0.8rem; background: var(--navy-panel-2);
+     border: 1px solid var(--hairline); color: var(--chalk);
+     font-family: var(--font-body); font-size: 0.9rem;
+   }
+   .club-search:focus { outline: none; border-color: var(--amber); }
+   .club-search::placeholder { color: var(--muted); }
+   .league-nav {
+     display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1rem;
+     max-height: 232px; overflow-y: auto; padding-bottom: 0.9rem;
+     border-bottom: 1px solid var(--hairline);
+   }
+   .league-nav-group { display: flex; flex-direction: column; gap: 0.4rem; }
+   .league-nav-nation {
+     font-family: var(--font-display); text-transform: uppercase;
+     letter-spacing: 0.12em; font-size: 0.72rem; color: var(--muted);
+   }
+   .league-nav-chips { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+   .league-chip {
+     font-family: var(--font-display); font-size: 0.76rem; letter-spacing: 0.04em;
+     padding: 0.35rem 0.9rem; border-radius: 999px;
+     background: var(--navy-panel-2); color: var(--muted);
+     border: 1px solid var(--hairline); cursor: pointer; transition: all 0.12s ease;
+   }
+   .league-chip:hover:not(.active) { color: var(--chalk); border-color: var(--chalk); }
+   .league-chip.active {
+     background: var(--amber); color: var(--amber-ink); border-color: var(--amber); font-weight: 600;
+   }
    
    /* ---------- Squad & market lists ---------- */
    .player-row {
@@ -339,6 +370,8 @@
    table.ladder tr.zone-ecl td:first-child { border-left: 3px solid #b58cff; }
    table.ladder tr.zone-relegation td:first-child { border-left: 3px solid var(--alert-red); }
    table.ladder tr.zone-champion td:first-child { border-left: 3px solid var(--amber); }
+   /* Championship/relegation split divider */
+   table.ladder tr.split-line td { border-top: 2px dashed rgba(255,200,87,0.55); }
    table.ladder tr.zone-promotion td:first-child { border-left: 3px solid #4ad991; }
    table.ladder tr.zone-playoff td:first-child { border-left: 3px solid #5ec2ff; }
    .legend { display:flex; gap: 1rem; flex-wrap: wrap; margin-top: 0.8rem; font-size: 0.74rem; color: var(--muted); }

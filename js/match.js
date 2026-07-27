@@ -78,6 +78,38 @@
       return players.reduce((s, p) => s + p.rating, 0) / players.length;
     },
 
+    // Attack/defense ratings for a club, whichever way it's modelled.
+    // A club managed at player level (the user's country) has a real squad, so
+    // its ratings come from its starting XI. A "strength-only" foreign club
+    // (no stored squad — see the lightweight rest-of-world model) is simulated
+    // from a single `strength` number, used for both attack and defense. This
+    // keeps every quick-sim call site working for both kinds of club with no
+    // change, and is bit-identical to the old path for squad clubs.
+    sideRatings(club) {
+      if (!club.strengthOnly && club.squad && club.squad.length) {
+        const st = Lineup.starters(club);
+        return { att: this.attackRating(st), def: this.defenseRating(st), starters: st };
+      }
+      const s = typeof club.strength === "number" ? club.strength : 60;
+      return { att: s, def: s, starters: null };
+    },
+
+    // A disposable XI for a strength-only club, so it can appear in a LIVE
+    // match (Europe) with named players for the commentary/scorers. Generated
+    // around the club's strength and never stored — the club stays squad-less.
+    tempStarters(club) {
+      const s = typeof club.strength === "number" ? club.strength : 60;
+      const out = [];
+      [["GK", 1], ["DF", 4], ["MF", 4], ["FW", 2]].forEach(([pos, n]) => {
+        for (let i = 0; i < n; i++) {
+          const nm = (typeof randomProspect === "function") ? randomProspect().name : (club.short + " " + pos + (i + 1));
+          out.push({ id: club.id + "_t" + out.length, name: nm, pos, bonus: {},
+            rating: Math.max(40, Math.min(95, Math.round(s + (Math.random() * 8 - 4)))) });
+        }
+      });
+      return out;
+    },
+
     // Picks a goalscorer, weighted toward forwards and toward anyone carrying a
     // goalscoring boost. Promoted to the engine so the stat attributor and the
     // live commentary draw scorers from the exact same model.
@@ -120,12 +152,11 @@
 
     // Fast result for AI-vs-AI matches: no commentary, just a scoreline.
     simulateQuick(home, away) {
-      const hStarters = Lineup.starters(home);
-      const aStarters = Lineup.starters(away);
-      const hAtt = this.attackRating(hStarters) * 1.04;
-      const hDef = this.defenseRating(hStarters);
-      const aAtt = this.attackRating(aStarters);
-      const aDef = this.defenseRating(aStarters);
+      const H = this.sideRatings(home), A = this.sideRatings(away);
+      const hAtt = H.att * 1.04;
+      const hDef = H.def;
+      const aAtt = A.att;
+      const aDef = A.def;
 
       const hxg = clamp(1.28 * this.goalRatio(hAtt, aDef) * this.form(), 0.2, 5.2);
       const axg = clamp(1.05 * this.goalRatio(aAtt, hDef) * this.form(), 0.22, 4.8);
@@ -137,12 +168,13 @@
   
     // Builds the full minute-by-minute event timeline for a live, watched match.
     simulateFull(home, away) {
-      const hStarters = Lineup.starters(home);
-      const aStarters = Lineup.starters(away);
-      const hAtt = this.attackRating(hStarters) * 1.04;
-      const hDef = this.defenseRating(hStarters);
-      const aAtt = this.attackRating(aStarters);
-      const aDef = this.defenseRating(aStarters);
+      const H = this.sideRatings(home), A = this.sideRatings(away);
+      const hStarters = H.starters || this.tempStarters(home);
+      const aStarters = A.starters || this.tempStarters(away);
+      const hAtt = H.att * 1.04;
+      const hDef = H.def;
+      const aAtt = A.att;
+      const aDef = A.def;
   
       const pHomeGoal = clamp(0.0130 * this.goalRatio(hAtt, aDef) * this.form(), 0.004, 0.062);
       const pAwayGoal = clamp(0.0110 * this.goalRatio(aAtt, hDef) * this.form(), 0.004, 0.058);

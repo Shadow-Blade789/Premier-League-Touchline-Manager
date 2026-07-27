@@ -23,29 +23,56 @@
       return `<div class="crest ${size}" style="background:linear-gradient(160deg, ${c1} 55%, ${c2} 55%); color:${textColor};">${initials}</div>`;
     },
   
-    renderClubGrid(selectedId, country) {
-      country = country || COUNTRIES[0];
-      // Country selector bar — clicking one filters the clubs below to it.
-      const bar = document.getElementById("countryBar");
+    // League-centric club picker. You browse by LEAGUE (grouped under a light
+    // nation label for scanning), or type to search a club/league by name
+    // across the whole world. Nations without their own league (e.g.
+    // Liechtenstein) simply have no entry — their clubs live in the league they
+    // actually play in. Scales to every UEFA nation as leagues are added.
+    renderClubGrid(selectedId, selectedLeague, search) {
+      search = (search || "").trim().toLowerCase();
+      selectedLeague = selectedLeague || LEAGUES[0];
+
+      // League navigation: one group per nation, each league a selectable chip.
+      const bar = document.getElementById("leagueBar");
       if (bar) {
-        bar.innerHTML = COUNTRIES.map(co =>
-          `<button class="country-btn ${co === country ? "active" : ""}" data-country="${co}" type="button">${COUNTRY_NAMES[co]}</button>`
-        ).join("");
+        bar.innerHTML = COUNTRIES.map(co => `
+          <div class="league-nav-group">
+            <div class="league-nav-nation">${COUNTRY_NAMES[co] || co}</div>
+            <div class="league-nav-chips">
+              ${LEAGUE_CHAINS[co].map(lg =>
+                `<button class="league-chip ${lg === selectedLeague && !search ? "active" : ""}" data-league="${lg}" type="button">${LEAGUE_NAMES[lg]}</button>`
+              ).join("")}
+            </div>
+          </div>
+        `).join("");
       }
+
       const grid = document.getElementById("clubGrid");
       const tile = c => `
         <button class="club-tile ${c.id === selectedId ? "selected" : ""}" data-club="${c.id}" type="button">
           ${this.crestHTML(c, "sm")}
           <span>
             <span class="name">${c.name}</span>
-            <span class="tag">${"★".repeat(c.tier)}${"☆".repeat(5 - c.tier)} reputation</span>
+            <span class="tag">${LEAGUE_SHORT[c.league] || LEAGUE_NAMES[c.league]} · ${"★".repeat(c.tier)}${"☆".repeat(5 - c.tier)}</span>
           </span>
         </button>
       `;
-      grid.innerHTML = (LEAGUE_CHAINS[country] || []).map(lg => `
-        <div class="club-group-head">${LEAGUE_NAMES[lg]}</div>
-        ${CLUBS.filter(c => c.league === lg).map(tile).join("")}
-      `).join("");
+
+      if (search) {
+        // Flat search across every league by club OR league name.
+        const matches = CLUBS.filter(c =>
+          c.name.toLowerCase().includes(search) || (LEAGUE_NAMES[c.league] || "").toLowerCase().includes(search)
+        );
+        grid.innerHTML = matches.length
+          ? `<div class="club-group-head">${matches.length} result${matches.length === 1 ? "" : "s"} for “${search}”</div>` + matches.slice(0, 80).map(tile).join("")
+          : `<div class="club-group-head">No clubs match “${search}”</div>`;
+        return;
+      }
+
+      const lg = selectedLeague;
+      grid.innerHTML =
+        `<div class="club-group-head">${LEAGUE_NAMES[lg]} · ${COUNTRY_NAMES[LEAGUE_COUNTRY[lg]] || LEAGUE_COUNTRY[lg]}</div>` +
+        CLUBS.filter(c => c.league === lg).map(tile).join("");
     },
   
     renderTopbar(state) {
@@ -103,20 +130,31 @@
       }
       this.renderHubStats(state, App.hubStatScope, club.league);
       const setTitle = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+      const cupPanel = document.getElementById("hubCupPanel");
+      const carabaoPanel = document.getElementById("hubCarabaoPanel");
       const vertuPanel = document.getElementById("hubVertuPanel");
-      if (Game.myCountry() === "ESP") {
+      const showCup = el => el && el.classList.remove("hidden");
+      const hideCup = el => el && el.classList.add("hidden");
+      const country = Game.myCountry();
+      if (country === "ESP") {
+        showCup(cupPanel); showCup(carabaoPanel);
         setTitle("hubCupTitle", "Copa del Rey");
         setTitle("hubCarabaoTitle", "Supercopa de España");
         this.renderCupPanel(state, Cup.CUPS.copa, "hubCupBody");
         this.renderSupercopaPanel(state);
-        if (vertuPanel) vertuPanel.classList.add("hidden");
-      } else {
+        hideCup(vertuPanel);
+      } else if (country === "ENG") {
+        showCup(cupPanel); showCup(carabaoPanel);
         setTitle("hubCupTitle", "FA Cup");
         setTitle("hubCarabaoTitle", "Carabao Cup");
         this.renderCupPanel(state, Cup.CUPS.fa, "hubCupBody");
         this.renderCupPanel(state, Cup.CUPS.efl, "hubCarabaoBody");
-        if (vertuPanel) vertuPanel.classList.remove("hidden");
+        showCup(vertuPanel);
         this.renderVertuPanel(state);
+      } else {
+        // Nations whose domestic cups aren't modelled yet (Phase 3 leagues) —
+        // hide the cup panels; the European panel below still applies.
+        hideCup(cupPanel); hideCup(carabaoPanel); hideCup(vertuPanel);
       }
       this.renderEuroPanel(state);
     },
@@ -554,15 +592,23 @@
     renderTable(state, league) {
       league = league || Game.myLeague();
       document.getElementById("tableTitle").textContent = LEAGUE_NAMES[league] + " Table";
+      // Build the division toggle from the user's own pyramid, whichever nation
+      // that is (a delegated click handler on the container keeps working).
       const myLeagues = chainFor(Game.myLeague());
-      document.querySelectorAll(".table-league-btn").forEach(b => {
-        b.classList.toggle("hidden", !myLeagues.includes(b.dataset.league));
-        b.classList.toggle("active", b.dataset.league === league);
-      });
+      const toggle = document.querySelector("#screen-table .scope-toggle");
+      if (toggle) {
+        toggle.innerHTML = myLeagues.map(lg =>
+          `<button class="scope-btn table-league-btn ${lg === league ? "active" : ""}" data-league="${lg}" type="button">${LEAGUE_SHORT[lg] || LEAGUE_NAMES[lg]}</button>`
+        ).join("");
+      }
       const rows = Season.table(state, league);
+      let prevGroup = null;
       document.getElementById("ladderBody").innerHTML = rows.map(r => {
         const zone = Season.zoneFor(r.pos, league, rows.length);
-        return `<tr class="${r.id === state.clubId ? "me" : ""} ${zone ? "zone-" + zone : ""}">
+        // Draw a divider where a championship/relegation split group changes.
+        const splitLine = (r.splitGroup != null && prevGroup != null && r.splitGroup !== prevGroup) ? " split-line" : "";
+        prevGroup = r.splitGroup;
+        return `<tr class="${r.id === state.clubId ? "me" : ""} ${zone ? "zone-" + zone : ""}${splitLine}">
           <td>${r.pos}</td>
           <td class="club-cell">${this.crestHTML(r, "sm")} ${r.name}</td>
           <td>${r.played}</td><td>${r.won}</td><td>${r.drawn}</td><td>${r.lost}</td>
