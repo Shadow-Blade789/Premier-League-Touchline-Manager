@@ -28,6 +28,19 @@ const EURO_COMPS = {
 };
 const EURO_COMP_KEYS = ["ucl", "uel", "uecl"];
 
+// How many clubs each country sends to the group/league phase of each comp,
+// roughly by UEFA coefficient. Everything not listed uses DEFAULT_BERTHS. The
+// UCL field is a fixed 36, so if the total guaranteed exceeds that, buildFields
+// keeps the strongest (small-nation champions effectively play "qualifying").
+const EURO_BERTHS = {
+  ENG: { ucl: 4, uel: 1, uecl: 1 }, ESP: { ucl: 4, uel: 1, uecl: 1 },
+  GER: { ucl: 4, uel: 1, uecl: 1 }, ITA: { ucl: 4, uel: 1, uecl: 1 },
+  FRA: { ucl: 3, uel: 1, uecl: 1 },
+  POR: { ucl: 2, uel: 1, uecl: 1 }, NED: { ucl: 2, uel: 1, uecl: 1 },
+  BEL: { ucl: 2, uel: 1, uecl: 1 }, TUR: { ucl: 2, uel: 1, uecl: 1 },
+};
+const DEFAULT_BERTHS = { ucl: 1, uel: 1, uecl: 1 };
+
 // League-phase matchdays and the two-legged knockout weeks (0-based, within a
 // 38-week top-flight season).
 const EURO_MD_WEEKS = [3, 5, 7, 9, 12, 14, 16, 18];
@@ -53,16 +66,31 @@ const Euro = {
 
   // Positions 1–4 of each top flight → UCL, 5th → UEL, 6th → UECL. Stored as
   // plain arrays so it survives JSON save/load.
+  // Assign a country's top-flight finishers to the three comps per its berths.
+  assignBerths(q, country, orderedIds) {
+    const b = EURO_BERTHS[country] || DEFAULT_BERTHS;
+    let i = 0;
+    for (let n = 0; n < b.ucl && orderedIds[i]; n++, i++) q.ucl.push(orderedIds[i]);
+    for (let n = 0; n < b.uel && orderedIds[i]; n++, i++) q.uel.push(orderedIds[i]);
+    for (let n = 0; n < b.uecl && orderedIds[i]; n++, i++) q.uecl.push(orderedIds[i]);
+  },
+
+  // The user's country's main domestic cup winner earns a Europa League place
+  // (only the user's country runs cups). Skipped if they already qualified.
+  addCupBerth(state, q) {
+    const cup = Object.values(Cup.CUPS).find(c => c.country === Game.myCountry() && Cup.isActive(state[c.stateKey]) && state[c.stateKey].winner);
+    if (!cup) return;
+    const w = state[cup.stateKey].winner;
+    if (!q.ucl.includes(w) && !q.uel.includes(w) && !q.uecl.includes(w)) q.uel.push(w);
+  },
+
   qualificationFromTables(state, tables) {
     const q = { ucl: [], uel: [], uecl: [] };
     COUNTRIES.forEach(co => {
-      const lg = LEAGUE_CHAINS[co][0]; // the country's top flight
-      const tbl = tables[lg];
-      if (!tbl) return;
-      tbl.slice(0, 4).forEach(r => q.ucl.push(r.id));
-      if (tbl[4]) q.uel.push(tbl[4].id);
-      if (tbl[5]) q.uecl.push(tbl[5].id);
+      const tbl = tables[LEAGUE_CHAINS[co][0]]; // the country's top flight
+      if (tbl) this.assignBerths(q, co, tbl.map(r => r.id));
     });
+    this.addCupBerth(state, q);
     return q;
   },
 
@@ -70,12 +98,9 @@ const Euro = {
   bootstrapQualification(state) {
     const q = { ucl: [], uel: [], uecl: [] };
     COUNTRIES.forEach(co => {
-      const lg = LEAGUE_CHAINS[co][0];
-      const clubs = state.clubs.filter(c => c.league === lg)
-        .sort((a, b) => Stats.clubStrength(b) - Stats.clubStrength(a));
-      clubs.slice(0, 4).forEach(c => q.ucl.push(c.id));
-      if (clubs[4]) q.uel.push(clubs[4].id);
-      if (clubs[5]) q.uecl.push(clubs[5].id);
+      const order = state.clubs.filter(c => c.league === LEAGUE_CHAINS[co][0])
+        .sort((a, b) => Stats.clubStrength(b) - Stats.clubStrength(a)).map(c => c.id);
+      this.assignBerths(q, co, order);
     });
     return q;
   },
@@ -83,12 +108,21 @@ const Euro = {
   // Partition the strongest clubs into three disjoint 36-team fields: guaranteed
   // qualifiers first, then filled by coefficient (UCL gets the pick of the rest).
   buildFields(state, q) {
+    const coeffOf = id => this.coeff(this.club(state, id));
     const ranked = state.clubs.slice().sort((a, b) => this.coeff(b) - this.coeff(a)).map(c => c.id);
     const assigned = new Set();
     const fields = { ucl: [], uel: [], uecl: [] };
-    EURO_COMP_KEYS.forEach(k => (q[k] || []).forEach(id => {
-      if (!assigned.has(id)) { fields[k].push(id); assigned.add(id); }
-    }));
+    // Guaranteed qualifiers first — strongest first and capped at 36, so with many
+    // nations the weakest champions drop out (they'd be in real-life qualifying).
+    // The user's own club is prioritised so it's never squeezed out of its field.
+    EURO_COMP_KEYS.forEach(k => {
+      const guaranteed = (q[k] || []).slice().sort((a, b) =>
+        a === state.clubId ? -1 : b === state.clubId ? 1 : coeffOf(b) - coeffOf(a));
+      for (const id of guaranteed) {
+        if (fields[k].length >= 36) break;
+        if (!assigned.has(id)) { fields[k].push(id); assigned.add(id); }
+      }
+    });
     EURO_COMP_KEYS.forEach(k => {
       for (const id of ranked) {
         if (fields[k].length >= 36) break;

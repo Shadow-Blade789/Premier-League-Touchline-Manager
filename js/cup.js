@@ -263,6 +263,15 @@ const NATIONAL_CUPS = {
   NED: "KNVB Beker", POL: "Puchar Polski", TUR: "Turkish Cup", BEL: "Belgian Cup",
   AUT: "ÖFB-Cup", DEN: "DBU Pokalen", GRE: "Greek Cup", SCO: "Scottish Cup",
   SUI: "Swiss Cup", CRO: "Croatian Cup", HUN: "Magyar Kupa",
+  CZE: "Czech Cup", SRB: "Serbian Cup", UKR: "Ukrainian Cup", SWE: "Svenska Cupen",
+  NOR: "Norwegian Cup", ROU: "Cupa României", CYP: "Cypriot Cup", SVK: "Slovak Cup",
+  SVN: "Slovenian Cup", ISR: "State Cup", FIN: "Suomen Cup", BUL: "Bulgarian Cup",
+  BIH: "BiH Cup", ISL: "Icelandic Cup", IRL: "FAI Cup", ALB: "Albanian Cup",
+  MKD: "Macedonian Cup", MDA: "Cupa Moldovei", BLR: "Belarusian Cup", AZE: "Azerbaijan Cup",
+  KAZ: "Kazakhstan Cup", GEO: "Georgian Cup", ARM: "Armenian Cup", LVA: "Latvian Cup",
+  LTU: "Lithuanian Cup", KVX: "Kosovar Cup", MNE: "Montenegrin Cup", EST: "Estonian Cup",
+  LUX: "Luxembourg Cup", NIR: "Irish Cup", MLT: "FA Trophy", FRO: "Faroese Cup",
+  WAL: "Welsh Cup", GIB: "Rock Cup", AND: "Copa Constitució", SMR: "Coppa Titano",
 };
 Object.entries(NATIONAL_CUPS).forEach(([cc, name]) => {
   Cup.CUPS["cup" + cc] = makeNationalCup(cc, name, "cup" + cc);
