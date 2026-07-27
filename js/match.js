@@ -57,10 +57,13 @@
   function assistBoost(p) { return (p.bonus && p.bonus.assist) || 0; }
   function keeperBoost(p) { return (p.bonus && p.bonus.keeper) || 0; }
   function defenseBoost(p) { return (p.bonus && p.bonus.defense) || 0; }
+  // A tired player contributes less: full at 100% fitness, ~0.82 at 40%.
+  // Foreign/generated players have no fitness field and are unaffected.
+  function fitFactor(p) { const f = typeof p.fitness === "number" ? p.fitness : 100; return 0.7 + 0.3 * (f / 100); }
 
   const MatchEngine = {
     attackRating(players) {
-      const eff = p => p.rating * (1 + 0.5 * goalBoost(p) + 0.3 * assistBoost(p));
+      const eff = p => p.rating * (1 + 0.5 * goalBoost(p) + 0.3 * assistBoost(p)) * fitFactor(p);
       const fw = players.filter(p => p.pos === "FW");
       const mf = players.filter(p => p.pos === "MF");
       const avg = arr => arr.length ? arr.reduce((s, p) => s + eff(p), 0) / arr.length : 60;
@@ -69,8 +72,8 @@
     defenseRating(players) {
       const df = players.filter(p => p.pos === "DF");
       const gk = players.filter(p => p.pos === "GK");
-      const avgDf = df.length ? df.reduce((s, p) => s + p.rating * (1 + defenseBoost(p)), 0) / df.length : 60;
-      const avgGk = gk.length ? gk.reduce((s, p) => s + p.rating * (1 + keeperBoost(p)), 0) / gk.length : 60;
+      const avgDf = df.length ? df.reduce((s, p) => s + p.rating * (1 + defenseBoost(p)) * fitFactor(p), 0) / df.length : 60;
+      const avgGk = gk.length ? gk.reduce((s, p) => s + p.rating * (1 + keeperBoost(p)) * fitFactor(p), 0) / gk.length : 60;
       return avgDf * 0.72 + avgGk * 0.28;
     },
     overallRating(players) {

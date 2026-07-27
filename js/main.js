@@ -109,7 +109,7 @@
         if (this.wrapUpWeek()) return; // jumped to the season-end screen
       }
   
-      ["hub", "squad", "market", "coaches", "lineup", "table"].forEach(t => {
+      ["hub", "squad", "market", "coaches", "academy", "lineup", "table"].forEach(t => {
         document.getElementById("screen-" + t).classList.toggle("hidden", t !== name);
         const tabBtn = document.getElementById("tab" + t[0].toUpperCase() + t.slice(1));
         if (tabBtn) tabBtn.classList.toggle("active", t === name);
@@ -120,7 +120,8 @@
       if (name === "hub") UI.renderHub(Game.state);
       if (name === "squad") UI.renderSquad(Game.state);
       if (name === "market") UI.renderMarket(Game.state);
-      if (name === "coaches") { UI.renderCoaches(Game.state); UI.renderAcademy(Game.state); UI.renderScouting(Game.state); }
+      if (name === "coaches") { UI.renderCoaches(Game.state); UI.renderMedical(Game.state); UI.renderScouting(Game.state); }
+      if (name === "academy") UI.renderAcademy(Game.state);
       if (name === "lineup") UI.renderLineup(Game.state);
       if (name === "table") {
         // Default the Table tab to the user's own division each visit.
@@ -139,13 +140,12 @@
         UI.toast(`Hired ${res.name} — ${Coaching.ROLE_LABEL[res.role]} (${UI.money(res.price)})`);
         Game.save();
         UI.renderCoaches(Game.state);
-        UI.renderAcademy(Game.state);
+        UI.renderMedical(Game.state);
         UI.renderScouting(Game.state);
         this.refreshChrome();
       });
-      // Academy: promote or release graduates/prospects. Scouting: assign,
-      // recall, sign a target, or dismiss a report.
-      document.getElementById("screen-coaches").addEventListener("click", e => {
+      // Academy (own tab): promote or release graduates/prospects.
+      document.getElementById("screen-academy").addEventListener("click", e => {
         const prom = e.target.closest("button[data-promote]");
         if (prom) {
           const res = Academy.promote(Game.state, prom.dataset.promote);
@@ -158,8 +158,10 @@
         if (rel) {
           const res = Academy.release(Game.state, rel.dataset.release);
           if (res.ok) { UI.toast(`${res.name} released from the academy`); Game.save(); UI.renderAcademy(Game.state); }
-          return;
         }
+      });
+      // Scouting: assign, recall, sign a target, or dismiss a report.
+      document.getElementById("screen-coaches").addEventListener("click", e => {
         const send = e.target.closest("button[data-scoutsend]");
         if (send) {
           const row = send.closest(".scout-row");
@@ -578,6 +580,12 @@
       if (!item || item.recorded) return;
       item.recorded = true;
       const state = Game.state;
+      // Any match the user's club played drains the fitness of the XI that
+      // featured (stacks across a congested week).
+      if (item.full && item.home && item.away && (item.home.id === state.clubId || item.away.id === state.clubId)) {
+        const me = Game.myClub();
+        if (me && me.lineup) Fitness.recordMatch(me, Lineup.starterIds(me.lineup));
+      }
       if (item.type === "league") {
         Season.recordResult(state, item.home.id, item.away.id, item.full.hg, item.full.ag);
         Stats.recordUserMatch(item.full.hStarters, item.full.aStarters, item.full.hg, item.full.ag, item.full.homeScorers, item.full.awayScorers);
@@ -706,6 +714,7 @@
         else if (t && t.transition === "closed") UI.toast("🔒 Transfer window has closed.");
         (state.academyNews || []).forEach(m => UI.toast(m));
         (state.scoutNews || []).forEach(m => UI.toast(m));
+        (state.medicalNews || []).forEach(m => UI.toast(m));
       }
     },
 

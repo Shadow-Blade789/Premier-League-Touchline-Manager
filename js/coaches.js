@@ -55,10 +55,10 @@ const Coaching = {
     return "Basic";
   },
 
-  ROLE_LABEL: { GK: "Goalkeeping", DF: "Defence", MF: "Midfield", FW: "Attack", scout: "Youth Scout", youthcoach: "Youth Coach", talentscout: "Talent Scout" },
+  ROLE_LABEL: { GK: "Goalkeeping", DF: "Defence", MF: "Midfield", FW: "Attack", scout: "Youth Scout", youthcoach: "Youth Coach", talentscout: "Talent Scout", physio: "Physio" },
   isYouth(role) { return role === "scout" || role === "youthcoach"; },
-  // Backroom staff (youth staff + recruitment scouts) cost the "investment" premium.
-  isBackroom(role) { return this.isYouth(role) || role === "talentscout"; },
+  // Backroom staff (youth staff, recruitment scouts, physios) cost the "investment" premium.
+  isBackroom(role) { return this.isYouth(role) || role === "talentscout" || role === "physio"; },
 
   // Youth staff cost more than position coaches — a top scout/academy coach is
   // a real investment.
@@ -77,7 +77,8 @@ const Coaching = {
     const yn = 2 + Math.floor(Math.random() * 3); // 2–4 youth staff
     for (let i = 0; i < yn; i++) list.push(makeYouthStaff(Math.random() < 0.5 ? "scout" : "youthcoach", rate()));
     if (Math.random() < 0.6) list.push(makeYouthStaff("talentscout", rate())); // a recruitment scout most weeks
-    const order = ["GK", "DF", "MF", "FW", "scout", "youthcoach", "talentscout"];
+    if (Math.random() < 0.55) list.push(makeYouthStaff("physio", rate()));      // a physio most weeks
+    const order = ["GK", "DF", "MF", "FW", "scout", "youthcoach", "talentscout", "physio"];
     list.sort((a, b) => order.indexOf(a.role) - order.indexOf(b.role) || b.rating - a.rating);
     state.coachMarket = list;
   },
@@ -99,6 +100,7 @@ const Coaching = {
       if (team.length < Scouting.CAP) team.push(hired);
       else { team.sort((a, b) => a.rating - b.rating); team[0] = hired; } // swap out the weakest
     }
+    else if (staff.role === "physio") { club.physio = staff; }
     else club.coaches[staff.role] = staff; // position coach
     state.coachMarket.splice(idx, 1);
     return { ok: true, name: staff.name, role: staff.role, price };

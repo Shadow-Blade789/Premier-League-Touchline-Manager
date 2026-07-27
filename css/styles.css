@@ -325,6 +325,15 @@
    .strike { text-decoration: line-through; opacity: 0.55; font-size: 0.82em; margin-left: 0.3rem; }
    #scoutTeam { margin-top: 0.4rem; }
 
+   /* ---------- Fitness / injury tags ---------- */
+   .fit-tag { display: inline-block; margin-left: 0.4rem; padding: 0.02rem 0.34rem; border-radius: 4px; font-size: 0.68rem; font-family: var(--font-mono, monospace); border: 1px solid transparent; vertical-align: middle; }
+   .fit-tag.fresh   { color: #8de08a; border-color: rgba(141,224,138,0.4); }
+   .fit-tag.ok      { color: #cbd5e1; border-color: rgba(203,213,225,0.3); }
+   .fit-tag.tired   { color: #ffc857; border-color: rgba(255,200,87,0.5); }
+   .fit-tag.injured { color: #ff7a6b; border-color: rgba(255,122,107,0.6); background: rgba(255,122,107,0.10); }
+   .player-row.injured-row { opacity: 0.72; }
+   #medicalStaff { margin-top: 0.4rem; }
+
    /* ---------- Pitch / lineup ---------- */
    .pitch-wrap {
      position: relative; width: 100%; max-width: 420px; margin: 0 auto 1rem;

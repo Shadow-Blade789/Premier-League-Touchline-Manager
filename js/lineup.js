@@ -22,16 +22,18 @@
       const lineup = this.emptyLineup(formationKey);
       const used = new Set();
   
+      // Injured players can't be selected.
+      const fit = p => !p.injuryWeeks;
       POSITIONS.forEach(pos => {
-        const pool = club.squad.filter(p => p.pos === pos).sort((a, b) => b.rating - a.rating);
+        const pool = club.squad.filter(p => p.pos === pos && fit(p)).sort((a, b) => b.rating - a.rating);
         for (let i = 0; i < req[pos]; i++) {
           const pick = pool[i];
           if (pick) { lineup.slots[pos][i] = pick.id; used.add(pick.id); }
         }
       });
-  
+
       // Bench: best remaining players, up to 7, at least one spare keeper if possible.
-      const rest = club.squad.filter(p => !used.has(p.id)).sort((a, b) => b.rating - a.rating);
+      const rest = club.squad.filter(p => !used.has(p.id) && fit(p)).sort((a, b) => b.rating - a.rating);
       lineup.bench = rest.slice(0, 7).map(p => p.id);
   
       club.formation = formationKey;

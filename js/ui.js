@@ -420,8 +420,8 @@
           subLabel: this.wage(p.wage),
           careerLabel: Stats.careerSquadLine(p),
           potentialLabel: String(p.potential),
-          badge,
-          rowClass: p.transferListed ? "listed" : "",
+          badge: this.fitnessBadge(p) + badge,
+          rowClass: (p.transferListed ? "listed" : "") + (p.injuryWeeks ? " injured-row" : ""),
           action: listBtn,
         });
         const panel = offers.length ? `<div class="offers-panel hidden" id="offers-${p.id}">${this.offersHTML(p, open)}</div>` : "";
@@ -490,12 +490,13 @@
         const cur = role === "scout" ? (a.scout ? a.scout.rating : 0)
           : role === "youthcoach" ? (a.coach ? a.coach.rating : 0)
           : role === "talentscout" ? (scoutTeam.length < Scouting.CAP ? 0 : bestScout)
+          : role === "physio" ? (club.physio ? club.physio.rating : 0)
           : (club.coaches[role] ? club.coaches[role].rating : 0);
         const tag = role === "talentscout"
           ? (scoutTeam.length < Scouting.CAP ? " · adds to team" : " · swaps weakest")
           : c.rating > cur ? " · upgrade" : c.rating < cur ? " · downgrade" : "";
         const chipClass = Coaching.isBackroom(role) ? "youth" : role;
-        const chipText = role === "scout" ? "SCT" : role === "youthcoach" ? "YTH" : role === "talentscout" ? "TAL" : role;
+        const chipText = role === "scout" ? "SCT" : role === "youthcoach" ? "YTH" : role === "talentscout" ? "TAL" : role === "physio" ? "MED" : role;
         return `<div class="coach-row market">
           <div class="pos-chip ${chipClass}">${chipText}</div>
           <div><div class="name">${c.name}</div><div class="sub">${Coaching.ROLE_LABEL[role]} · ${Coaching.ratingLabel(c.rating)}${tag}</div></div>
@@ -605,6 +606,36 @@
         : `<p class="muted" style="font-size:0.82rem;">No reports yet — send a scout out and check back in a few matchweeks.${windowOpen ? "" : " You can scout any time; sign when the window opens."}</p>`;
     },
 
+    // The Medical & Fitness panel: the physio and the current treatment room.
+    renderMedical(state) {
+      const club = Game.myClub();
+      const ph = club.physio;
+      const bonus = Fitness.physioBonus(club);
+      const cut = Math.round(clamp((Fitness.physioRating(club) - 50) / 120, 0, 0.42) * 100);
+      document.getElementById("medicalStaff").innerHTML = `<div class="coach-row">
+        <div class="pos-chip youth">MED</div>
+        <div><div class="name">${ph ? ph.name : "—"}</div>
+          <div class="sub">Physio · ${ph ? Coaching.ratingLabel(ph.rating) : "none"} · −${cut}% injury risk</div></div>
+        <div class="rating-pill">${ph ? ph.rating : "—"}</div>
+        <div class="mono muted">+${bonus.toFixed(0)} recovery</div>
+      </div>`;
+
+      const injured = Fitness.injuredList(club);
+      document.getElementById("medicalInjured").innerHTML = injured.length
+        ? injured.map(p => `<div class="coach-row grad">
+            <div class="pos-chip ${p.pos}">${p.pos}</div>
+            <div><div class="name">${p.name} <span class="nat-tag">${p.nat || "ENG"}</span></div>
+              <div class="sub">Out injured · back in ${p.injuryWeeks} week${p.injuryWeeks === 1 ? "" : "s"}</div></div>
+            <div class="rating-pill">${p.rating}</div>
+          </div>`).join("")
+        : `<p class="muted" style="font-size:0.82rem;">No injuries — your squad is fully fit.</p>`;
+    },
+
+    // A compact fitness/injury chip for squad rows.
+    fitnessBadge(p) {
+      return `<span class="fit-tag ${Fitness.level(p)}" title="Match fitness">${Fitness.label(p)}</span>`;
+    },
+
     formationOptions(current) {
       return Object.keys(FORMATIONS).map(f => `<option value="${f}" ${f === current ? "selected" : ""}>${f}</option>`).join("");
     },
@@ -642,11 +673,11 @@
         html += `<div class="slot-group"><span class="eyebrow">${posLabel(pos)}</span>`;
         lineup.slots[pos].forEach((id, idx) => {
           const used = usedElsewhere(pos);
-          const eligible = club.squad.filter(p => p.pos === pos && (!used.includes(p.id) || p.id === id)).sort((a, b) => b.rating - a.rating);
+          const eligible = club.squad.filter(p => p.pos === pos && !p.injuryWeeks && (!used.includes(p.id) || p.id === id)).sort((a, b) => b.rating - a.rating);
           html += `<div class="slot-row">
             <select data-pos="${pos}" data-idx="${idx}">
               <option value="">— Empty —</option>
-              ${eligible.map(p => `<option value="${p.id}" ${p.id === id ? "selected" : ""}>${p.name} (${p.rating})</option>`).join("")}
+              ${eligible.map(p => `<option value="${p.id}" ${p.id === id ? "selected" : ""}>${p.name} (${p.rating}) · ${Math.round(p.fitness ?? 100)}%</option>`).join("")}
             </select>
           </div>`;
         });
@@ -665,6 +696,9 @@
     renderLineup(state) {
       const club = Game.myClub();
       if (!club.lineup) Lineup.autoPick(club);
+      // An injured player can't stay in the XI — pull them out so the manager
+      // sees the empty slot to fill.
+      (club.squad || []).forEach(p => { if (p.injuryWeeks) Fitness.dropFromLineup(club, p.id); });
       document.getElementById("formationSelect").innerHTML = this.formationOptions(club.formation);
       this.renderPitch(club);
       this.renderLineupSlots(club);
