@@ -33,18 +33,30 @@
      // Gradient by reputation tier: elite generated sides (a tier-5 La Liga
      // club) are genuinely strong, lower tiers step down toward the fourth tier.
      const baseRating = Math.max(46, 52 + club.tier * 6);
+     const country = LEAGUE_COUNTRY[club.league];
      for (const pos of POSITIONS) {
        while (have[pos] < need[pos]) {
          // Skew young: most fill-ins are academy-aged depth, with a handful of
          // older journeymen for squad balance.
          const age = Math.random() < 0.65 ? 17 + Math.floor(Math.random() * 6) : 24 + Math.floor(Math.random() * 10);
          const rating = baseRating - 6 + Math.floor(Math.random() * 10) - (age < 21 ? 4 : 0);
-         const { name, nat } = randomProspect();
+         const { name, nat } = homeProspect(country); // squads skew to the club's own nation
          const p = P(name, pos, age, rating, { nat });
          p.club = club.id;
          club.squad.push(p);
          have[pos]++;
        }
+     }
+     // Elite clubs get a couple of standout players so the top flight of every
+     // nation feels genuinely strong (a peer to the real English rosters).
+     if (club.tier >= 4) {
+       const targets = club.tier >= 5 ? [88, 86, 84] : [84, 82];
+       club.squad.slice().sort((a, b) => b.rating - a.rating).slice(0, targets.length).forEach((p, i) => {
+         if (p.rating < targets[i]) {
+           p.rating = targets[i];
+           if (p.potential < p.rating) p.potential = p.rating;
+         }
+       });
      }
    }
    
@@ -96,6 +108,7 @@
        coachMarket: [],       // hireable coaches, refreshed each matchweek
        pendingShield: null,   // Community Shield participants for the coming season
        pendingSupercopa: null, // Supercopa de España final-four for the coming season
+       pendingSuperCup: null,  // generic super cup (champion v national cup winner) for the coming season
        euro: null,            // this season's European competitions (set by Euro.initSeason)
        pendingEuro: null,     // next season's European qualification (by league finish)
        pendingMatch: null,    // result payload waiting to be viewed live
@@ -277,6 +290,11 @@
        ER: RAW_NL_ER, EE: RAW_NL_EE, EK: RAW_PL_EK, IL: RAW_PL_IL, SL: RAW_TR_SL, T1: RAW_TR_T1,
        BPL: RAW_BE_BPL, BCH: RAW_BE_BCH, ABL: RAW_AT_ABL, A2L: RAW_AT_A2L,
        DSL: RAW_DK_DSL, D1D: RAW_DK_D1D, GSL: RAW_GR_GSL, GS2: RAW_GR_GS2,
+       SPL: RAW_SC_SPL, SC2: RAW_SC_SC2, SSL: RAW_CH_SSL, SCL: RAW_CH_SCL,
+       HNL: RAW_HR_HNL, HN2: RAW_HR_HN2, NB1: RAW_HU_NB1, NB2: RAW_HU_NB2,
+       FL1: RAW_FR_FL1, FL2: RAW_FR_FL2, FN1: RAW_FR_FN1, FN2: RAW_FR_FN2,
+       PRF: RAW_ES_PRF, SGF: RAW_ES_SGF, BL3: RAW_DE_BL3, BL4: RAW_DE_BL4,
+       SEC: RAW_IT_SEC, SED: RAW_IT_SED,
      };
      state.clubs.forEach(c => { if (!c.league) c.league = "PL"; });
 
@@ -317,13 +335,21 @@
      });
 
      const counts = LEAGUES.map(lg => (state.fixtures && !Array.isArray(state.fixtures) && state.fixtures[lg] || []).length);
-     const expected = LEAGUES.map(lg => 2 * (state.clubs.filter(c => c.league === lg).length - 1));
-     const fixturesOk = counts.every((c, i) => c === expected[i]);
+     // Expected REGULAR-season rounds, format-aware (2× default, 3×/4× for
+     // triple/quadruple leagues). A split league that has already split will
+     // legitimately hold MORE rounds than this, so we require "at least".
+     const expected = LEAGUES.map(lg => {
+       const n = state.clubs.filter(c => c.league === lg).length;
+       const fmt = leagueFormat(lg);
+       return ((fmt && fmt.rounds) || 2) * (n - 1);
+     });
+     const fixturesOk = counts.every((c, i) => c > 0 && c >= expected[i]);
      if (!fixturesOk || injected) {
        const oldPL = Array.isArray(state.fixtures) ? state.fixtures : (state.fixtures && state.fixtures.PL);
        Season.buildFixtures(state);
        // Keep the in-progress Premier League schedule if it still matches (20 clubs).
        if (oldPL && oldPL.length === state.fixtures.PL.length) state.fixtures.PL = oldPL;
+       state.splitDone = {}; state.clubs.forEach(c => { c.splitGroup = null; }); // rebuilt schedules → clear split tracking
      }
 
      delete state.feederPool;
@@ -348,6 +374,15 @@
      if (!Array.isArray(state.honours)) state.honours = [];
      if (state.pendingShield === undefined) state.pendingShield = null;
      if (state.pendingSupercopa === undefined) state.pendingSupercopa = null;
+     if (state.pendingSuperCup === undefined) state.pendingSuperCup = null;
+
+     // Generic national cups (Phase 6) are newer than some saves — make sure the
+     // managed country's cup exists (mid-season it sits out and starts fresh next).
+     const myNatCup = Object.values(Cup.CUPS).find(c => c.generic && c.country === managedCountry);
+     if (myNatCup && !state[myNatCup.stateKey]) {
+       if (state.week > 0) state[myNatCup.stateKey] = { skipped: true, participants: [], entrantsByRound: {}, ties: [], winner: null };
+       else Cup.init(state, myNatCup);
+     }
 
      // European competitions are newer than some saves. Mid-season they sit out
      // the current campaign and begin fresh next season.

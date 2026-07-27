@@ -314,6 +314,7 @@
       // Season curtain-raisers on matchweek 1 (per country).
       this.queueCommunityShield(state, club);
       this.queueSupercopa(state, club);
+      this.queueSuperCup(state, club);
 
       // The league game.
       const home = state.clubs.find(c => c.id === fixture.home);
@@ -330,7 +331,7 @@
       // A cup round can fall on this week (FA Cup and/or Carabao Cup).
       Object.values(Cup.CUPS).forEach(cfg => {
         const fc = state[cfg.stateKey];
-        if (!Cup.isActive(fc) || fc.winner || !Cup.roundForWeek(cfg, state.week)) return;
+        if (!Cup.isActive(fc) || fc.winner || !Cup.roundForWeek(cfg, state.week, fc)) return;
         Cup.drawRound(state, fc);
         Cup.simulateOtherTies(state, fc);
         const tie = Cup.userTie(state, fc);
@@ -426,6 +427,24 @@
         this.weekQueue.push({ type: "supercopa-final", home: club, away: other, full: finalFull, recorded: false, label: "Supercopa de España · Final" });
       } else {
         this.qsWinner(byId(semiWinnerId), byId(otherWinnerId)); // final, in the background
+      }
+    },
+
+    // Generic season-opening super cup (any nation without a bespoke one):
+    // last season's league champion vs the national cup winner, single match.
+    queueSuperCup(state, club) {
+      if (state.week !== 0 || !state.pendingSuperCup) return;
+      const ps = state.pendingSuperCup;
+      state.pendingSuperCup = null;
+      const a = state.clubs.find(c => c.id === ps.champion);
+      const b = state.clubs.find(c => c.id === ps.cupWinner);
+      if (!a || !b || a.id === b.id) return; // champion also won the cup — skip
+      if (a.id === club.id || b.id === club.id) {
+        const foe = a.id === club.id ? b : a;
+        Lineup.autoPick(foe, foe.formation || "4-4-2");
+        this.weekQueue.push({ type: "supercup", home: a, away: b, full: MatchEngine.simulateFull(a, b), recorded: false, label: ps.name });
+      } else {
+        this.qsWinner(a, b); // resolved in the background
       }
     },
 
@@ -542,6 +561,16 @@
         }
         document.getElementById("matchStatus").textContent =
           (item.full.hg === item.full.ag ? "Pens · " : "") + Cup.clubShort(state, w) + " win the Supercopa";
+      } else if (item.type === "supercup") {
+        const w = item.full.hg > item.full.ag ? item.home.id
+          : item.full.ag > item.full.hg ? item.away.id
+          : Cup.penaltyWinner(item.home, item.away);
+        if (w === state.clubId) {
+          state.honours = state.honours || [];
+          state.honours.push({ type: "supercup", season: state.season });
+        }
+        document.getElementById("matchStatus").textContent =
+          (item.full.hg === item.full.ag ? "Pens · " : "") + Cup.clubShort(state, w) + " win the Super Cup";
       } else if (item.type === "euro-league") {
         Euro.recordUserLeagueGame(state, item.fixture, item.full.hg, item.full.ag);
       } else if (item.type === "euro-ko") {
@@ -717,6 +746,7 @@
           ${cupLine(result.faCup)}
           ${cupLine(result.eflCup)}
           ${cupLine(result.copa)}
+          ${cupLine(result.natCup)}
           ${result.euro && result.euro.eligible ? cupLine(result.euro) : ""}
           ${result.vertu && result.vertu.eligible ? cupLine(result.vertu) : ""}
           <p class="muted">${fromLeagueName} champions: ${result.champion.name} · New budget: ${UI.money(club.budget)}</p>

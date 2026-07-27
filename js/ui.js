@@ -152,9 +152,14 @@
         showCup(vertuPanel);
         this.renderVertuPanel(state);
       } else {
-        // Nations whose domestic cups aren't modelled yet (Phase 3 leagues) —
-        // hide the cup panels; the European panel below still applies.
-        hideCup(cupPanel); hideCup(carabaoPanel); hideCup(vertuPanel);
+        // Every other nation: its single generic national cup.
+        const natCupCfg = Object.values(Cup.CUPS).find(c => c.generic && c.country === country);
+        if (natCupCfg && Cup.isActive(state[natCupCfg.stateKey])) {
+          showCup(cupPanel);
+          setTitle("hubCupTitle", natCupCfg.name);
+          this.renderCupPanel(state, natCupCfg, "hubCupBody");
+        } else hideCup(cupPanel);
+        hideCup(carabaoPanel); hideCup(vertuPanel);
       }
       this.renderEuroPanel(state);
     },
@@ -291,6 +296,10 @@
         { type: "shield", label: "Community Shield", icon: "🛡️" },
         { type: "supercopa", label: "Supercopa de España", icon: "🛡️" },
       ];
+      // League titles + national cups for every other nation, plus the generic super cup.
+      LEAGUE_REGISTRY.forEach(l => { if (!defs.some(d => d.type === l.code)) defs.push({ type: l.code, label: l.name + " Winners", icon: "🏆" }); });
+      Object.values(Cup.CUPS).filter(c => c.generic).forEach(c => defs.push({ type: c.stateKey, label: c.name, icon: "🏆" }));
+      defs.push({ type: "supercup", label: "Super Cup", icon: "🛡️" });
       const lines = defs.map(d => {
         const seasons = honours.filter(h => h.type === d.type).map(h => h.season).sort((a, b) => a - b);
         if (!seasons.length) return "";
@@ -311,7 +320,7 @@
       const fc = state[cfg.stateKey];
       if (!fc || fc.skipped) { body.innerHTML = `<span class="muted">The ${cfg.name} begins next season.</span>`; return; }
       const clubId = state.clubId;
-      const rounds = cfg.rounds;
+      const rounds = Cup.roundsOf(cfg, fc);
 
       let head;
       if (fc.winner === clubId) {

@@ -102,7 +102,8 @@ const Cup = {
   initSeason(state) { this.initAll(state); },
 
   init(state, cfg) {
-    const { participants, entrantsByRound } = cfg.build(state);
+    const built = cfg.build(state);
+    const { participants, entrantsByRound } = built;
     let userEntryRound = participants.includes(state.clubId) ? 0 : null;
     if (userEntryRound === null) {
       for (const r of Object.keys(entrantsByRound)) {
@@ -111,9 +112,28 @@ const Cup = {
     }
     state[cfg.stateKey] = {
       season: state.season, roundIndex: 0, drawnRound: -1,
-      participants, entrantsByRound, userEntryRound: userEntryRound == null ? 0 : userEntryRound,
+      participants, entrantsByRound, rounds: built.rounds || null, // per-instance rounds for generic cups
+      userEntryRound: userEntryRound == null ? 0 : userEntryRound,
       ties: [], winner: null, userOut: false, userExitRound: null, skipped: false,
     };
+  },
+
+  // Rounds for a cup instance: a generic national cup carries its own rounds
+  // list (sized to the field); the hand-built cups use their static config.
+  roundsOf(cfg, fc) { return (fc && fc.rounds) || cfg.rounds || []; },
+
+  // Build a rounds list for a knockout of `bracket` clubs (a power of two),
+  // optionally preceded by a preliminary round. Names are derived from the
+  // teams remaining; the Final always lands late in the season.
+  buildRounds(bracket, hasPrelim) {
+    const names = [];
+    if (hasPrelim) names.push("Preliminary Round");
+    for (let t = bracket; t >= 2; t /= 2) {
+      names.push(t > 16 ? "Round of " + t : t === 16 ? "Round of 16" : t === 8 ? "Quarter-Final" : t === 4 ? "Semi-Final" : "Final");
+    }
+    const WEEKS = [2, 5, 8, 11, 15, 19, 23, 27, 30, 34];
+    const weeks = WEEKS.slice(-names.length);
+    return names.map((name, i) => ({ key: "r" + i, name, short: name.length > 8 ? name.slice(0, 8) : name, week: weeks[i] }));
   },
 
   // ---- lookups & status ----------------------------------------------------
@@ -122,8 +142,8 @@ const Cup = {
   clubByAnyId(state, id) { return state.clubs.find(c => c.id === id) || null; },
   clubName(state, id) { const c = this.clubByAnyId(state, id); return c ? c.name : id; },
   clubShort(state, id) { const c = this.clubByAnyId(state, id); return c ? c.short : id; },
-  roundForWeek(cfg, week) { return cfg.rounds.find(r => r.week === week) || null; },
-  currentRoundDef(cfg, fc) { return cfg.rounds[fc.roundIndex] || null; },
+  roundForWeek(cfg, week, fc) { return this.roundsOf(cfg, fc).find(r => r.week === week) || null; },
+  currentRoundDef(cfg, fc) { return this.roundsOf(cfg, fc)[fc.roundIndex] || null; },
   userHasBye(fc) { return fc.winner == null && !fc.userOut && fc.roundIndex < fc.userEntryRound; },
   userTie(state, fc) {
     if (!this.isActive(fc)) return null;
@@ -212,7 +232,38 @@ const Cup = {
     if (!fc || fc.skipped) return null;
     let userResult = "Did not feature";
     if (fc.winner === state.clubId) userResult = "🏆 Winners";
-    else if (fc.userExitRound != null) userResult = "Out in the " + cfg.rounds[fc.userExitRound].name;
+    else if (fc.userExitRound != null) userResult = "Out in the " + (this.roundsOf(cfg, fc)[fc.userExitRound] || {}).name;
     return { name: cfg.name, winner: fc.winner ? this.clubName(state, fc.winner) : "—", userWon: fc.winner === state.clubId, userResult };
   },
 };
+
+// A generic national cup for every nation that doesn't already have a bespoke
+// one (England's FA/Carabao, Spain's Copa). The weakest clubs contest a
+// preliminary round; the strongest are seeded into a clean single-elimination
+// bracket. Field size varies by nation, so each carries its own rounds list.
+function makeNationalCup(country, name, stateKey) {
+  return {
+    key: stateKey, stateKey, name, country, generic: true, rounds: null,
+    build(state) {
+      const clubs = state.clubs.filter(c => LEAGUE_COUNTRY[c.league] === country);
+      const ranked = clubs.slice().sort((a, b) => Stats.clubStrength(a) - Stats.clubStrength(b)); // weakest first
+      const N = ranked.length;
+      let bracket = 1; while (bracket * 2 <= N) bracket *= 2; // largest power of two ≤ field
+      const prelimClubs = 2 * (N - bracket);
+      const hasPrelim = prelimClubs > 0;
+      const participants = (hasPrelim ? ranked.slice(0, prelimClubs) : ranked).map(c => c.id);
+      const byes = hasPrelim ? ranked.slice(prelimClubs).map(c => c.id) : [];
+      return { participants, entrantsByRound: hasPrelim ? { 1: byes } : {}, rounds: Cup.buildRounds(bracket, hasPrelim) };
+    },
+  };
+}
+
+const NATIONAL_CUPS = {
+  GER: "DFB-Pokal", ITA: "Coppa Italia", FRA: "Coupe de France", POR: "Taça de Portugal",
+  NED: "KNVB Beker", POL: "Puchar Polski", TUR: "Turkish Cup", BEL: "Belgian Cup",
+  AUT: "ÖFB-Cup", DEN: "DBU Pokalen", GRE: "Greek Cup", SCO: "Scottish Cup",
+  SUI: "Swiss Cup", CRO: "Croatian Cup", HUN: "Magyar Kupa",
+};
+Object.entries(NATIONAL_CUPS).forEach(([cc, name]) => {
+  Cup.CUPS["cup" + cc] = makeNationalCup(cc, name, "cup" + cc);
+});

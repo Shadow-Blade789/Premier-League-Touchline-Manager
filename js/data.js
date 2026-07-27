@@ -93,15 +93,44 @@
      USA: { first: ["Tyler","Jackson","Cole","Bryce","Mason","Dylan","Cameron","Hunter"], last: ["Brooks","Reilly","Walsh","Pulisic","Anderson","Reyna","Carter","Howard"] },
      COL: { first: ["Santiago","Andrés","Camilo","Esteban","Mateo","Juan","Sebastián","Cristian"], last: ["Quintero","Salazar","Restrepo","Mosquera","Valencia","Cuesta","Hinestroza","Mina"] },
      HRV: { first: ["Luka","Marko","Ivan","Petar","Josip","Filip","Ante","Karlo"], last: ["Horvat","Kovačić","Babić","Vuković","Jurić","Maric","Pavić","Knežević"] },
+     ITA: { first: ["Lorenzo","Marco","Andrea","Matteo","Francesco","Alessandro","Giovanni","Federico","Davide","Simone"], last: ["Rossi","Russo","Ferrari","Esposito","Bianchi","Romano","Colombo","Ricci","Marino","Greco"] },
+     POL: { first: ["Kacper","Jakub","Szymon","Mateusz","Filip","Bartosz","Wojciech","Piotr","Kamil","Michał"], last: ["Nowak","Kowalski","Wiśniewski","Wójcik","Kowalczyk","Kamiński","Zieliński","Szymański","Woźniak","Mazur"] },
+     TUR: { first: ["Emre","Mert","Burak","Yusuf","Arda","Kaan","Cenk","Ozan","Berkay","Efe"], last: ["Yılmaz","Kaya","Demir","Şahin","Çelik","Yıldız","Yıldırım","Öztürk","Aydın","Arslan"] },
+     BEL: { first: ["Lars","Wout","Jonas","Senne","Milan","Lucas","Aaron","Vic","Simon","Arne"], last: ["Peeters","Janssens","Maes","Jacobs","Willems","Claes","Wouters","De Smet","Dupont","Michiels"] },
+     AUT: { first: ["Lukas","David","Julian","Marcel","Florian","Stefan","Manuel","Fabian","Simon","Andreas"], last: ["Gruber","Bauer","Pichler","Steiner","Moser","Mayer","Berger","Hofer","Leitner","Wimmer"] },
+     DEN: { first: ["Mikkel","Frederik","Mathias","Emil","Oliver","Magnus","Victor","Rasmus","Anton","Malte"], last: ["Nielsen","Jensen","Hansen","Pedersen","Andersen","Christensen","Larsen","Sørensen","Rasmussen","Madsen"] },
+     GRE: { first: ["Giorgos","Dimitris","Kostas","Nikos","Panagiotis","Vasilis","Christos","Andreas","Thanasis","Stelios"], last: ["Papadopoulos","Nikolaou","Georgiou","Vasileiou","Pappas","Makris","Oikonomou","Ioannidis","Alexiou","Katsaros"] },
+     SUI: { first: ["Noah","Luca","Leon","Nico","Elias","Dario","Sven","Loris","Jan","Fabio"], last: ["Meier","Schmid","Keller","Widmer","Zbinden","Brunner","Baumann","Frei","Kobel","Vargas"] },
+     HUN: { first: ["Bence","Máté","Levente","Dániel","Ádám","Balázs","Gergő","Zsombor","Dávid","Márton"], last: ["Nagy","Kovács","Tóth","Szabó","Horváth","Varga","Kiss","Molnár","Németh","Farkas"] },
+     SCO: { first: ["Callum","Ryan","Lewis","Jack","Kieran","Scott","Aiden","Finlay","Cameron","Kyle"], last: ["Campbell","Stewart","Robertson","Murray","MacLeod","Fraser","Gray","Docherty","Kennedy","Wallace"] },
    };
    const NATION_WEIGHTS = ["ENG","ENG","ENG","ENG","ENG","FRA","FRA","BRA","BRA","NED","POR","NGA","ARG","ESP","GER","IRL","SEN","HRV","NOR","JPN","USA","COL"];
-   
+   // Each footballing country's primary player nationality, for home-skewed squads.
+   const COUNTRY_NAT = {
+     ENG: "ENG", ESP: "ESP", GER: "GER", ITA: "ITA", FRA: "FRA", POR: "POR", NED: "NED",
+     POL: "POL", TUR: "TUR", BEL: "BEL", AUT: "AUT", DEN: "DEN", GRE: "GRE", SCO: "SCO",
+     SUI: "SUI", CRO: "HRV", HUN: "HUN",
+   };
+
    function randomProspect() {
      const nat = NATION_WEIGHTS[Math.floor(Math.random() * NATION_WEIGHTS.length)];
      const pool = NATION_POOLS[nat];
      const first = pool.first[Math.floor(Math.random() * pool.first.length)];
      const last = pool.last[Math.floor(Math.random() * pool.last.length)];
      return { name: first + " " + last, nat };
+   }
+
+   // A prospect skewed toward the club's own country (~65% homegrown, the rest an
+   // international mix) — so a German club fields German-sounding names, etc.
+   function homeProspect(country) {
+     const nat = COUNTRY_NAT[country];
+     const pool = nat && NATION_POOLS[nat];
+     if (pool && Math.random() < 0.65) {
+       const first = pool.first[Math.floor(Math.random() * pool.first.length)];
+       const last = pool.last[Math.floor(Math.random() * pool.last.length)];
+       return { name: first + " " + last, nat };
+     }
+     return randomProspect();
    }
    
    // Position groups: GK, DF, MF, FW
@@ -776,6 +805,332 @@
      { id: "gre_ovl", name: "Olympiacos Volos", short: "OVL", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
    ];
 
+   // =========================================================================
+   // N-TIMES ROUND-ROBIN NATIONS (Phase 5 — triple / quadruple leagues)
+   // =========================================================================
+
+   // ---- SCOTLAND (Premiership: triple round-robin then 6/6 split) ----
+   const RAW_SC_SPL = [
+     { id: "sco_cel", name: "Celtic", short: "CEL", city: "Glasgow", stadium: "Celtic Park", colors: ["#16984B", "#FFFFFF"], tier: 4, squad: [] },
+     { id: "sco_ran", name: "Rangers", short: "RAN", city: "Glasgow", stadium: "Ibrox", colors: ["#1B458F", "#FFFFFF"], tier: 4, squad: [] },
+     { id: "sco_abe", name: "Aberdeen", short: "ABE", city: "Aberdeen", stadium: "Pittodrie", colors: ["#E03A3E", "#FFFFFF"], tier: 3, squad: [] },
+     { id: "sco_hea", name: "Hearts", short: "HEA", city: "Edinburgh", stadium: "Tynecastle", colors: ["#7A263A", "#FFFFFF"], tier: 3, squad: [] },
+     { id: "sco_hib", name: "Hibernian", short: "HIB", city: "Edinburgh", stadium: "Easter Road", colors: ["#00752F", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "sco_dun", name: "Dundee United", short: "DUN", colors: ["#FF6600", "#000000"], tier: 2, squad: [] },
+     { id: "sco_kil", name: "Kilmarnock", short: "KIL", colors: ["#003399", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "sco_stm", name: "St Mirren", short: "STM", colors: ["#000000", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "sco_mot", name: "Motherwell", short: "MOT", colors: ["#FFC20E", "#8A1538"], tier: 2, squad: [] },
+     { id: "sco_dee", name: "Dundee", short: "DEE", colors: ["#0A2340", "#E30613"], tier: 2, squad: [] },
+     { id: "sco_ros", name: "Ross County", short: "ROS", colors: ["#000000", "#0A2340"], tier: 2, squad: [] },
+     { id: "sco_stj", name: "St Johnstone", short: "STJ", colors: ["#005CA9", "#FFFFFF"], tier: 2, squad: [] },
+   ];
+   const RAW_SC_SC2 = [
+     { id: "sco_fal", name: "Falkirk", short: "FAL", colors: ["#005CA9", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "sco_liv", name: "Livingston", short: "LIV", colors: ["#FFD700", "#000000"], tier: 2, squad: [] },
+     { id: "sco_par", name: "Partick Thistle", short: "PAR", colors: ["#E30613", "#FFD700"], tier: 1, squad: [] },
+     { id: "sco_rai", name: "Raith Rovers", short: "RAI", colors: ["#0A2340", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "sco_dnf", name: "Dunfermline", short: "DNF", colors: ["#000000", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "sco_ayr", name: "Ayr United", short: "AYR", colors: ["#000000", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "sco_mor", name: "Greenock Morton", short: "MOR", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "sco_qpk", name: "Queen's Park", short: "QPK", colors: ["#000000", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "sco_air", name: "Airdrieonians", short: "AIR", colors: ["#FFFFFF", "#E30613"], tier: 1, squad: [] },
+     { id: "sco_ham", name: "Hamilton", short: "HAM", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
+   ];
+
+   // ---- SWITZERLAND (Super League: triple round-robin then 6/6 split) ----
+   // FC Vaduz (Liechtenstein) plays in the Swiss pyramid — folded in here.
+   const RAW_CH_SSL = [
+     { id: "sui_ybb", name: "Young Boys", short: "YBB", city: "Bern", stadium: "Wankdorf", colors: ["#FFD700", "#000000"], tier: 4, squad: [] },
+     { id: "sui_bas", name: "Basel", short: "BAS", city: "Basel", stadium: "St. Jakob-Park", colors: ["#E30613", "#005CA9"], tier: 4, squad: [] },
+     { id: "sui_ser", name: "Servette", short: "SER", city: "Geneva", stadium: "Stade de Genève", colors: ["#7A263A", "#FFFFFF"], tier: 3, squad: [] },
+     { id: "sui_lug", name: "Lugano", short: "LUG", city: "Lugano", stadium: "Cornaredo", colors: ["#000000", "#FFFFFF"], tier: 3, squad: [] },
+     { id: "sui_sga", name: "St. Gallen", short: "SGA", colors: ["#00A650", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "sui_zur", name: "Zürich", short: "ZUR", colors: ["#005CA9", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "sui_lau", name: "Lausanne", short: "LAU", colors: ["#005CA9", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "sui_luz", name: "Luzern", short: "LUZ", colors: ["#005CA9", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "sui_gra", name: "Grasshopper", short: "GRA", colors: ["#005CA9", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "sui_sio", name: "Sion", short: "SIO", colors: ["#E30613", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "sui_yve", name: "Yverdon", short: "YVE", colors: ["#00A650", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "sui_win", name: "Winterthur", short: "WIN", colors: ["#E30613", "#FFFFFF"], tier: 2, squad: [] },
+   ];
+   const RAW_CH_SCL = [
+     { id: "sui_aar", name: "Aarau", short: "AAR", colors: ["#000000", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "sui_thu", name: "Thun", short: "THU", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "sui_vad", name: "Vaduz", short: "VAD", colors: ["#E30613", "#005CA9"], tier: 1, squad: [] },
+     { id: "sui_wil", name: "Wil", short: "WIL", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "sui_xam", name: "Neuchâtel Xamax", short: "XAM", colors: ["#E30613", "#000000"], tier: 1, squad: [] },
+     { id: "sui_sch", name: "Schaffhausen", short: "SCH", colors: ["#000000", "#FFD700"], tier: 1, squad: [] },
+     { id: "sui_bel", name: "Bellinzona", short: "BEL", colors: ["#E30613", "#005CA9"], tier: 1, squad: [] },
+     { id: "sui_nyo", name: "Stade Nyonnais", short: "NYO", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "sui_car", name: "Étoile Carouge", short: "CAR", colors: ["#E30613", "#000000"], tier: 1, squad: [] },
+     { id: "sui_rap", name: "Rapperswil-Jona", short: "RAP", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+   ];
+
+   // ---- CROATIA (HNL: quadruple round-robin) ----
+   const RAW_HR_HNL = [
+     { id: "cro_din", name: "Dinamo Zagreb", short: "DIN", city: "Zagreb", stadium: "Maksimir", colors: ["#005CA9", "#FFFFFF"], tier: 4, squad: [] },
+     { id: "cro_haj", name: "Hajduk Split", short: "HAJ", city: "Split", stadium: "Poljud", colors: ["#005CA9", "#FFFFFF"], tier: 4, squad: [] },
+     { id: "cro_rij", name: "Rijeka", short: "RIJ", city: "Rijeka", stadium: "Rujevica", colors: ["#FFFFFF", "#005CA9"], tier: 3, squad: [] },
+     { id: "cro_osi", name: "Osijek", short: "OSI", city: "Osijek", stadium: "Opus Arena", colors: ["#005CA9", "#FFFFFF"], tier: 3, squad: [] },
+     { id: "cro_sla", name: "Slaven Belupo", short: "SLA", colors: ["#005CA9", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "cro_lok", name: "Lokomotiva", short: "LOK", colors: ["#005CA9", "#FFD700"], tier: 2, squad: [] },
+     { id: "cro_gor", name: "Gorica", short: "GOR", colors: ["#005CA9", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "cro_var", name: "Varaždin", short: "VAR", colors: ["#FFD700", "#005CA9"], tier: 2, squad: [] },
+     { id: "cro_ist", name: "Istra 1961", short: "IST", colors: ["#00A650", "#FFD700"], tier: 2, squad: [] },
+     { id: "cro_sib", name: "Šibenik", short: "SIB", colors: ["#005CA9", "#FFFFFF"], tier: 2, squad: [] },
+   ];
+   const RAW_HR_HN2 = [
+     { id: "cro_cib", name: "Cibalia", short: "CIB", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "cro_dub", name: "Dubrava", short: "DUB", colors: ["#00A650", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "cro_ses", name: "Sesvete", short: "SES", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "cro_jar", name: "Jarun", short: "JAR", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "cro_bbr", name: "Bijelo Brdo", short: "BBR", colors: ["#FFFFFF", "#005CA9"], tier: 1, squad: [] },
+     { id: "cro_ori", name: "Orijent", short: "ORI", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "cro_rud", name: "Rudeš", short: "RUD", colors: ["#00A650", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "cro_vuk", name: "Vukovar 1991", short: "VUK", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "cro_zmi", name: "Zmijavci", short: "ZMI", colors: ["#E30613", "#000000"], tier: 1, squad: [] },
+     { id: "cro_sol", name: "Solin", short: "SOL", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "cro_kus", name: "Kustošija", short: "KUS", colors: ["#005CA9", "#FFD700"], tier: 1, squad: [] },
+     { id: "cro_opa", name: "Opatija", short: "OPA", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+   ];
+
+   // ---- HUNGARY (NB I: triple round-robin, no split) ----
+   const RAW_HU_NB1 = [
+     { id: "hun_fer", name: "Ferencváros", short: "FER", city: "Budapest", stadium: "Groupama Aréna", colors: ["#00A650", "#FFFFFF"], tier: 4, squad: [] },
+     { id: "hun_pus", name: "Puskás Akadémia", short: "PUS", city: "Felcsút", stadium: "Pancho Aréna", colors: ["#005CA9", "#FFD700"], tier: 3, squad: [] },
+     { id: "hun_pak", name: "Paks", short: "PAK", colors: ["#00A650", "#FFFFFF"], tier: 3, squad: [] },
+     { id: "hun_feh", name: "Fehérvár", short: "FEH", colors: ["#E30613", "#005CA9"], tier: 2, squad: [] },
+     { id: "hun_deb", name: "Debrecen", short: "DEB", colors: ["#E30613", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "hun_kis", name: "Kisvárda", short: "KIS", colors: ["#FFD700", "#000000"], tier: 2, squad: [] },
+     { id: "hun_ujp", name: "Újpest", short: "UJP", colors: ["#4B2E83", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "hun_mtk", name: "MTK Budapest", short: "MTK", colors: ["#005CA9", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "hun_dio", name: "Diósgyőr", short: "DIO", colors: ["#E30613", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "hun_zal", name: "Zalaegerszeg", short: "ZAL", colors: ["#005CA9", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "hun_nyi", name: "Nyíregyháza", short: "NYI", colors: ["#FFD700", "#005CA9"], tier: 2, squad: [] },
+     { id: "hun_kec", name: "Kecskemét", short: "KEC", colors: ["#8A1538", "#FFD700"], tier: 2, squad: [] },
+   ];
+   const RAW_HU_NB2 = [
+     { id: "hun_vas", name: "Vasas", short: "VAS", colors: ["#005CA9", "#E30613"], tier: 2, squad: [] },
+     { id: "hun_hon", name: "Honvéd", short: "HON", colors: ["#E30613", "#000000"], tier: 2, squad: [] },
+     { id: "hun_eto", name: "ETO Győr", short: "ETO", colors: ["#00A650", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "hun_sze", name: "Szeged", short: "SZE", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "hun_vac", name: "Vác", short: "VAC", colors: ["#005CA9", "#FFD700"], tier: 1, squad: [] },
+     { id: "hun_ajk", name: "Ajka", short: "AJK", colors: ["#8A1538", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "hun_csa", name: "Csákvár", short: "CSA", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "hun_bek", name: "Békéscsaba", short: "BEK", colors: ["#4B0082", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "hun_bud", name: "Budafok", short: "BUD", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "hun_hal", name: "Haladás", short: "HAL", colors: ["#00A650", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "hun_koz", name: "Kozármisleny", short: "KOZ", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "hun_sio", name: "Siófok", short: "SIO", colors: ["#005CA9", "#FFD700"], tier: 1, squad: [] },
+     { id: "hun_tis", name: "Tiszakécske", short: "TIS", colors: ["#00A650", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "hun_mos", name: "Mosonmagyaróvár", short: "MOS", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "hun_sor", name: "Soroksár", short: "SOR", colors: ["#005CA9", "#E30613"], tier: 1, squad: [] },
+     { id: "hun_kar", name: "Karcag", short: "KAR", colors: ["#E30613", "#000000"], tier: 1, squad: [] },
+   ];
+
+   // =========================================================================
+   // TOP-5 FULL PYRAMIDS — France (new, 4 tiers) + 3rd/4th tiers for Spain,
+   // Germany, Italy so each of the big five nations has four divisions.
+   // =========================================================================
+
+   // ---- FRANCE (Ligue 1 / Ligue 2 / National / National 2) ----
+   const RAW_FR_FL1 = [
+     { id: "fra_psg", name: "Paris Saint-Germain", short: "PSG", city: "Paris", stadium: "Parc des Princes", colors: ["#004170", "#E30613"], tier: 5, squad: [] },
+     { id: "fra_mar", name: "Marseille", short: "MAR", city: "Marseille", stadium: "Vélodrome", colors: ["#2FAEE0", "#FFFFFF"], tier: 4, squad: [] },
+     { id: "fra_mon", name: "Monaco", short: "MON", city: "Monaco", stadium: "Louis II", colors: ["#E30613", "#FFFFFF"], tier: 4, squad: [] },
+     { id: "fra_lil", name: "Lille", short: "LIL", city: "Lille", stadium: "Pierre-Mauroy", colors: ["#E30613", "#005CA9"], tier: 4, squad: [] },
+     { id: "fra_lyo", name: "Lyon", short: "LYO", city: "Lyon", stadium: "Groupama Stadium", colors: ["#005CA9", "#E30613"], tier: 3, squad: [] },
+     { id: "fra_nic", name: "Nice", short: "NIC", city: "Nice", stadium: "Allianz Riviera", colors: ["#E30613", "#000000"], tier: 3, squad: [] },
+     { id: "fra_len", name: "Lens", short: "LEN", city: "Lens", stadium: "Bollaert-Delelis", colors: ["#FFD700", "#E30613"], tier: 3, squad: [] },
+     { id: "fra_ren", name: "Rennes", short: "REN", city: "Rennes", stadium: "Roazhon Park", colors: ["#E30613", "#000000"], tier: 3, squad: [] },
+     { id: "fra_str", name: "Strasbourg", short: "STR", colors: ["#005CA9", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "fra_bre", name: "Brest", short: "BRE", colors: ["#E30613", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "fra_tou", name: "Toulouse", short: "TOU", colors: ["#4B2E83", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "fra_nan", name: "Nantes", short: "NAN", colors: ["#FFD700", "#00A650"], tier: 2, squad: [] },
+     { id: "fra_lha", name: "Le Havre", short: "LHA", colors: ["#005CA9", "#87CEEB"], tier: 2, squad: [] },
+     { id: "fra_rei", name: "Reims", short: "REI", colors: ["#E30613", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "fra_aux", name: "Auxerre", short: "AUX", colors: ["#005CA9", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "fra_ang", name: "Angers", short: "ANG", colors: ["#000000", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "fra_set", name: "Saint-Étienne", short: "SET", colors: ["#00A650", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "fra_mtp", name: "Montpellier", short: "MTP", colors: ["#005CA9", "#FF6600"], tier: 2, squad: [] },
+   ];
+   const RAW_FR_FL2 = [
+     { id: "fra_met", name: "Metz", short: "MET", colors: ["#8A1538", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "fra_lor", name: "Lorient", short: "LOR", colors: ["#FF6600", "#000000"], tier: 2, squad: [] },
+     { id: "fra_bor", name: "Bordeaux", short: "BOR", colors: ["#00205B", "#E30613"], tier: 2, squad: [] },
+     { id: "fra_gui", name: "Guingamp", short: "GUI", colors: ["#E30613", "#000000"], tier: 1, squad: [] },
+     { id: "fra_bas", name: "Bastia", short: "BAS", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "fra_gre", name: "Grenoble", short: "GRE", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "fra_pfc", name: "Paris FC", short: "PFC", colors: ["#005CA9", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "fra_cae", name: "Caen", short: "CAE", colors: ["#E30613", "#005CA9"], tier: 1, squad: [] },
+     { id: "fra_aja", name: "Ajaccio", short: "AJA", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "fra_ami", name: "Amiens", short: "AMI", colors: ["#000000", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "fra_ann", name: "Annecy", short: "ANN", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "fra_dun", name: "Dunkerque", short: "DUN", colors: ["#005CA9", "#FFD700"], tier: 1, squad: [] },
+     { id: "fra_lav", name: "Laval", short: "LAV", colors: ["#FF6600", "#000000"], tier: 1, squad: [] },
+     { id: "fra_pau", name: "Pau", short: "PAU", colors: ["#FFD700", "#005CA9"], tier: 1, squad: [] },
+     { id: "fra_rod", name: "Rodez", short: "ROD", colors: ["#E30613", "#FFD700"], tier: 1, squad: [] },
+     { id: "fra_tro", name: "Troyes", short: "TRO", colors: ["#005CA9", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "fra_cle", name: "Clermont", short: "CLE", colors: ["#E30613", "#005CA9"], tier: 1, squad: [] },
+     { id: "fra_rst", name: "Red Star", short: "RST", colors: ["#00A650", "#FFFFFF"], tier: 1, squad: [] },
+   ];
+   const RAW_FR_FN1 = [
+     { id: "fra_lem", name: "Le Mans", short: "LEM", colors: ["#FFD700", "#E30613"], tier: 1, squad: [] },
+     { id: "fra_ncy", name: "Nancy", short: "NCY", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "fra_orl", name: "Orléans", short: "ORL", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "fra_cha", name: "Châteauroux", short: "CHA", colors: ["#E30613", "#005CA9"], tier: 1, squad: [] },
+     { id: "fra_nim", name: "Nîmes", short: "NIM", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "fra_soc", name: "Sochaux", short: "SOC", colors: ["#FFD700", "#005CA9"], tier: 1, squad: [] },
+     { id: "fra_bou", name: "Boulogne", short: "BOU", colors: ["#E30613", "#000000"], tier: 1, squad: [] },
+     { id: "fra_dij", name: "Dijon", short: "DIJ", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "fra_con", name: "Concarneau", short: "CON", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "fra_qro", name: "Quevilly-Rouen", short: "QRO", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "fra_mrt", name: "Martigues", short: "MRT", colors: ["#FFD700", "#005CA9"], tier: 1, squad: [] },
+     { id: "fra_bpe", name: "Bourg-Péronnas", short: "BPE", colors: ["#005CA9", "#FFD700"], tier: 1, squad: [] },
+     { id: "fra_vil", name: "Villefranche", short: "VIL", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "fra_ver", name: "Versailles", short: "VER", colors: ["#000000", "#FFD700"], tier: 1, squad: [] },
+     { id: "fra_epi", name: "Épinal", short: "EPI", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "fra_fle", name: "Fleury", short: "FLE", colors: ["#E30613", "#000000"], tier: 1, squad: [] },
+   ];
+   const RAW_FR_FN2 = [
+     { id: "fra_cho", name: "Cholet", short: "CHO", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "fra_her", name: "Les Herbiers", short: "HER", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "fra_sma", name: "Saint-Malo", short: "SMA", colors: ["#000000", "#FFD700"], tier: 1, squad: [] },
+     { id: "fra_hye", name: "Hyères", short: "HYE", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "fra_rum", name: "Rumilly", short: "RUM", colors: ["#E30613", "#005CA9"], tier: 1, squad: [] },
+     { id: "fra_puy", name: "Le Puy", short: "PUY", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "fra_bel", name: "Belfort", short: "BEL", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "fra_was", name: "Wasquehal", short: "WAS", colors: ["#005CA9", "#E30613"], tier: 1, squad: [] },
+     { id: "fra_blo", name: "Blois", short: "BLO", colors: ["#005CA9", "#FFD700"], tier: 1, squad: [] },
+     { id: "fra_sau", name: "Saumur", short: "SAU", colors: ["#000000", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "fra_poi", name: "Poissy", short: "POI", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "fra_p13", name: "Paris 13 Atletico", short: "P13", colors: ["#E30613", "#000000"], tier: 1, squad: [] },
+     { id: "fra_sed", name: "Sedan", short: "SED", colors: ["#00A650", "#E30613"], tier: 1, squad: [] },
+     { id: "fra_duc", name: "Lyon La Duchère", short: "DUC", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "fra_gfc", name: "GOAL FC", short: "GFC", colors: ["#FFD700", "#000000"], tier: 1, squad: [] },
+     { id: "fra_mci", name: "Marignane", short: "MCI", colors: ["#005CA9", "#FFD700"], tier: 1, squad: [] },
+   ];
+
+   // ---- SPAIN tier 3-4 (Primera Federación / Segunda Federación) ----
+   const RAW_ES_PRF = [
+     { id: "esp_pon", name: "Ponferradina", short: "PON", colors: ["#005CA9", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "esp_nas", name: "Nàstic Tarragona", short: "NAS", colors: ["#E30613", "#005CA9"], tier: 2, squad: [] },
+     { id: "esp_mur", name: "Real Murcia", short: "MUR", colors: ["#E30613", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "esp_her", name: "Hércules", short: "HER", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "esp_sab", name: "Sabadell", short: "SAB", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "esp_mrb", name: "Marbella", short: "MRB", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "esp_ceu", name: "AD Ceuta", short: "CEU", colors: ["#000000", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "esp_ibi", name: "UD Ibiza", short: "IBI", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "esp_ant", name: "Antequera", short: "ANT", colors: ["#00A650", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "esp_tar", name: "Tarazona", short: "TAR", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "esp_san", name: "Sanluqueño", short: "SAN", colors: ["#00A650", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "esp_ter", name: "Teruel", short: "TER", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "esp_bar", name: "Barakaldo", short: "BAR", colors: ["#FFD700", "#000000"], tier: 1, squad: [] },
+     { id: "esp_are", name: "Arenteiro", short: "ARE", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "esp_gui", name: "Guijuelo", short: "GUI", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "esp_yec", name: "Yeclano", short: "YEC", colors: ["#005CA9", "#E30613"], tier: 1, squad: [] },
+     { id: "esp_lug", name: "Lugo", short: "LUG", colors: ["#FFFFFF", "#E30613"], tier: 1, squad: [] },
+     { id: "esp_zam", name: "Zamora", short: "ZAM", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
+   ];
+   const RAW_ES_SGF = [
+     { id: "esp_num", name: "Numancia", short: "NUM", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "esp_ptv", name: "Pontevedra", short: "PTV", colors: ["#005CA9", "#000000"], tier: 1, squad: [] },
+     { id: "esp_maj", name: "Rayo Majadahonda", short: "MAJ", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "esp_ses", name: "Sestao River", short: "SES", colors: ["#000000", "#E30613"], tier: 1, squad: [] },
+     { id: "esp_avi", name: "Real Avilés", short: "AVI", colors: ["#FFFFFF", "#005CA9"], tier: 1, squad: [] },
+     { id: "esp_cac", name: "Cacereño", short: "CAC", colors: ["#00A650", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "esp_tal", name: "Talavera", short: "TAL", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "esp_mer", name: "Mérida", short: "MER", colors: ["#000000", "#FFD700"], tier: 1, squad: [] },
+     { id: "esp_cor", name: "Coria", short: "COR", colors: ["#00A650", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "esp_utr", name: "Utrera", short: "UTR", colors: ["#00A650", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "esp_est", name: "Estepona", short: "EST", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "esp_lin", name: "Linares", short: "LIN", colors: ["#005CA9", "#E30613"], tier: 1, squad: [] },
+     { id: "esp_ori", name: "Orihuela", short: "ORI", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "esp_agu", name: "Águilas", short: "AGU", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "esp_mel", name: "Melilla", short: "MEL", colors: ["#005CA9", "#E30613"], tier: 1, squad: [] },
+     { id: "esp_lor", name: "Lorca", short: "LOR", colors: ["#000000", "#FFFFFF"], tier: 1, squad: [] },
+   ];
+
+   // ---- GERMANY tier 3-4 (3. Liga / Regionalliga) ----
+   const RAW_DE_BL3 = [
+     { id: "ger_m60", name: "1860 Munich", short: "M60", colors: ["#005CA9", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "ger_cot", name: "Energie Cottbus", short: "COT", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "ger_rwe", name: "Rot-Weiss Essen", short: "RWE", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "ger_wal", name: "Waldhof Mannheim", short: "WAL", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "ger_saa", name: "1. FC Saarbrücken", short: "SAA", colors: ["#005CA9", "#000000"], tier: 1, squad: [] },
+     { id: "ger_aue", name: "Erzgebirge Aue", short: "AUE", colors: ["#4B2E83", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "ger_ing", name: "Ingolstadt", short: "ING", colors: ["#E30613", "#000000"], tier: 1, squad: [] },
+     { id: "ger_osn", name: "Osnabrück", short: "OSN", colors: ["#4B2E83", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "ger_vik", name: "Viktoria Köln", short: "VIK", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "ger_ver", name: "SC Verl", short: "VER", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "ger_san", name: "Sandhausen", short: "SAN", colors: ["#000000", "#FFD700"], tier: 1, squad: [] },
+     { id: "ger_han", name: "Hansa Rostock", short: "HAN", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "ger_hav", name: "TSV Havelse", short: "HAV", colors: ["#00A650", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "ger_weh", name: "Wehen Wiesbaden", short: "WEH", colors: ["#E30613", "#000000"], tier: 1, squad: [] },
+     { id: "ger_dui", name: "MSV Duisburg", short: "DUI", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "ger_aac", name: "Alemannia Aachen", short: "AAC", colors: ["#FFD700", "#000000"], tier: 1, squad: [] },
+     { id: "ger_uhc", name: "Unterhaching", short: "UHC", colors: ["#E30613", "#005CA9"], tier: 1, squad: [] },
+     { id: "ger_swf", name: "Schweinfurt", short: "SWF", colors: ["#00A650", "#FFFFFF"], tier: 1, squad: [] },
+   ];
+   const RAW_DE_BL4 = [
+     { id: "ger_off", name: "Kickers Offenbach", short: "OFF", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "ger_hom", name: "FC Homburg", short: "HOM", colors: ["#00A650", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "ger_stk", name: "Stuttgart Kickers", short: "STK", colors: ["#005CA9", "#FFD700"], tier: 1, squad: [] },
+     { id: "ger_ulm", name: "SSV Ulm", short: "ULM", colors: ["#FFFFFF", "#000000"], tier: 1, squad: [] },
+     { id: "ger_bal", name: "TSG Balingen", short: "BAL", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "ger_bah", name: "Bahlinger SC", short: "BAH", colors: ["#E30613", "#000000"], tier: 1, squad: [] },
+     { id: "ger_fsv", name: "FSV Frankfurt", short: "FSV", colors: ["#000000", "#E30613"], tier: 1, squad: [] },
+     { id: "ger_fre", name: "SGV Freiberg", short: "FRE", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "ger_ste", name: "TSV Steinbach", short: "STE", colors: ["#00A650", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "ger_kob", name: "Rot-Weiß Koblenz", short: "KOB", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "ger_tri", name: "Eintracht Trier", short: "TRI", colors: ["#000000", "#FFD700"], tier: 1, squad: [] },
+     { id: "ger_wor", name: "Wormatia Worms", short: "WOR", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "ger_byr", name: "SpVgg Bayreuth", short: "BYR", colors: ["#FFD700", "#000000"], tier: 1, squad: [] },
+     { id: "ger_wue", name: "Würzburger Kickers", short: "WUE", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "ger_asc", name: "Viktoria Aschaffenburg", short: "ASC", colors: ["#FFD700", "#005CA9"], tier: 1, squad: [] },
+     { id: "ger_aal", name: "VfR Aalen", short: "AAL", colors: ["#000000", "#FFFFFF"], tier: 1, squad: [] },
+   ];
+
+   // ---- ITALY tier 3-4 (Serie C / Serie D) ----
+   const RAW_IT_SEC = [
+     { id: "ita_vic", name: "Vicenza", short: "VIC", colors: ["#E30613", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "ita_ter", name: "Ternana", short: "TER", colors: ["#00A650", "#E30613"], tier: 1, squad: [] },
+     { id: "ita_cta", name: "Catania", short: "CTA", colors: ["#005CA9", "#E30613"], tier: 1, squad: [] },
+     { id: "ita_ave", name: "Avellino", short: "AVE", colors: ["#00A650", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "ita_ben", name: "Benevento", short: "BEN", colors: ["#FFD700", "#E30613"], tier: 1, squad: [] },
+     { id: "ita_cro", name: "Crotone", short: "CRO", colors: ["#E30613", "#005CA9"], tier: 1, squad: [] },
+     { id: "ita_pes", name: "Pescara", short: "PES", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "ita_fog", name: "Foggia", short: "FOG", colors: ["#E30613", "#000000"], tier: 1, squad: [] },
+     { id: "ita_tra", name: "Trapani", short: "TRA", colors: ["#E30613", "#005CA9"], tier: 1, squad: [] },
+     { id: "ita_cer", name: "Cerignola", short: "CER", colors: ["#FFD700", "#005CA9"], tier: 1, squad: [] },
+     { id: "ita_lat", name: "Latina", short: "LAT", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "ita_cas", name: "Casertana", short: "CAS", colors: ["#E30613", "#000000"], tier: 1, squad: [] },
+     { id: "ita_pad", name: "Padova", short: "PAD", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "ita_trs", name: "Triestina", short: "TRS", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "ita_pvc", name: "Pro Vercelli", short: "PVC", colors: ["#FFFFFF", "#000000"], tier: 1, squad: [] },
+     { id: "ita_alb", name: "AlbinoLeffe", short: "ALB", colors: ["#005CA9", "#FFD700"], tier: 1, squad: [] },
+     { id: "ita_nov", name: "Novara", short: "NOV", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "ita_per", name: "Pergolettese", short: "PER", colors: ["#FFD700", "#005CA9"], tier: 1, squad: [] },
+   ];
+   const RAW_IT_SED = [
+     { id: "ita_noc", name: "Nocerina", short: "NOC", colors: ["#E30613", "#000000"], tier: 1, squad: [] },
+     { id: "ita_csr", name: "Casarano", short: "CSR", colors: ["#E30613", "#005CA9"], tier: 1, squad: [] },
+     { id: "ita_chi", name: "Chieri", short: "CHI", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "ita_sgi", name: "Sangiuliano", short: "SGI", colors: ["#00A650", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "ita_fan", name: "Fanfulla", short: "FAN", colors: ["#FFFFFF", "#005CA9"], tier: 1, squad: [] },
+     { id: "ita_leg", name: "Legnano", short: "LEG", colors: ["#4B2E83", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "ita_vae", name: "Varese", short: "VAE", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "ita_snr", name: "Sanremese", short: "SNR", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "ita_cal", name: "Caldiero", short: "CAL", colors: ["#00A650", "#FFD700"], tier: 1, squad: [] },
+     { id: "ita_fzu", name: "Fiorenzuola", short: "FZU", colors: ["#E30613", "#000000"], tier: 1, squad: [] },
+     { id: "ita_rav", name: "Ravenna", short: "RAV", colors: ["#FFD700", "#E30613"], tier: 1, squad: [] },
+     { id: "ita_for", name: "Forlì", short: "FOR", colors: ["#E30613", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "ita_imo", name: "Imolese", short: "IMO", colors: ["#E30613", "#005CA9"], tier: 1, squad: [] },
+     { id: "ita_luc", name: "Lucchese", short: "LUC", colors: ["#E30613", "#000000"], tier: 1, squad: [] },
+     { id: "ita_ppa", name: "Pro Patria", short: "PPA", colors: ["#005CA9", "#FFFFFF"], tier: 1, squad: [] },
+     { id: "ita_cle", name: "Real Calepina", short: "CLE", colors: ["#005CA9", "#E30613"], tier: 1, squad: [] },
+   ];
+
    // Attach league tag, club reference & ids onto every club / player.
    const CLUBS = [
      ...RAW_CLUBS.map(c => {
@@ -809,6 +1164,24 @@
      ...RAW_DK_D1D.map(c => { c.league = "D1D"; c.crestInitials = c.short; return c; }),
      ...RAW_GR_GSL.map(c => { c.league = "GSL"; c.crestInitials = c.short; return c; }),
      ...RAW_GR_GS2.map(c => { c.league = "GS2"; c.crestInitials = c.short; return c; }),
+     ...RAW_SC_SPL.map(c => { c.league = "SPL"; c.crestInitials = c.short; return c; }),
+     ...RAW_SC_SC2.map(c => { c.league = "SC2"; c.crestInitials = c.short; return c; }),
+     ...RAW_CH_SSL.map(c => { c.league = "SSL"; c.crestInitials = c.short; return c; }),
+     ...RAW_CH_SCL.map(c => { c.league = "SCL"; c.crestInitials = c.short; return c; }),
+     ...RAW_HR_HNL.map(c => { c.league = "HNL"; c.crestInitials = c.short; return c; }),
+     ...RAW_HR_HN2.map(c => { c.league = "HN2"; c.crestInitials = c.short; return c; }),
+     ...RAW_HU_NB1.map(c => { c.league = "NB1"; c.crestInitials = c.short; return c; }),
+     ...RAW_HU_NB2.map(c => { c.league = "NB2"; c.crestInitials = c.short; return c; }),
+     ...RAW_FR_FL1.map(c => { c.league = "FL1"; c.crestInitials = c.short; return c; }),
+     ...RAW_FR_FL2.map(c => { c.league = "FL2"; c.crestInitials = c.short; return c; }),
+     ...RAW_FR_FN1.map(c => { c.league = "FN1"; c.crestInitials = c.short; return c; }),
+     ...RAW_FR_FN2.map(c => { c.league = "FN2"; c.crestInitials = c.short; return c; }),
+     ...RAW_ES_PRF.map(c => { c.league = "PRF"; c.crestInitials = c.short; return c; }),
+     ...RAW_ES_SGF.map(c => { c.league = "SGF"; c.crestInitials = c.short; return c; }),
+     ...RAW_DE_BL3.map(c => { c.league = "BL3"; c.crestInitials = c.short; return c; }),
+     ...RAW_DE_BL4.map(c => { c.league = "BL4"; c.crestInitials = c.short; return c; }),
+     ...RAW_IT_SEC.map(c => { c.league = "SEC"; c.crestInitials = c.short; return c; }),
+     ...RAW_IT_SED.map(c => { c.league = "SED"; c.crestInitials = c.short; return c; }),
    ];
 
    function clubById(id) { return CLUBS.find(c => c.id === id); }
@@ -828,10 +1201,20 @@
      { code: "L2", name: "League Two",       short: "Lg 2",    country: "ENG", econ: 0.18 },
      { code: "LL", name: "La Liga",          short: "La Liga", country: "ESP", econ: 1 },
      { code: "SG", name: "Segunda División", short: "Segunda", country: "ESP", econ: 0.6 },
+     { code: "PRF", name: "Primera Federación", short: "Primera Fed", country: "ESP", econ: 0.35 },
+     { code: "SGF", name: "Segunda Federación", short: "Segunda Fed", country: "ESP", econ: 0.15 },
      { code: "BL1", name: "Bundesliga",        short: "Bundesliga", country: "GER", econ: 1 },
      { code: "BL2", name: "2. Bundesliga",     short: "2.Bundesliga", country: "GER", econ: 0.55 },
+     { code: "BL3", name: "3. Liga",           short: "3. Liga",    country: "GER", econ: 0.35 },
+     { code: "BL4", name: "Regionalliga",      short: "Regionalliga", country: "GER", econ: 0.15 },
      { code: "SA",  name: "Serie A",           short: "Serie A",    country: "ITA", econ: 1 },
      { code: "SB",  name: "Serie B",           short: "Serie B",    country: "ITA", econ: 0.55 },
+     { code: "SEC", name: "Serie C",           short: "Serie C",    country: "ITA", econ: 0.35 },
+     { code: "SED", name: "Serie D",           short: "Serie D",    country: "ITA", econ: 0.15 },
+     { code: "FL1", name: "Ligue 1",           short: "Ligue 1",    country: "FRA", econ: 1 },
+     { code: "FL2", name: "Ligue 2",           short: "Ligue 2",    country: "FRA", econ: 0.5 },
+     { code: "FN1", name: "National",          short: "National",   country: "FRA", econ: 0.3 },
+     { code: "FN2", name: "National 2",        short: "National 2", country: "FRA", econ: 0.15 },
      { code: "PP",  name: "Primeira Liga",     short: "Primeira",   country: "POR", econ: 0.8 },
      { code: "P2",  name: "Liga Portugal 2",   short: "Liga 2",     country: "POR", econ: 0.4 },
      { code: "ER",  name: "Eredivisie",        short: "Eredivisie", country: "NED", econ: 0.8 },
@@ -849,11 +1232,21 @@
      { code: "D1D", name: "1. Division",        short: "1. Division", country: "DEN", econ: 0.3 },
      { code: "GSL", name: "Super League",       short: "Super League", country: "GRE", econ: 0.5, format: { split: { groups: [7, 7], legs: 1, points: "carry" } } },
      { code: "GS2", name: "Super League 2",     short: "Super Lg 2", country: "GRE", econ: 0.25 },
+     // N-times round-robin nations (Phase 5).
+     { code: "SPL", name: "Scottish Premiership", short: "Premiership", country: "SCO", econ: 0.6, format: { rounds: 3, split: { groups: [6, 6], legs: 1, points: "carry" } } },
+     { code: "SC2", name: "Scottish Championship", short: "Championship", country: "SCO", econ: 0.3, format: { rounds: 4 } },
+     { code: "SSL", name: "Swiss Super League",  short: "Super League", country: "SUI", econ: 0.6, format: { rounds: 3, split: { groups: [6, 6], legs: 1, points: "carry" } } },
+     { code: "SCL", name: "Challenge League",    short: "Challenge", country: "SUI", econ: 0.3, format: { rounds: 4 } },
+     { code: "HNL", name: "SuperSport HNL",      short: "HNL",       country: "CRO", econ: 0.4, format: { rounds: 4 } },
+     { code: "HN2", name: "Prva NL",             short: "Prva NL",   country: "CRO", econ: 0.2 },
+     { code: "NB1", name: "Nemzeti Bajnokság I", short: "NB I",      country: "HUN", econ: 0.4, format: { rounds: 3 } },
+     { code: "NB2", name: "Nemzeti Bajnokság II", short: "NB II",    country: "HUN", econ: 0.2 },
    ];
    const COUNTRY_NAMES = {
-     ENG: "England", ESP: "Spain", GER: "Germany", ITA: "Italy",
+     ENG: "England", ESP: "Spain", GER: "Germany", ITA: "Italy", FRA: "France",
      POR: "Portugal", NED: "Netherlands", POL: "Poland", TUR: "Turkey",
      BEL: "Belgium", AUT: "Austria", DEN: "Denmark", GRE: "Greece",
+     SCO: "Scotland", SUI: "Switzerland", CRO: "Croatia", HUN: "Hungary",
    };
 
    const LEAGUES        = LEAGUE_REGISTRY.map(l => l.code);

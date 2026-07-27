@@ -43,12 +43,26 @@
       return full.slice(0, full.length / 2);
     },
 
+    // Play each pair `times` times (2 = double, the default; 3 = triple as in
+    // Scotland/Switzerland/Hungary; 4 = quadruple as in Croatia/Ireland and most
+    // 10-club leagues). Legs alternate venue so meetings are venue-balanced.
+    roundRobinN(ids, times) {
+      const dbl = this.roundRobin(ids);       // [firstLeg…, secondLeg…]
+      const legLen = dbl.length / 2;
+      const firstLeg = dbl.slice(0, legLen);
+      const secondLeg = dbl.slice(legLen);
+      let rounds = [];
+      for (let i = 0; i < (times || 2); i++) rounds = rounds.concat(i % 2 === 0 ? firstLeg : secondLeg);
+      return rounds;
+    },
+
     // Builds a separate schedule for each league.
     buildFixtures(state) {
       state.fixtures = {};
       LEAGUES.forEach(lg => {
         const ids = state.clubs.filter(c => c.league === lg).map(c => c.id);
-        state.fixtures[lg] = this.roundRobin(ids);
+        const fmt = leagueFormat(lg);
+        state.fixtures[lg] = this.roundRobinN(ids, (fmt && fmt.rounds) || 2);
       });
     },
 
@@ -102,7 +116,7 @@
       if (state.splitDone[league]) return;
       const clubs = state.clubs.filter(c => c.league === league);
       if (clubs.length < 2) return;
-      const regularRounds = 2 * (clubs.length - 1);
+      const regularRounds = ((fmt.rounds) || 2) * (clubs.length - 1); // triple/quadruple leagues split later
       if (Math.max(...clubs.map(c => c.played || 0)) < regularRounds) return; // regular season not done yet
       this.applySplit(state, league, fmt.split, clubs);
       state.splitDone[league] = true;
@@ -226,13 +240,23 @@
       L1: { autoPromote: 3, playoff: 1, relegate: 4 },
       L2: { autoPromote: 3, playoff: 1, relegate: 0, sacking: 4 },
       LL: { autoPromote: 0, playoff: 0, relegate: 3 },            // La Liga
-      SG: { autoPromote: 3, playoff: 0, relegate: 0, sacking: 3 }, // Segunda (bottom Spanish tier)
+      SG:  { autoPromote: 3, playoff: 0, relegate: 3 },            // Segunda (now a middle tier)
+      PRF: { autoPromote: 3, playoff: 0, relegate: 3 },            // Primera Federación
+      SGF: { autoPromote: 3, playoff: 0, relegate: 0, sacking: 3 }, // Segunda Federación (bottom Spanish tier)
       // Foreign nations (Phase 3): top flight relegates 3, second tier promotes
       // 3 and is the sacking-zone bottom of its two-tier chain.
       BL1: { autoPromote: 0, playoff: 0, relegate: 3 },
-      BL2: { autoPromote: 3, playoff: 0, relegate: 0, sacking: 3 },
+      BL2: { autoPromote: 3, playoff: 0, relegate: 3 },
+      BL3: { autoPromote: 3, playoff: 0, relegate: 3 },
+      BL4: { autoPromote: 3, playoff: 0, relegate: 0, sacking: 3 },
       SA:  { autoPromote: 0, playoff: 0, relegate: 3 },
-      SB:  { autoPromote: 3, playoff: 0, relegate: 0, sacking: 3 },
+      SB:  { autoPromote: 3, playoff: 0, relegate: 3 },
+      SEC: { autoPromote: 3, playoff: 0, relegate: 3 },
+      SED: { autoPromote: 3, playoff: 0, relegate: 0, sacking: 3 },
+      FL1: { autoPromote: 0, playoff: 0, relegate: 3 },
+      FL2: { autoPromote: 3, playoff: 0, relegate: 3 },
+      FN1: { autoPromote: 3, playoff: 0, relegate: 3 },
+      FN2: { autoPromote: 3, playoff: 0, relegate: 0, sacking: 3 },
       PP:  { autoPromote: 0, playoff: 0, relegate: 3 },
       P2:  { autoPromote: 3, playoff: 0, relegate: 0, sacking: 3 },
       ER:  { autoPromote: 0, playoff: 0, relegate: 3 },
@@ -250,6 +274,15 @@
       D1D: { autoPromote: 3, playoff: 0, relegate: 0, sacking: 3 },
       GSL: { autoPromote: 0, playoff: 0, relegate: 3 },
       GS2: { autoPromote: 3, playoff: 0, relegate: 0, sacking: 3 },
+      // N-times round-robin nations (Phase 5) — smaller 10-12 club leagues, 2 up/down.
+      SPL: { autoPromote: 0, playoff: 0, relegate: 2 },
+      SC2: { autoPromote: 2, playoff: 0, relegate: 0, sacking: 3 },
+      SSL: { autoPromote: 0, playoff: 0, relegate: 2 },
+      SCL: { autoPromote: 2, playoff: 0, relegate: 0, sacking: 3 },
+      HNL: { autoPromote: 0, playoff: 0, relegate: 2 },
+      HN2: { autoPromote: 2, playoff: 0, relegate: 0, sacking: 3 },
+      NB1: { autoPromote: 0, playoff: 0, relegate: 2 },
+      NB2: { autoPromote: 2, playoff: 0, relegate: 0, sacking: 3 },
     },
     leagueAbove(lg) { const ch = chainFor(lg); const i = ch.indexOf(lg); return i > 0 ? ch[i - 1] : null; },
     leagueBelow(lg) { const ch = chainFor(lg); const i = ch.indexOf(lg); return i >= 0 && i < ch.length - 1 ? ch[i + 1] : null; },
@@ -308,6 +341,9 @@
       const faCup = Cup.seasonSummary(state, state.faCup, Cup.CUPS.fa);
       const eflCup = Cup.seasonSummary(state, state.eflCup, Cup.CUPS.efl);
       const copa = Cup.seasonSummary(state, state.copaCup, Cup.CUPS.copa);
+      // The user's country's generic national cup (non-ENG/ESP nations).
+      const natCupCfg = Object.values(Cup.CUPS).find(c => c.generic && c.country === Game.myCountry());
+      const natCup = natCupCfg ? Cup.seasonSummary(state, state[natCupCfg.stateKey], natCupCfg) : null;
       Vertu.autoResolve(state); // guarantee a Vertu Trophy winner
       const vertu = Vertu.seasonSummary(state);
       const euro = Euro.seasonSummary(state); // the European campaign just played
@@ -366,12 +402,13 @@
       if (eflCup && eflCup.userWon) state.honours.push({ type: "carabao", season: seasonPlayed });
       if (vertu && vertu.userWon) state.honours.push({ type: "vertu", season: seasonPlayed });
       if (copa && copa.userWon) state.honours.push({ type: "copa", season: seasonPlayed });
+      if (natCup && natCup.userWon) state.honours.push({ type: natCupCfg.stateKey, season: seasonPlayed });
       if (euro && euro.userWon) state.honours.push({ type: euro.comp, season: seasonPlayed });
 
       const resultBase = {
         userLeague, toLeague, myFinalPos, champion, isChampion,
         userPromoted, userRelegated, userSacked, userPlayoff,
-        awards, tables, faCup, eflCup, vertu, copa, euro,
+        awards, tables, faCup, eflCup, vertu, copa, natCup, euro,
       };
 
       if (userSacked) {
@@ -412,6 +449,7 @@
       const country = Game.myCountry();
       state.pendingShield = null;
       state.pendingSupercopa = null;
+      state.pendingSuperCup = null;
       if (country === "ENG") {
         const faWinnerId = state.faCup && state.faCup.winner;
         if (faWinnerId) state.pendingShield = { champion: tables.PL[0].id, faWinner: faWinnerId, faRunnerUp: state.faCup.runnerUp };
@@ -432,6 +470,14 @@
           let copaRunnerUp = state.copaCup.runnerUp;
           if (!copaRunnerUp || used.has(copaRunnerUp)) copaRunnerUp = nextLL(); else used.add(copaRunnerUp);
           state.pendingSupercopa = { llWinner, llRunnerUp, copaWinner, copaRunnerUp };
+        }
+      } else {
+        // Generic super cup: top-flight champion vs national cup winner.
+        const cupWinnerId = natCupCfg && state[natCupCfg.stateKey] && state[natCupCfg.stateKey].winner;
+        const topLg = LEAGUE_CHAINS[country] && LEAGUE_CHAINS[country][0];
+        const champ = topLg && tables[topLg] && tables[topLg][0];
+        if (cupWinnerId && champ) {
+          state.pendingSuperCup = { champion: champ.id, cupWinner: cupWinnerId, name: (COUNTRY_NAMES[country] || country) + " Super Cup" };
         }
       }
 

@@ -260,7 +260,7 @@ const Market = {
     const floor = { GK: 1, DF: 3, MF: 2, FW: 1 };
     POSITIONS.forEach(pos => {
       while (have[pos] < floor[pos]) {
-        const { name, nat } = randomProspect();
+        const { name, nat } = homeProspect(LEAGUE_COUNTRY[club.league]);
         const age = 18 + Math.floor(Math.random() * 5);
         const p = P(name, pos, age, 55 + Math.floor(Math.random() * 8), { nat });
         p.club = club.id;
