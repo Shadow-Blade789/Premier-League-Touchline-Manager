@@ -18,6 +18,24 @@ const Fitness = {
   // 0 → ~9 recovery bonus as the physio improves from average to world-class.
   physioBonus(club) { return clamp((this.physioRating(club) - 50) / 6, 0, 9); },
 
+  // Per-player stamina — the higher, the slower a player tires and the faster
+  // they recover. Driven mostly by AGE (young legs are stamina machines,
+  // veterans fade), with a small edge for elite athletes and a deterministic
+  // per-player jitter so two same-age players still differ a touch.
+  ageStamina(age) {
+    return age <= 21 ? 1.18 : age <= 24 ? 1.10 : age <= 28 ? 1.00
+         : age <= 31 ? 0.92 : age <= 34 ? 0.83 : 0.75;
+  },
+  idJitter(id) {
+    let h = 0; const s = String(id || "");
+    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) & 0xffff;
+    return ((h % 100) / 100 - 0.5) * 0.12; // ~ -0.06 … +0.06
+  },
+  staminaFactor(p) {
+    const quality = clamp(((p.rating || 70) - 76) / 120, 0, 0.09); // elite → a bit fitter
+    return clamp(this.ageStamina(p.age || 26) + quality + this.idJitter(p.id), 0.68, 1.30);
+  },
+
   init(club) {
     club.physio = makeYouthStaff("physio", Coaching.tierCoachRating(club.tier));
   },
@@ -43,7 +61,8 @@ const Fitness = {
     club.squad.forEach(p => {
       if (!ids.has(p.id)) return;
       p._played = true;
-      p.fitness = clamp((p.fitness ?? 100) - (lo + Math.random() * spread), 5, 100);
+      // Veterans lose more per match, young/fit legs less (drain ÷ stamina).
+      p.fitness = clamp((p.fitness ?? 100) - (lo + Math.random() * spread) / this.staminaFactor(p), 5, 100);
     });
   },
 
@@ -71,12 +90,19 @@ const Fitness = {
       }
     });
 
-    // 2) Recovery — rested players bounce back faster than those who played;
-    //    the injured recover slowly while out.
+    // 2) Recovery — a rested player bounces back fast (near-full within a week
+    //    or two, so rotation is a real option, not a season-ender); a player who
+    //    featured recovers only a little; the injured recover slowly while out.
+    //    Younger/fitter legs recover more (× stamina).
     const bonus = this.physioBonus(club);
-    const recRested = 15 + bonus, recPlayed = 7 + bonus / 2;
+    const REST_BASE = 42, PLAYED_BASE = 9;
     club.squad.forEach(p => {
-      const gain = p.injuryWeeks > 0 ? 6 : (p._played ? recPlayed : recRested);
+      let gain;
+      if (p.injuryWeeks > 0) gain = 6;
+      else {
+        const f = this.staminaFactor(p);
+        gain = p._played ? PLAYED_BASE * f + bonus / 2 : REST_BASE * f + bonus;
+      }
       p.fitness = clamp((p.fitness ?? 100) + gain, 5, 100);
     });
 
