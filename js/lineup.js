@@ -22,8 +22,8 @@
       const lineup = this.emptyLineup(formationKey);
       const used = new Set();
   
-      // Injured players can't be selected.
-      const fit = p => !p.injuryWeeks;
+      // Injured or suspended players can't be selected.
+      const fit = p => !p.injuryWeeks && !p.suspendedMatches;
       POSITIONS.forEach(pos => {
         const pool = club.squad.filter(p => p.pos === pos && fit(p)).sort((a, b) => b.rating - a.rating);
         for (let i = 0; i < req[pos]; i++) {

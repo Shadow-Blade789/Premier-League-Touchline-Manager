@@ -27,6 +27,7 @@
    
    function ensureSquadDepth(club) {
      if (club.strengthOnly) return; // foreign clubs are simulated from a strength rating, no squad
+     const realCount = club.squad.length; // real players present before we top up depth
      const need = { GK: 2, DF: 7, MF: 6, FW: 4 };
      const have = { GK: 0, DF: 0, MF: 0, FW: 0 };
      club.squad.forEach(p => have[p.pos]++);
@@ -34,12 +35,18 @@
      // club) are genuinely strong, lower tiers step down toward the fourth tier.
      const baseRating = Math.max(46, 52 + club.tier * 6);
      const country = LEAGUE_COUNTRY[club.league];
+     // A club that shipped with a real roster only needs backup/depth fill-ins —
+     // they must sit BELOW the real players so a generated name never becomes the
+     // club's best player (real stars stay on top).
+     const hasReal = realCount >= 1;
+     const minReal = hasReal ? Math.min(...club.squad.map(p => p.rating)) : 99;
      for (const pos of POSITIONS) {
        while (have[pos] < need[pos]) {
          // Skew young: most fill-ins are academy-aged depth, with a handful of
          // older journeymen for squad balance.
          const age = Math.random() < 0.65 ? 17 + Math.floor(Math.random() * 6) : 24 + Math.floor(Math.random() * 10);
-         const rating = baseRating - 6 + Math.floor(Math.random() * 10) - (age < 21 ? 4 : 0);
+         let rating = baseRating - 6 + Math.floor(Math.random() * 10) - (age < 21 ? 4 : 0);
+         if (hasReal) rating = Math.min(rating, minReal - 1); // depth never outranks the real squad
          const { name, nat } = homeProspect(country); // squads skew to the club's own nation
          const p = P(name, pos, age, rating, { nat });
          p.club = club.id;
@@ -48,8 +55,9 @@
        }
      }
      // Elite clubs get a couple of standout players so the top flight of every
-     // nation feels genuinely strong (a peer to the real English rosters).
-     if (club.tier >= 4) {
+     // nation feels genuinely strong — but only GENERATED squads; a club that
+     // shipped with a real roster keeps its authored ratings.
+     if (club.tier >= 4 && realCount === 0) {
        const targets = club.tier >= 5 ? [88, 86, 84] : [84, 82];
        club.squad.slice().sort((a, b) => b.rating - a.rating).slice(0, targets.length).forEach((p, i) => {
          if (p.rating < targets[i]) {

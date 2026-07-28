@@ -581,10 +581,21 @@
       item.recorded = true;
       const state = Game.state;
       // Any match the user's club played drains the fitness of the XI that
-      // featured (stacks across a congested week).
+      // featured (stacks across a congested week) and settles discipline.
       if (item.full && item.home && item.away && (item.home.id === state.clubId || item.away.id === state.clubId)) {
         const me = Game.myClub();
-        if (me && me.lineup) Fitness.recordMatch(me, Lineup.starterIds(me.lineup));
+        if (me) {
+          if (me.lineup) Fitness.recordMatch(me, Lineup.starterIds(me.lineup));
+          // Any outstanding ban is served by sitting out this match; then new
+          // red cards from this match start a one-match ban.
+          (me.squad || []).forEach(p => { if (p.suspendedMatches > 0) p.suspendedMatches--; });
+          const userSide = item.home.id === state.clubId ? "home" : "away";
+          (item.full.reds || []).forEach(r => {
+            if (r.side !== userSide) return;
+            const p = me.squad.find(x => x.id === r.playerId);
+            if (p) { p.suspendedMatches = 1; UI.toast(`🟥 ${p.name} sent off — suspended for the next match`); }
+          });
+        }
       }
       if (item.type === "league") {
         Season.recordResult(state, item.home.id, item.away.id, item.full.hg, item.full.ag);

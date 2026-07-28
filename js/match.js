@@ -185,6 +185,7 @@
       const timeline = [];
       let hg = 0, ag = 0;
       const homeScorers = [], awayScorers = []; // ordered scorer ids, fed to the stat sheet
+      const reds = []; // {side, playerId} — used to suspend the user's player next match
       let momentum = 50;
       const push = obj => { timeline.push({ ...obj, mom: Math.round(momentum), seq: timeline.length }); };
   
@@ -241,7 +242,8 @@
           const list = homeChance ? hStarters : aStarters;
           const player = pick(list);
           const isRed = Math.random() < 0.05;
-          push({ minute: minuteLabel, stoppage: isStoppage, type: isRed ? "red" : "yellow", text: fmt(pick(isRed ? Commentary.red : Commentary.yellow), { player: player.name, team: team.name }), hg, ag });
+          if (isRed && player) reds.push({ side: homeChance ? "home" : "away", playerId: player.id, name: player.name });
+          push({ minute: minuteLabel, stoppage: isStoppage, type: isRed ? "red" : "yellow", side: homeChance ? "home" : "away", playerId: player && player.id, text: fmt(pick(isRed ? Commentary.red : Commentary.yellow), { player: player.name, team: team.name }), hg, ag });
         } else if (m === 60 + (m > 45 ? stoppage1 : 0) && hSubsUsed < 1 && home.lineup) {
           const bench = home.lineup.bench.map(id => home.squad.find(p => p.id === id)).filter(Boolean);
           const off = pick(hStarters);
@@ -259,7 +261,7 @@
   
       push({ minute: 90, stoppage: stoppage2 > 0, type: "full", text: fmt(pick(Commentary.full), {}), hg, ag });
   
-      return { timeline, hg, ag, hStarters, aStarters, homeScorers, awayScorers };
+      return { timeline, hg, ag, hStarters, aStarters, homeScorers, awayScorers, reds };
     },
   };
   

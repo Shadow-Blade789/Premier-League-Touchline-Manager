@@ -631,9 +631,10 @@
         : `<p class="muted" style="font-size:0.82rem;">No injuries — your squad is fully fit.</p>`;
     },
 
-    // A compact fitness/injury chip for squad rows.
+    // A compact fitness/injury chip for squad rows, plus a suspension flag.
     fitnessBadge(p) {
-      return `<span class="fit-tag ${Fitness.level(p)}" title="Match fitness">${Fitness.label(p)}</span>`;
+      const susp = p.suspendedMatches > 0 ? `<span class="fit-tag injured" title="Suspended">🟥 ${p.suspendedMatches}</span>` : "";
+      return `<span class="fit-tag ${Fitness.level(p)}" title="Match fitness">${Fitness.label(p)}</span>${susp}`;
     },
 
     // Pitch-token colour from match fitness: green (fresh) → amber → bright red
@@ -684,7 +685,7 @@
         html += `<div class="slot-group"><span class="eyebrow">${posLabel(pos)}</span>`;
         lineup.slots[pos].forEach((id, idx) => {
           const used = usedElsewhere(pos);
-          const eligible = club.squad.filter(p => p.pos === pos && !p.injuryWeeks && (!used.includes(p.id) || p.id === id)).sort((a, b) => b.rating - a.rating);
+          const eligible = club.squad.filter(p => p.pos === pos && !p.injuryWeeks && !p.suspendedMatches && (!used.includes(p.id) || p.id === id)).sort((a, b) => b.rating - a.rating);
           html += `<div class="slot-row">
             <select data-pos="${pos}" data-idx="${idx}">
               <option value="">— Empty —</option>
@@ -707,9 +708,9 @@
     renderLineup(state) {
       const club = Game.myClub();
       if (!club.lineup) Lineup.autoPick(club);
-      // An injured player can't stay in the XI — pull them out so the manager
-      // sees the empty slot to fill.
-      (club.squad || []).forEach(p => { if (p.injuryWeeks) Fitness.dropFromLineup(club, p.id); });
+      // An injured or suspended player can't stay in the XI — pull them out so
+      // the manager sees the empty slot to fill.
+      (club.squad || []).forEach(p => { if (p.injuryWeeks || p.suspendedMatches) Fitness.dropFromLineup(club, p.id); });
       document.getElementById("formationSelect").innerHTML = this.formationOptions(club.formation);
       this.renderPitch(club);
       this.renderLineupSlots(club);

@@ -76,41 +76,41 @@
    // League squad sheet, used for generated free agents, academy fillers and
    // transfer-market youth prospects.
    const NATION_POOLS = {
-     ENG: { first: ["Jack","Tom","Harry","Luke","Sam","Josh","Connor","Liam","Ryan","Callum","Marcus","Lewis","Owen","Ethan","Mason","Jamie","Aaron","Kyle","Reece","Bradley","Theo","Charlie","Dylan","Ben","Will","Adam","Joe","Max","Nathan","Dan"],
-               last:  ["Walker","Hughes","Foster","Bennett","Sutton","Marshall","Hayes","Pearce","Russell","Bishop","Carter","Wells","Holloway","Mercer","Doyle","Kerr","Fletcher","Lowe","Whitfield","Sharpe","Donnelly","Bartley","Quinn","Hartley","Stokes","Vine","Crouch","Dunne","Mabey","Sinclair"] },
-     IRL: { first: ["Conor","Aidan","Sean","Cian","Darragh","Eoin","Liam","Cormac"], last: ["Brennan","Kelly","Doyle","Walsh","Byrne","McGrath","Hogan","Nolan"] },
-     FRA: { first: ["Hugo","Mathis","Lucas","Théo","Enzo","Yanis","Noah","Rayan"], last: ["Moreau","Lemaire","Girard","Caron","Rousseau","Fontaine","Bertrand","Lemoine"] },
-     BRA: { first: ["Gabriel","Lucas","Matheus","Bruno","Rafael","Caio","Wesley","Igor"], last: ["Souza","Oliveira","Pereira","Costa","Almeida","Barbosa","Ribeiro","Fernandes"] },
-     ESP: { first: ["Marc","Pol","Iker","Álvaro","Hugo","Mateo","Nico","Sergio"], last: ["Serrano","Navarro","Cano","Vidal","Marín","Castro","Soler","Reyes"] },
-     NED: { first: ["Daan","Sem","Luuk","Bram","Finn","Milan","Noud","Stijn"], last: ["Visser","Bakker","Janssen","Smit","De Boer","Mulder","Dekker","Hendriks"] },
-     NGA: { first: ["Chidi","Emeka","Tunde","Femi","Segun","Uche","Bayo","Ifeanyi"], last: ["Okafor","Adeyemi","Okoro","Eze","Balogun","Nwosu","Olawale","Chukwu"] },
-     ARG: { first: ["Joaquín","Santiago","Tomás","Agustín","Nicolás","Lautaro","Mateo","Bautista"], last: ["Acosta","Romero","Cabrera","Ferreyra","Aguirre","Ledesma","Quiroga","Sosa"] },
-     GER: { first: ["Finn","Luca","Jonas","Elias","Niklas","Tim","Leon","Maximilian"], last: ["Wagner","Becker","Hoffmann","Schreiber","Krüger","Lang","Vogel","Brandt"] },
-     POR: { first: ["Rui","Tiago","Gonçalo","Diogo","Bernardo","André","Vasco","Nuno"], last: ["Carvalho","Pinto","Teixeira","Cardoso","Lopes","Mendes","Faria","Esteves"] },
-     NOR: { first: ["Erik","Magnus","Sander","Jonas","Kristian","Markus","Henrik","Oskar"], last: ["Haugen","Berg","Larsen","Solberg","Andersen","Strand","Nilsen","Kristiansen"] },
-     SEN: { first: ["Mamadou","Ibrahima","Cheikh","Pape","Ousmane","Lamine","Abdou","Moussa"], last: ["Diallo","Ndiaye","Cissé","Faye","Diop","Sow","Toure","Mbaye"] },
-     JPN: { first: ["Ren","Sota","Haruto","Yuto","Kaito","Riku","Sho","Hayato"], last: ["Saito","Suzuki","Takahashi","Kobayashi","Yamamoto","Watanabe","Nakamura","Ito"] },
-     USA: { first: ["Tyler","Jackson","Cole","Bryce","Mason","Dylan","Cameron","Hunter"], last: ["Brooks","Reilly","Walsh","Pulisic","Anderson","Reyna","Carter","Howard"] },
-     COL: { first: ["Santiago","Andrés","Camilo","Esteban","Mateo","Juan","Sebastián","Cristian"], last: ["Quintero","Salazar","Restrepo","Mosquera","Valencia","Cuesta","Hinestroza","Mina"] },
-     HRV: { first: ["Luka","Marko","Ivan","Petar","Josip","Filip","Ante","Karlo"], last: ["Horvat","Kovačić","Babić","Vuković","Jurić","Maric","Pavić","Knežević"] },
-     ITA: { first: ["Lorenzo","Marco","Andrea","Matteo","Francesco","Alessandro","Giovanni","Federico","Davide","Simone"], last: ["Rossi","Russo","Ferrari","Esposito","Bianchi","Romano","Colombo","Ricci","Marino","Greco"] },
-     POL: { first: ["Kacper","Jakub","Szymon","Mateusz","Filip","Bartosz","Wojciech","Piotr","Kamil","Michał"], last: ["Nowak","Kowalski","Wiśniewski","Wójcik","Kowalczyk","Kamiński","Zieliński","Szymański","Woźniak","Mazur"] },
-     TUR: { first: ["Emre","Mert","Burak","Yusuf","Arda","Kaan","Cenk","Ozan","Berkay","Efe"], last: ["Yılmaz","Kaya","Demir","Şahin","Çelik","Yıldız","Yıldırım","Öztürk","Aydın","Arslan"] },
-     BEL: { first: ["Lars","Wout","Jonas","Senne","Milan","Lucas","Aaron","Vic","Simon","Arne"], last: ["Peeters","Janssens","Maes","Jacobs","Willems","Claes","Wouters","De Smet","Dupont","Michiels"] },
-     AUT: { first: ["Lukas","David","Julian","Marcel","Florian","Stefan","Manuel","Fabian","Simon","Andreas"], last: ["Gruber","Bauer","Pichler","Steiner","Moser","Mayer","Berger","Hofer","Leitner","Wimmer"] },
-     DEN: { first: ["Mikkel","Frederik","Mathias","Emil","Oliver","Magnus","Victor","Rasmus","Anton","Malte"], last: ["Nielsen","Jensen","Hansen","Pedersen","Andersen","Christensen","Larsen","Sørensen","Rasmussen","Madsen"] },
-     GRE: { first: ["Giorgos","Dimitris","Kostas","Nikos","Panagiotis","Vasilis","Christos","Andreas","Thanasis","Stelios"], last: ["Papadopoulos","Nikolaou","Georgiou","Vasileiou","Pappas","Makris","Oikonomou","Ioannidis","Alexiou","Katsaros"] },
-     SUI: { first: ["Noah","Luca","Leon","Nico","Elias","Dario","Sven","Loris","Jan","Fabio"], last: ["Meier","Schmid","Keller","Widmer","Zbinden","Brunner","Baumann","Frei","Kobel","Vargas"] },
-     HUN: { first: ["Bence","Máté","Levente","Dániel","Ádám","Balázs","Gergő","Zsombor","Dávid","Márton"], last: ["Nagy","Kovács","Tóth","Szabó","Horváth","Varga","Kiss","Molnár","Németh","Farkas"] },
-     SCO: { first: ["Callum","Ryan","Lewis","Jack","Kieran","Scott","Aiden","Finlay","Cameron","Kyle"], last: ["Campbell","Stewart","Robertson","Murray","MacLeod","Fraser","Gray","Docherty","Kennedy","Wallace"] },
-     SWE: { first: ["Oscar","William","Lucas","Elias","Hugo","Axel","Viktor","Isak","Filip","Gustav"], last: ["Andersson","Johansson","Karlsson","Nilsson","Eriksson","Larsson","Olsson","Persson","Svensson","Gustafsson"] },
-     CZE: { first: ["Jan","Tomáš","Jakub","Lukáš","Martin","Adam","Ondřej","Petr","David","Matěj"], last: ["Novák","Svoboda","Novotný","Dvořák","Černý","Procházka","Kučera","Veselý","Horák","Němec"] },
-     SRB: { first: ["Nikola","Luka","Stefan","Marko","Aleksa","Filip","Miloš","Petar","Nemanja","Uroš"], last: ["Jovanović","Petrović","Nikolić","Marković","Đorđević","Stojanović","Ilić","Pavlović","Kovačević","Popović"] },
-     UKR: { first: ["Andriy","Oleksandr","Dmytro","Serhiy","Bohdan","Artem","Maksym","Vladyslav","Yuriy","Denys"], last: ["Shevchenko","Kovalenko","Bondarenko","Tkachenko","Kravchenko","Melnyk","Boyko","Kovalchuk","Lysenko","Marchenko"] },
-     ROU: { first: ["Andrei","Alexandru","Ionuț","Gabriel","Florin","Cristian","Ștefan","Denis","Rareș","Vlad"], last: ["Popa","Ionescu","Popescu","Dumitru","Stan","Gheorghe","Matei","Constantin","Marin","Dinu"] },
-     SVK: { first: ["Martin","Tomáš","Lukáš","Jakub","Adam","Matúš","Filip","Peter","Michal","Dávid"], last: ["Horváth","Kováč","Varga","Tóth","Baláž","Novák","Molnár","Szabó","Lukáč","Marček"] },
+     ENG: { first: ["Jack","Tom","Harry","Luke","Sam","Josh","Connor","Liam","Ryan","Callum","Marcus","Lewis","Owen","Ethan","Mason","Jamie","Aaron","Kyle","Reece","Bradley","Theo","Charlie","Dylan","Ben","Will","Adam","Joe","Max","Nathan","Dan","Alfie","Archie","George","Oliver","Freddie","Louie","Harvey","Riley","Toby","Jude","Rory","Elliot","Isaac","Oscar","Leo","Finley","Cole","Sonny","Kai","Jenson","Bailey","Corey","Ashton","Declan","Morgan","Regan","Tyler","Frankie","Rhys","Spencer"],
+               last:  ["Walker","Hughes","Foster","Bennett","Sutton","Marshall","Hayes","Pearce","Russell","Bishop","Carter","Wells","Holloway","Mercer","Doyle","Kerr","Fletcher","Lowe","Whitfield","Sharpe","Donnelly","Bartley","Quinn","Hartley","Stokes","Vine","Crouch","Dunne","Mabey","Sinclair","Barker","Hammond","Prescott","Rowe","Cross","Rhodes","Ashworth","Baldwin","Pemberton","Yates","Osborne","Trott","Ainsworth","Rutherford","Sowerby","Hedges","Colville","Napier","Merrick","Radford","Ellison","Cavendish","Beckett","Slater","Whitmore","Tomlinson","Grimshaw","Hardcastle","Collier","Fairbanks"] },
+     IRL: { first: ["Conor","Aidan","Sean","Cian","Darragh","Eoin","Liam","Cormac","Oisin","Fionn","Ronan","Padraig","Niall","Callum","Rian","Tadhg","Dara","Cathal","Killian","Senan"], last: ["Brennan","Kelly","Doyle","Walsh","Byrne","McGrath","Hogan","Nolan","Kavanagh","Murphy","O'Sullivan","Gallagher","Fitzgerald","Boyle","Donovan","Clarke","Reilly","Whelan","Fahey","Sheridan"] },
+     FRA: { first: ["Hugo","Mathis","Lucas","Théo","Enzo","Yanis","Noah","Rayan","Nathan","Ethan","Léo","Adam","Gabriel","Jules","Louis","Raphaël","Sacha","Malo","Timéo","Aaron","Clément","Antoine","Maxime","Baptiste","Corentin"], last: ["Moreau","Lemaire","Girard","Caron","Rousseau","Fontaine","Bertrand","Lemoine","Dubois","Laurent","Garnier","Chevalier","Renard","Marchand","Perrot","Guillet","Da Silva","Barbier","Colin","Roussel","Muller","Faure","Blanchard","Leclerc","Vasseur"] },
+     BRA: { first: ["Gabriel","Lucas","Matheus","Bruno","Rafael","Caio","Wesley","Igor","João","Pedro","Felipe","Vinícius","Guilherme","Enzo","Murilo","Kaique","Yuri","Éverton","Léo","Danilo","Gustavo","Thiago","Bernardo","Arthur"], last: ["Souza","Oliveira","Pereira","Costa","Almeida","Barbosa","Ribeiro","Fernandes","Santos","Rodrigues","Carvalho","Gomes","Martins","Araújo","Cardoso","Nascimento","Moreira","Teixeira","Correia","Pinho","Vieira","Rocha","Batista","Freitas"] },
+     ESP: { first: ["Marc","Pol","Iker","Álvaro","Hugo","Mateo","Nico","Sergio","Pablo","Adrián","Javier","Diego","Rubén","Aitor","Iván","Gonzalo","Bryan","Óscar","Unai","Carlos","Manuel","Fran","Dani","Rodri"], last: ["Serrano","Navarro","Cano","Vidal","Marín","Castro","Soler","Reyes","García","Fernández","Martínez","Sánchez","Romero","Torres","Ramos","Ortega","Molina","Herrera","Gallardo","Blanco","Iglesias","Ferrer","Campos","Peña"] },
+     NED: { first: ["Daan","Sem","Luuk","Bram","Finn","Milan","Noud","Stijn","Jesse","Sven","Thijs","Ruben","Julian","Lars","Teun","Cas","Gijs","Mees","Bas","Joris","Koen","Tim","Rick","Niek"], last: ["Visser","Bakker","Janssen","Smit","De Boer","Mulder","Dekker","Hendriks","De Jong","Van Dijk","Bos","Vermeulen","Van der Berg","Meijer","Kramer","Timmermans","Willemsen","Groot","Koning","Schouten","Brouwer","Peters","Kuijpers","Van Dam"] },
+     NGA: { first: ["Chidi","Emeka","Tunde","Femi","Segun","Uche","Bayo","Ifeanyi","Obi","Chinedu","Kelechi","Samuel","Musa","David","Ola","Kingsley","Ebuka","Nnamdi","Sadiq","Taiwo","Kenneth","Victor","Chibuzo","Yusuf"], last: ["Okafor","Adeyemi","Okoro","Eze","Balogun","Nwosu","Olawale","Chukwu","Adebayo","Obi","Okonkwo","Ibrahim","Nwankwo","Bello","Uche","Aliyu","Osei","Ogundele","Afolabi","Onyeka","Madu","Ezenwa","Ojo","Chukwuma"] },
+     ARG: { first: ["Joaquín","Santiago","Tomás","Agustín","Nicolás","Lautaro","Mateo","Bautista","Thiago","Benjamín","Franco","Facundo","Valentín","Julián","Máximo","Gino","Lucas","Emiliano","Ignacio","Ramiro","Bruno","Alan","Enzo","Gastón"], last: ["Acosta","Romero","Cabrera","Ferreyra","Aguirre","Ledesma","Quiroga","Sosa","González","Gómez","Fernández","Ruiz","Domínguez","Ojeda","Molina","Paredes","Godoy","Vera","Ibáñez","Rojas","Cáceres","Bustos","Correa","Luna"] },
+     GER: { first: ["Finn","Luca","Jonas","Elias","Niklas","Tim","Leon","Maximilian","Ben","Paul","Felix","Moritz","Julian","Lukas","Noah","Emil","Anton","Jannik","Fabian","Tom","Henry","David","Erik","Marlon"], last: ["Wagner","Becker","Hoffmann","Schreiber","Krüger","Lang","Vogel","Brandt","Schmidt","Fischer","Weber","Meyer","Schulz","Richter","Klein","Wolf","Neumann","Schwarz","Zimmermann","Braun","Krause","Hartmann","Werner","Köhler"] },
+     POR: { first: ["Rui","Tiago","Gonçalo","Diogo","Bernardo","André","Vasco","Nuno","Miguel","Rodrigo","Afonso","Tomás","Duarte","Guilherme","Martim","Salvador","Francisco","Henrique","Rafael","João","Gabriel","Dinis","Simão","Leandro"], last: ["Carvalho","Pinto","Teixeira","Cardoso","Lopes","Mendes","Faria","Esteves","Silva","Santos","Ferreira","Costa","Rodrigues","Sousa","Fonseca","Machado","Nunes","Antunes","Ramos","Baptista","Moura","Tavares","Correia","Cunha"] },
+     NOR: { first: ["Erik","Magnus","Sander","Jonas","Kristian","Markus","Henrik","Oskar","Elias","Emil","Mathias","Håkon","Jakob","Tobias","Sondre","Aksel","Filip","Nikolai","Even","Andreas","Martin","Kasper","Ludvig","Herman"], last: ["Haugen","Berg","Larsen","Solberg","Andersen","Strand","Nilsen","Kristiansen","Hansen","Johansen","Olsen","Pedersen","Bakken","Moen","Lie","Dahl","Halvorsen","Iversen","Rønning","Eriksen","Fossum","Sæther","Aas","Ødegaard"] },
+     SEN: { first: ["Mamadou","Ibrahima","Cheikh","Pape","Ousmane","Lamine","Abdou","Moussa","Idrissa","Aliou","Sadio","Boubacar","Modou","Assane","Serigne","Babacar","Alassane","Malick","Habib","Souleymane"], last: ["Diallo","Ndiaye","Cissé","Faye","Diop","Sow","Toure","Mbaye","Gueye","Sarr","Ba","Fall","Camara","Seck","Niang","Diouf","Sane","Coly","Badji","Thiam"] },
+     JPN: { first: ["Ren","Sota","Haruto","Yuto","Kaito","Riku","Sho","Hayato","Takumi","Sora","Yuki","Daiki","Kenta","Ryo","Hiroto","Kota","Yamato","Shota","Rikuto","Tatsuya"], last: ["Saito","Suzuki","Takahashi","Kobayashi","Yamamoto","Watanabe","Nakamura","Ito","Tanaka","Sato","Kato","Yoshida","Yamada","Sasaki","Matsumoto","Inoue","Kimura","Hayashi","Shimizu","Mori"] },
+     USA: { first: ["Tyler","Jackson","Cole","Bryce","Mason","Dylan","Cameron","Hunter","Landon","Caleb","Chase","Brady","Colton","Weston","Gavin","Blake","Trevor","Preston","Cade","Nolan","Grant","Zach","Brayden","Easton"], last: ["Brooks","Reilly","Walsh","Anderson","Carter","Howard","Miller","Davis","Wilson","Robinson","Ramirez","Sullivan","Meyer","Coleman","Hoffman","Jennings","Bradley","Marsh","Delgado","Schneider","Kowalski","Vega","Boone","Hale"] },
+     COL: { first: ["Santiago","Andrés","Camilo","Esteban","Mateo","Juan","Sebastián","Cristian","Nicolás","Samuel","Emmanuel","Jhon","Miguel","Daniel","David","Kevin","Brayan","Óscar","Steven","Yerson","Carlos","Julián","Fabián","Deiver"], last: ["Quintero","Salazar","Restrepo","Mosquera","Valencia","Cuesta","Hinestroza","Mina","Ramírez","Cardona","Arias","Zapata","Muñoz","Palacios","Rentería","Córdoba","Bolaños","Guerrero","Ospina","Vergara","Angulo","Caicedo","Lozano","Tapias"] },
+     HRV: { first: ["Luka","Marko","Ivan","Petar","Josip","Filip","Ante","Karlo","Mateo","Nikola","Toma","Bruno","Roko","David","Lovro","Šime","Fran","Borna","Duje","Marin"], last: ["Horvat","Kovačić","Babić","Vuković","Jurić","Marić","Pavić","Knežević","Marković","Petrović","Novak","Kovačević","Matić","Perić","Radić","Blažević","Jukić","Tomić","Grgić","Šarić"] },
+     ITA: { first: ["Lorenzo","Marco","Andrea","Matteo","Francesco","Alessandro","Giovanni","Federico","Davide","Simone","Luca","Riccardo","Gabriele","Nicolò","Tommaso","Edoardo","Filippo","Leonardo","Antonio","Stefano","Emanuele","Christian","Michele","Samuele"], last: ["Rossi","Russo","Ferrari","Esposito","Bianchi","Romano","Colombo","Ricci","Marino","Greco","Bruno","Gallo","Conti","De Luca","Mancini","Costa","Giordano","Rizzo","Lombardi","Moretti","Barbieri","Fontana","Santoro","Mariani"] },
+     POL: { first: ["Kacper","Jakub","Szymon","Mateusz","Filip","Bartosz","Wojciech","Piotr","Kamil","Michał","Antoni","Franciszek","Aleksander","Nikodem","Wiktor","Ignacy","Oliwier","Tymon","Adam","Marcel"], last: ["Nowak","Kowalski","Wiśniewski","Wójcik","Kowalczyk","Kamiński","Zieliński","Szymański","Woźniak","Mazur","Krawczyk","Piotrowski","Grabowski","Pawłowski","Michalski","Nowakowski","Jankowski","Wojciechowski","Kwiatkowski","Kaczmarek"] },
+     TUR: { first: ["Emre","Mert","Burak","Yusuf","Arda","Kaan","Cenk","Ozan","Berkay","Efe","Kerem","Baran","Eren","Umut","Tolga","Hakan","Yiğit","Deniz","Onur","Bora"], last: ["Yılmaz","Kaya","Demir","Şahin","Çelik","Yıldız","Yıldırım","Öztürk","Aydın","Arslan","Doğan","Kılıç","Aslan","Çetin","Şimşek","Koç","Kurt","Özdemir","Erdoğan","Polat"] },
+     BEL: { first: ["Lars","Wout","Jonas","Senne","Milan","Lucas","Aaron","Vic","Simon","Arne","Robbe","Lander","Stan","Tuur","Warre","Mauro","Kobe","Vince","Jef","Nand"], last: ["Peeters","Janssens","Maes","Jacobs","Willems","Claes","Wouters","De Smet","Dupont","Michiels","Mertens","Goossens","Van Damme","Verhoeven","De Clercq","Lambert","Vandenberghe","Segers","Coppens","De Backer"] },
+     AUT: { first: ["Lukas","David","Julian","Marcel","Florian","Stefan","Manuel","Fabian","Simon","Andreas","Tobias","Alexander","Dominik","Sebastian","Philipp","Matthias","Elias","Michael","Raphael","Jakob"], last: ["Gruber","Bauer","Pichler","Steiner","Moser","Mayer","Berger","Hofer","Leitner","Wimmer","Huber","Wagner","Maier","Fuchs","Weber","Winkler","Reiter","Aigner","Egger","Lehner"] },
+     DEN: { first: ["Mikkel","Frederik","Mathias","Emil","Oliver","Magnus","Victor","Rasmus","Anton","Malte","William","Noah","Oscar","Carl","August","Alfred","Villads","Elias","Storm","Lucas"], last: ["Nielsen","Jensen","Hansen","Pedersen","Andersen","Christensen","Larsen","Sørensen","Rasmussen","Madsen","Kristensen","Olsen","Thomsen","Poulsen","Johansen","Møller","Mortensen","Jørgensen","Knudsen","Holm"] },
+     GRE: { first: ["Giorgos","Dimitris","Kostas","Nikos","Panagiotis","Vasilis","Christos","Andreas","Thanasis","Stelios","Yannis","Alexandros","Michalis","Petros","Manolis","Antonis","Spyros","Fotis","Lefteris","Nikolas"], last: ["Papadopoulos","Nikolaou","Georgiou","Vasileiou","Pappas","Makris","Oikonomou","Ioannidis","Alexiou","Katsaros","Papadakis","Antoniou","Christou","Dimitriou","Karagiannis","Samaras","Vlachos","Angelopoulos","Panagiotou","Manolas"] },
+     SUI: { first: ["Noah","Luca","Leon","Nico","Elias","Dario","Sven","Loris","Jan","Fabio","Timo","Joel","Levin","Nevio","Andrin","Gian","Robin","Kilian","Yanick","Sandro"], last: ["Meier","Schmid","Keller","Widmer","Zbinden","Brunner","Baumann","Frei","Kobel","Vargas","Steffen","Fässler","Graf","Zürcher","Bühler","Kaufmann","Roth","Gerber","Wyss","Hodel"] },
+     HUN: { first: ["Bence","Máté","Levente","Dániel","Ádám","Balázs","Gergő","Zsombor","Dávid","Márton","Botond","Dominik","Milán","Barnabás","Zalán","Kristóf","Nándor","Áron","Bálint","Csanád"], last: ["Nagy","Kovács","Tóth","Szabó","Horváth","Varga","Kiss","Molnár","Németh","Farkas","Balogh","Papp","Takács","Juhász","Lakatos","Mészáros","Oláh","Simon","Fekete","Szalai"] },
+     SCO: { first: ["Callum","Ryan","Lewis","Jack","Kieran","Scott","Aiden","Finlay","Cameron","Kyle","Rory","Angus","Fraser","Euan","Struan","Hamish","Lachlan","Corey","Dougie","Alistair","Blair","Ruaridh","Innes","Craig","Grant","Iain","Murray","Stuart","Greig","Duncan","Ross","Connor","Liam","Jamie","Dean","Cole","Nathan","Regan","Kai","Josh"], last: ["Campbell","Stewart","Robertson","Murray","MacLeod","Fraser","Gray","Docherty","Kennedy","Wallace","MacDonald","Ferguson","Mackay","Reid","Muir","Sinclair","Cunningham","Buchanan","Boyd","Hamilton","Baxter","Ross","Munro","Crawford","Kerr","Watt","Rennie","Cochrane","Aitken","Forsyth","MacKinnon","Ogilvie","Ramsay","Bruce","Douglas","Findlay","Nairn","Sutherland","Craig","Millar"] },
+     SWE: { first: ["Oscar","William","Lucas","Elias","Hugo","Axel","Viktor","Isak","Filip","Gustav","Emil","Nils","Melker","Anton","Ludvig","Albin","Wilmer","Alfred","Sixten","Vidar","Loke","Kalle","Theo","Malte"], last: ["Andersson","Johansson","Karlsson","Nilsson","Eriksson","Larsson","Olsson","Persson","Svensson","Gustafsson","Pettersson","Jonsson","Jansson","Hansson","Bengtsson","Lindberg","Lindqvist","Berg","Sandberg","Forsberg","Holm","Ström","Ekström","Wallin"] },
+     CZE: { first: ["Jan","Tomáš","Jakub","Lukáš","Martin","Adam","Ondřej","Petr","David","Matěj","Vojtěch","Filip","Daniel","Marek","Šimon","Jiří","Dominik","Antonín","Štěpán","Vít"], last: ["Novák","Svoboda","Novotný","Dvořák","Černý","Procházka","Kučera","Veselý","Horák","Němec","Marek","Pospíšil","Pokorný","Hájek","Král","Jelínek","Růžička","Beneš","Fiala","Sedláček"] },
+     SRB: { first: ["Nikola","Luka","Stefan","Marko","Aleksa","Filip","Miloš","Petar","Nemanja","Uroš","Lazar","Vukašin","Đorđe","Mihajlo","Andrej","Ognjen","Vasilije","Strahinja","Dušan","Mateja"], last: ["Jovanović","Petrović","Nikolić","Marković","Đorđević","Stojanović","Ilić","Pavlović","Kovačević","Popović","Stanković","Ristić","Todorović","Milošević","Simić","Lukić","Kostić","Mitrović","Đukić","Vasić"] },
+     UKR: { first: ["Andriy","Oleksandr","Dmytro","Serhiy","Bohdan","Artem","Maksym","Vladyslav","Yuriy","Denys","Mykyta","Yehor","Illia","Nazar","Danylo","Kyrylo","Roman","Oleh","Volodymyr","Taras"], last: ["Shevchenko","Kovalenko","Bondarenko","Tkachenko","Kravchenko","Melnyk","Boyko","Kovalchuk","Lysenko","Marchenko","Rudenko","Kravets","Savchenko","Bondar","Tkach","Moroz","Poliakov","Koval","Petrenko","Zaitsev"] },
+     ROU: { first: ["Andrei","Alexandru","Ionuț","Gabriel","Florin","Cristian","Ștefan","Denis","Rareș","Vlad","Darius","David","Antonio","Robert","Sergiu","Mihai","Cătălin","Bogdan","Răzvan","Ianis"], last: ["Popa","Ionescu","Popescu","Dumitru","Stan","Gheorghe","Matei","Constantin","Marin","Dinu","Radu","Munteanu","Stoica","Nistor","Ilie","Barbu","Tudor","Neagu","Lupu","Diaconu"] },
+     SVK: { first: ["Martin","Tomáš","Lukáš","Jakub","Adam","Matúš","Filip","Peter","Michal","Dávid","Samuel","Marek","Patrik","Oliver","Šimon","Matej","Jozef","Andrej","Dominik","Timotej"], last: ["Horváth","Kováč","Varga","Tóth","Baláž","Novák","Molnár","Szabó","Lukáč","Marček","Baran","Hudák","Král","Blaško","Kollár","Šimko","Krajčí","Gajdoš","Beňo","Ďuriš"] },
    };
-   const NATION_WEIGHTS = ["ENG","ENG","ENG","ENG","ENG","FRA","FRA","BRA","BRA","NED","POR","NGA","ARG","ESP","GER","IRL","SEN","HRV","NOR","JPN","USA","COL"];
+   const NATION_WEIGHTS = ["ENG","ENG","ENG","ENG","FRA","FRA","BRA","BRA","NED","POR","NGA","ARG","ESP","GER","IRL","SEN","HRV","NOR","JPN","USA","COL","ITA","SWE","DEN","BEL","SCO","POL","SRB"];
    // Each footballing country's primary player nationality, for home-skewed squads.
    const COUNTRY_NAT = {
      ENG: "ENG", ESP: "ESP", GER: "GER", ITA: "ITA", FRA: "FRA", POR: "POR", NED: "NED",
@@ -123,12 +123,20 @@
      FRO: "DEN", MLT: "ITA",
    };
 
+   // Pick a first + last from a pool, avoiding first === last (e.g. "Ross Ross").
+   function nameFromPool(pool) {
+     const first = pool.first[Math.floor(Math.random() * pool.first.length)];
+     let last = pool.last[Math.floor(Math.random() * pool.last.length)];
+     if (last === first && pool.last.length > 1) {
+       let guard = 0;
+       while (last === first && guard++ < 5) last = pool.last[Math.floor(Math.random() * pool.last.length)];
+     }
+     return first + " " + last;
+   }
+
    function randomProspect() {
      const nat = NATION_WEIGHTS[Math.floor(Math.random() * NATION_WEIGHTS.length)];
-     const pool = NATION_POOLS[nat];
-     const first = pool.first[Math.floor(Math.random() * pool.first.length)];
-     const last = pool.last[Math.floor(Math.random() * pool.last.length)];
-     return { name: first + " " + last, nat };
+     return { name: nameFromPool(NATION_POOLS[nat]), nat };
    }
 
    // A prospect skewed toward the club's own country (~65% homegrown, the rest an
@@ -136,11 +144,7 @@
    function homeProspect(country) {
      const nat = COUNTRY_NAT[country];
      const pool = nat && NATION_POOLS[nat];
-     if (pool && Math.random() < 0.65) {
-       const first = pool.first[Math.floor(Math.random() * pool.first.length)];
-       const last = pool.last[Math.floor(Math.random() * pool.last.length)];
-       return { name: first + " " + last, nat };
-     }
+     if (pool && Math.random() < 0.65) return { name: nameFromPool(pool), nat };
      return randomProspect();
    }
    
@@ -378,26 +382,146 @@
 
    // ---- SPAIN: LA LIGA (20) --------------------------------------------------
    const RAW_LALIGA = [
-     { id: "rma", name: "Real Madrid", short: "RMA", nick: "Los Blancos", city: "Madrid", stadium: "Santiago Bernabéu", colors: ["#FEBE10", "#00529F"], tier: 5, squad: [] },
-     { id: "fcb", name: "FC Barcelona", short: "BAR", nick: "Blaugrana", city: "Barcelona", stadium: "Spotify Camp Nou", colors: ["#A50044", "#004D98"], tier: 5, squad: [] },
-     { id: "atm", name: "Atlético Madrid", short: "ATM", nick: "Los Colchoneros", city: "Madrid", stadium: "Metropolitano", colors: ["#CB3524", "#FFFFFF"], tier: 5, squad: [] },
-     { id: "ath", name: "Athletic Club", short: "ATH", nick: "Los Leones", city: "Bilbao", stadium: "San Mamés", colors: ["#EE2523", "#FFFFFF"], tier: 4, squad: [] },
-     { id: "rso", name: "Real Sociedad", short: "RSO", nick: "La Real", city: "San Sebastián", stadium: "Reale Arena", colors: ["#0067B1", "#FFFFFF"], tier: 4, squad: [] },
-     { id: "bet", name: "Real Betis", short: "BET", nick: "Los Verdiblancos", city: "Seville", stadium: "Benito Villamarín", colors: ["#00954C", "#FFFFFF"], tier: 4, squad: [] },
-     { id: "vil", name: "Villarreal", short: "VIL", nick: "El Submarino Amarillo", city: "Villarreal", stadium: "Estadio de la Cerámica", colors: ["#FFE667", "#004C99"], tier: 4, squad: [] },
-     { id: "sev", name: "Sevilla", short: "SEV", nick: "Los Nervionenses", city: "Seville", stadium: "Ramón Sánchez-Pizjuán", colors: ["#D8010F", "#FFFFFF"], tier: 4, squad: [] },
-     { id: "vlc", name: "Valencia", short: "VLC", nick: "Los Che", city: "Valencia", stadium: "Mestalla", colors: ["#FF7C00", "#000000"], tier: 3, squad: [] },
-     { id: "gir", name: "Girona", short: "GIR", nick: "Blanquivermells", city: "Girona", stadium: "Montilivi", colors: ["#CD1719", "#FFFFFF"], tier: 3, squad: [] },
-     { id: "cel", name: "Celta Vigo", short: "CEL", nick: "Os Celestes", city: "Vigo", stadium: "Balaídos", colors: ["#8AC3EE", "#FFFFFF"], tier: 3, squad: [] },
-     { id: "osa", name: "Osasuna", short: "OSA", nick: "Los Rojillos", city: "Pamplona", stadium: "El Sadar", colors: ["#0A346F", "#D91A21"], tier: 3, squad: [] },
-     { id: "ray", name: "Rayo Vallecano", short: "RAY", nick: "Los Franjirrojos", city: "Madrid", stadium: "Vallecas", colors: ["#FFFFFF", "#E53027"], tier: 3, squad: [] },
-     { id: "get", name: "Getafe", short: "GET", nick: "Los Azulones", city: "Getafe", stadium: "Coliseum", colors: ["#005999", "#FFFFFF"], tier: 3, squad: [] },
-     { id: "mll", name: "Mallorca", short: "MLL", nick: "Los Bermellones", city: "Palma", stadium: "Son Moix", colors: ["#E20613", "#000000"], tier: 2, squad: [] },
-     { id: "esn", name: "Espanyol", short: "ESP", nick: "Los Pericos", city: "Barcelona", stadium: "RCDE Stadium", colors: ["#007FC8", "#FFFFFF"], tier: 2, squad: [] },
-     { id: "alv", name: "Alavés", short: "ALV", nick: "El Glorioso", city: "Vitoria-Gasteiz", stadium: "Mendizorroza", colors: ["#0761AF", "#FFFFFF"], tier: 2, squad: [] },
-     { id: "elc", name: "Elche", short: "ELC", nick: "Los Franjiverdes", city: "Elche", stadium: "Martínez Valero", colors: ["#00913F", "#FFFFFF"], tier: 2, squad: [] },
-     { id: "lev", name: "Levante", short: "LEV", nick: "Los Granotas", city: "Valencia", stadium: "Ciutat de València", colors: ["#9E1C31", "#004B9F"], tier: 2, squad: [] },
-     { id: "ovi", name: "Real Oviedo", short: "OVI", nick: "Los Carbayones", city: "Oviedo", stadium: "Carlos Tartiere", colors: ["#0033A0", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "rma", name: "Real Madrid", short: "RMA", nick: "Los Blancos", city: "Madrid", stadium: "Santiago Bernabéu", colors: ["#FEBE10", "#00529F"], tier: 5,
+       squad: [
+         P("Thibaut Courtois", "GK", 34, 89), P("Andriy Lunin", "GK", 27, 78),
+         P("Trent Alexander-Arnold", "DF", 28, 85), P("Éder Militão", "DF", 28, 84), P("Antonio Rüdiger", "DF", 33, 84), P("Dean Huijsen", "DF", 21, 82), P("Ferland Mendy", "DF", 31, 79), P("Fran García", "DF", 27, 78), P("Raúl Asencio", "DF", 23, 77),
+         P("Jude Bellingham", "MF", 23, 89), P("Federico Valverde", "MF", 28, 87), P("Aurélien Tchouaméni", "MF", 26, 84), P("Eduardo Camavinga", "MF", 24, 84), P("Arda Güler", "MF", 21, 82), P("Dani Ceballos", "MF", 30, 77),
+         P("Kylian Mbappé", "FW", 28, 91), P("Vinícius Júnior", "FW", 26, 90), P("Rodrygo", "FW", 26, 85), P("Brahim Díaz", "FW", 27, 81), P("Endrick", "FW", 20, 78),
+       ]},
+     { id: "fcb", name: "FC Barcelona", short: "BAR", nick: "Blaugrana", city: "Barcelona", stadium: "Spotify Camp Nou", colors: ["#A50044", "#004D98"], tier: 5,
+       squad: [
+         P("Joan García", "GK", 25, 82), P("Marc-André ter Stegen", "GK", 34, 83), P("Wojciech Szczęsny", "GK", 36, 78),
+         P("Pau Cubarsí", "DF", 19, 83), P("Ronald Araújo", "DF", 27, 84), P("Jules Koundé", "DF", 27, 84), P("Íñigo Martínez", "DF", 35, 80), P("Alejandro Balde", "DF", 23, 82), P("Andreas Christensen", "DF", 30, 78),
+         P("Pedri", "MF", 23, 88), P("Frenkie de Jong", "MF", 29, 85), P("Gavi", "MF", 22, 83), P("Dani Olmo", "MF", 28, 84), P("Fermín López", "MF", 23, 80), P("Marc Casadó", "MF", 22, 78),
+         P("Lamine Yamal", "FW", 19, 90), P("Raphinha", "FW", 30, 87), P("Robert Lewandowski", "FW", 38, 84), P("Ferran Torres", "FW", 26, 80), P("Marcus Rashford", "FW", 29, 82),
+       ]},
+     { id: "atm", name: "Atlético Madrid", short: "ATM", nick: "Los Colchoneros", city: "Madrid", stadium: "Metropolitano", colors: ["#CB3524", "#FFFFFF"], tier: 5,
+       squad: [
+         P("Jan Oblak", "GK", 33, 86), P("Juan Musso", "GK", 32, 76),
+         P("Robin Le Normand", "DF", 30, 82), P("José María Giménez", "DF", 31, 82), P("David Hancko", "DF", 28, 81), P("Clément Lenglet", "DF", 31, 78), P("Nahuel Molina", "DF", 28, 79), P("Reinildo", "DF", 32, 77), P("Matteo Ruggeri", "DF", 24, 76),
+         P("Rodrigo De Paul", "MF", 32, 82), P("Marcos Llorente", "MF", 31, 81), P("Pablo Barrios", "MF", 23, 80), P("Conor Gallagher", "MF", 26, 80), P("Koke", "MF", 34, 77), P("Johnny Cardoso", "MF", 24, 78),
+         P("Julián Álvarez", "FW", 26, 87), P("Antoine Griezmann", "FW", 35, 83), P("Alexander Sørloth", "FW", 30, 81), P("Giacomo Raspadori", "FW", 26, 79), P("Giuliano Simeone", "FW", 23, 78),
+       ]},
+     { id: "ath", name: "Athletic Club", short: "ATH", nick: "Los Leones", city: "Bilbao", stadium: "San Mamés", colors: ["#EE2523", "#FFFFFF"], tier: 4,
+       squad: [
+         P("Unai Simón", "GK", 29, 84), P("Álex Padilla", "GK", 23, 72),
+         P("Dani Vivian", "DF", 26, 81), P("Aitor Paredes", "DF", 25, 78), P("Yeray Álvarez", "DF", 31, 77), P("Imanol García de Albéniz", "DF", 24, 75), P("Yuri Berchiche", "DF", 36, 75), P("Iñaki Lekue", "DF", 32, 73),
+         P("Oihan Sancet", "MF", 26, 82), P("Mikel Jauregizar", "MF", 22, 78), P("Álex Berenguer", "MF", 31, 78), P("Iñigo Ruiz de Galarreta", "MF", 32, 75), P("Beñat Prados", "MF", 24, 74), P("Unai Gómez", "MF", 23, 74),
+         P("Nico Williams", "FW", 24, 85), P("Iñaki Williams", "FW", 32, 82), P("Gorka Guruzeta", "FW", 30, 78), P("Robert Navarro", "FW", 24, 74), P("Maroan Sannadi", "FW", 25, 73),
+       ]},
+     { id: "rso", name: "Real Sociedad", short: "RSO", nick: "La Real", city: "San Sebastián", stadium: "Reale Arena", colors: ["#0067B1", "#FFFFFF"], tier: 4,
+       squad: [
+         P("Álex Remiro", "GK", 31, 83), P("Unai Marrero", "GK", 22, 71),
+         P("Igor Zubeldia", "DF", 29, 80), P("Nayef Aguerd", "DF", 30, 80), P("Duje Ćaleta-Car", "DF", 29, 78), P("Aritz Elustondo", "DF", 32, 75), P("Hamari Traoré", "DF", 34, 76), P("Jon Aramburu", "DF", 23, 75), P("Aihen Muñoz", "DF", 29, 74),
+         P("Takefusa Kubo", "MF", 25, 84), P("Brais Méndez", "MF", 29, 81), P("Luka Sučić", "MF", 24, 78), P("Beñat Turrientes", "MF", 24, 76), P("Pablo Marín", "MF", 22, 73), P("Carlos Soler", "MF", 29, 78),
+         P("Mikel Oyarzabal", "FW", 29, 84), P("Ander Barrenetxea", "FW", 24, 78), P("Orri Óskarsson", "FW", 21, 77), P("Sheraldo Becker", "FW", 31, 76),
+       ]},
+     { id: "bet", name: "Real Betis", short: "BET", nick: "Los Verdiblancos", city: "Seville", stadium: "Benito Villamarín", colors: ["#00954C", "#FFFFFF"], tier: 4,
+       squad: [
+         P("Pau López", "GK", 31, 79), P("Álvaro Valles", "GK", 28, 76),
+         P("Natan", "DF", 24, 78), P("Marc Bartra", "DF", 35, 76), P("Diego Llorente", "DF", 33, 77), P("Héctor Bellerín", "DF", 31, 77), P("Valentín Gómez", "DF", 22, 75), P("Ricardo Rodríguez", "DF", 34, 74), P("Romain Perraud", "DF", 28, 74),
+         P("Giovani Lo Celso", "MF", 30, 80), P("Isco", "MF", 34, 82), P("Pablo Fornals", "MF", 30, 79), P("Marc Roca", "MF", 29, 78), P("Sergi Altimira", "MF", 24, 76), P("Nelson Deossa", "MF", 25, 76),
+         P("Antony", "FW", 26, 83), P("Abde Ezzalzouli", "FW", 24, 79), P("Cucho Hernández", "FW", 27, 79), P("Cédric Bakambu", "FW", 30, 76), P("Chimy Ávila", "FW", 32, 74),
+       ]},
+     { id: "vil", name: "Villarreal", short: "VIL", nick: "El Submarino Amarillo", city: "Villarreal", stadium: "Estadio de la Cerámica", colors: ["#FFE667", "#004C99"], tier: 4,
+       squad: [
+         P("Luiz Júnior", "GK", 24, 78), P("Diego Conde", "GK", 27, 72),
+         P("Juan Foyth", "DF", 28, 80), P("Renato Veiga", "DF", 23, 79), P("Rafa Marín", "DF", 23, 76), P("Sergi Cardona", "DF", 26, 76), P("Santiago Mouriño", "DF", 23, 75), P("Willy Kambwala", "DF", 21, 76), P("Alfonso Pedraza", "DF", 30, 76),
+         P("Dani Parejo", "MF", 37, 79), P("Thomas Partey", "MF", 33, 79), P("Santi Comesaña", "MF", 29, 77), P("Pape Gueye", "MF", 26, 77), P("Alberto Moleiro", "MF", 22, 78),
+         P("Georges Mikautadze", "FW", 25, 80), P("Gerard Moreno", "FW", 34, 80), P("Ayoze Pérez", "FW", 33, 79), P("Nicolas Pépé", "FW", 30, 77), P("Tani Oluwaseyi", "FW", 25, 74),
+       ]},
+     { id: "sev", name: "Sevilla", short: "SEV", nick: "Los Nervionenses", city: "Seville", stadium: "Ramón Sánchez-Pizjuán", colors: ["#D8010F", "#FFFFFF"], tier: 4,
+       squad: [
+         P("Ørjan Nyland", "GK", 35, 76), P("Odysseas Vlachodimos", "GK", 31, 75),
+         P("Loïc Badé", "DF", 25, 80), P("Kike Salas", "DF", 23, 76), P("Marcão", "DF", 29, 76), P("Tanguy Nianzou", "DF", 24, 76), P("José Ángel Carmona", "DF", 24, 76), P("Gabriel Suazo", "DF", 28, 76), P("Ramón Martínez", "DF", 22, 73),
+         P("Djibril Sow", "MF", 29, 77), P("Saúl Ñíguez", "MF", 31, 78), P("Lucien Agoumé", "MF", 24, 76), P("Nemanja Gudelj", "MF", 34, 74), P("Joan Jordán", "MF", 31, 74),
+         P("Dodi Lukébakio", "FW", 28, 80), P("Rubén Vargas", "FW", 27, 77), P("Isaac Romero", "FW", 25, 76), P("Chidera Ejuke", "FW", 28, 75), P("Akor Adams", "FW", 26, 74),
+       ]},
+     { id: "vlc", name: "Valencia", short: "VLC", nick: "Los Che", city: "Valencia", stadium: "Mestalla", colors: ["#FF7C00", "#000000"], tier: 3,
+       squad: [
+         P("Julen Agirrezabala", "GK", 25, 76), P("Stole Dimitrievski", "GK", 32, 74),
+         P("Mouctar Diakhaby", "DF", 29, 77), P("José Gayà", "DF", 31, 78), P("Cenk Özkacar", "DF", 25, 74), P("Dimitri Foulquier", "DF", 32, 74), P("Thierry Rendall", "DF", 28, 73), P("Jesús Vázquez", "DF", 23, 73),
+         P("Pepelu", "MF", 27, 77), P("Javi Guerra", "MF", 22, 79), P("André Almeida", "MF", 25, 75), P("Baptiste Santamaría", "MF", 30, 74), P("Filip Ugrinic", "MF", 26, 74),
+         P("Hugo Duro", "FW", 26, 78), P("Diego López", "FW", 24, 77), P("Luis Rioja", "FW", 32, 74), P("Dani Gómez", "FW", 27, 74), P("Rafa Mir", "FW", 29, 74),
+       ]},
+     { id: "gir", name: "Girona", short: "GIR", nick: "Blanquivermells", city: "Girona", stadium: "Montilivi", colors: ["#CD1719", "#FFFFFF"], tier: 3,
+       squad: [
+         P("Paulo Gazzaniga", "GK", 34, 77), P("Vladyslav Krapyvtsov", "GK", 21, 70),
+         P("Arnau Martínez", "DF", 23, 77), P("Daley Blind", "DF", 36, 74), P("Vitor Reis", "DF", 20, 76), P("Alejandro Francés", "DF", 23, 75), P("David López", "DF", 36, 73), P("Juanpe", "DF", 34, 73),
+         P("Iván Martín", "MF", 26, 76), P("Yaser Asprilla", "MF", 22, 76), P("Donny van de Beek", "MF", 29, 76), P("Oriol Romeu", "MF", 34, 74), P("Axel Witsel", "MF", 37, 74),
+         P("Viktor Tsygankov", "FW", 28, 80), P("Bryan Gil", "FW", 25, 77), P("Abel Ruiz", "FW", 26, 75), P("Cristhian Stuani", "FW", 39, 74), P("Vladyslav Vanat", "FW", 23, 77),
+       ]},
+     { id: "cel", name: "Celta Vigo", short: "CEL", nick: "Os Celestes", city: "Vigo", stadium: "Balaídos", colors: ["#8AC3EE", "#FFFFFF"], tier: 3,
+       squad: [
+         P("Ionuț Radu", "GK", 29, 77), P("Vicente Guaita", "GK", 39, 74),
+         P("Carl Starfelt", "DF", 31, 76), P("Marcos Alonso", "DF", 35, 74), P("Óscar Mingueza", "DF", 27, 78), P("Javi Rodríguez", "DF", 23, 73), P("Carlos Domínguez", "DF", 24, 74), P("Sergio Carreira", "DF", 24, 73),
+         P("Fran Beltrán", "MF", 27, 76), P("Ilaix Moriba", "MF", 23, 75), P("Luca de la Torre", "MF", 28, 75), P("Hugo Sotelo", "MF", 21, 73), P("Damián Rodríguez", "MF", 22, 73),
+         P("Iago Aspas", "FW", 39, 78), P("Borja Iglesias", "FW", 33, 77), P("Pablo Durán", "FW", 21, 74), P("Williot Swedberg", "FW", 22, 75), P("Jonathan Bamba", "FW", 30, 76),
+       ]},
+     { id: "osa", name: "Osasuna", short: "OSA", nick: "Los Rojillos", city: "Pamplona", stadium: "El Sadar", colors: ["#0A346F", "#D91A21"], tier: 3,
+       squad: [
+         P("Sergio Herrera", "GK", 33, 76), P("Aitor Fernández", "GK", 35, 73),
+         P("Alejandro Catena", "DF", 32, 75), P("David García", "DF", 32, 76), P("Juan Cruz", "DF", 30, 74), P("Jesús Areso", "DF", 26, 76), P("Rubén Peña", "DF", 34, 73), P("Abel Bretones", "DF", 25, 73),
+         P("Lucas Torró", "MF", 32, 75), P("Jon Moncayola", "MF", 27, 77), P("Aimar Oroz", "MF", 24, 77), P("Moi Gómez", "MF", 31, 74), P("Iker Muñoz", "MF", 22, 73),
+         P("Ante Budimir", "FW", 35, 78), P("Rubén García", "FW", 32, 74), P("Bryan Zaragoza", "FW", 24, 77), P("Raúl García de Haro", "FW", 27, 73), P("Víctor Muñoz", "FW", 22, 72),
+       ]},
+     { id: "ray", name: "Rayo Vallecano", short: "RAY", nick: "Los Franjirrojos", city: "Madrid", stadium: "Vallecas", colors: ["#FFFFFF", "#E53027"], tier: 3,
+       squad: [
+         P("Augusto Batalla", "GK", 29, 76), P("Dani Cárdenas", "GK", 28, 72),
+         P("Florian Lejeune", "DF", 35, 76), P("Aridane Hernández", "DF", 37, 73), P("Pep Chavarría", "DF", 28, 75), P("Andrei Rațiu", "DF", 28, 78), P("Iván Balliu", "DF", 34, 74), P("Pacha Espino", "DF", 32, 73),
+         P("Óscar Valentín", "MF", 32, 75), P("Pathé Ciss", "MF", 31, 75), P("Unai López", "MF", 30, 75), P("Isi Palazón", "MF", 31, 78), P("Pedro Díaz", "MF", 26, 73), P("Gerard Gumbau", "MF", 31, 73),
+         P("Jorge de Frutos", "FW", 29, 77), P("Álvaro García", "FW", 33, 75), P("Sergio Camello", "FW", 25, 76), P("Randy Nteka", "FW", 28, 73),
+       ]},
+     { id: "get", name: "Getafe", short: "GET", nick: "Los Azulones", city: "Getafe", stadium: "Coliseum", colors: ["#005999", "#FFFFFF"], tier: 3,
+       squad: [
+         P("David Soria", "GK", 33, 77), P("Jiří Letáček", "GK", 28, 72),
+         P("Domingos Duarte", "DF", 31, 76), P("Djené", "DF", 34, 76), P("Abdel Abqar", "DF", 26, 75), P("Juan Iglesias", "DF", 27, 75), P("Diego Rico", "DF", 33, 73), P("Kiko Femenía", "DF", 34, 73),
+         P("Luis Milla", "MF", 29, 76), P("Mario Martín", "MF", 22, 73), P("Yellu Santiago", "MF", 23, 73), P("Christantus Uche", "MF", 22, 76), P("Álex Sola", "MF", 25, 73),
+         P("Borja Mayoral", "FW", 29, 78), P("Mauro Arambarri", "MF", 31, 77), P("Coba da Costa", "FW", 21, 72), P("Adrián Liso", "FW", 20, 72), P("Peter Federico", "FW", 23, 73),
+       ]},
+     { id: "mll", name: "Mallorca", short: "MLL", nick: "Los Bermellones", city: "Palma", stadium: "Son Moix", colors: ["#E20613", "#000000"], tier: 2,
+       squad: [
+         P("Leo Román", "GK", 25, 76), P("Dominik Greif", "GK", 29, 74),
+         P("Martin Valjent", "DF", 31, 77), P("Antonio Raíllo", "DF", 35, 75), P("Pablo Maffeo", "DF", 29, 77), P("Toni Lato", "DF", 29, 73), P("Johan Mojica", "DF", 33, 74), P("Mateu Morey", "DF", 26, 73),
+         P("Sergi Darder", "MF", 32, 78), P("Antonio Sánchez", "MF", 29, 74), P("Manu Morlanes", "MF", 27, 75), P("Samú Costa", "MF", 25, 76), P("Pablo Torre", "MF", 23, 76),
+         P("Vedat Muriqi", "FW", 32, 79), P("Takuma Asano", "FW", 32, 74), P("Mateo Joseph", "FW", 22, 76), P("Jan Virgili", "FW", 20, 72), P("Abdón Prats", "FW", 34, 72),
+       ]},
+     { id: "esn", name: "Espanyol", short: "ESP", nick: "Los Pericos", city: "Barcelona", stadium: "RCDE Stadium", colors: ["#007FC8", "#FFFFFF"], tier: 2,
+       squad: [
+         P("Marko Dmitrović", "GK", 34, 76), P("Fernando Pacheco", "GK", 33, 73),
+         P("Leandro Cabrera", "DF", 35, 75), P("Sergi Gómez", "DF", 34, 73), P("Fernando Calero", "DF", 30, 75), P("Omar El Hilali", "DF", 22, 75), P("Carlos Romero", "DF", 24, 74), P("Riad Bajić", "DF", 24, 72),
+         P("Pol Lozano", "MF", 26, 74), P("Edu Expósito", "MF", 29, 76), P("Ramón Terrats", "MF", 25, 74), P("Charles Pickel", "MF", 29, 74), P("Dani Rodríguez", "MF", 26, 73),
+         P("Roberto Fernández", "FW", 23, 76), P("Javi Puado", "FW", 28, 78), P("Jofre Carreras", "FW", 24, 73), P("Kike García", "FW", 36, 74), P("Pere Milla", "FW", 33, 73),
+       ]},
+     { id: "alv", name: "Alavés", short: "ALV", nick: "El Glorioso", city: "Vitoria-Gasteiz", stadium: "Mendizorroza", colors: ["#0761AF", "#FFFFFF"], tier: 2,
+       squad: [
+         P("Antonio Sivera", "GK", 30, 76), P("Jesús Owono", "GK", 25, 72),
+         P("Nahuel Tenaglia", "DF", 30, 74), P("Víctor Laguardia", "DF", 36, 73), P("Facundo Garcés", "DF", 26, 75), P("Jon Pacheco", "DF", 25, 75), P("Moussa Diarra", "DF", 25, 74), P("Andoni Gorosabel", "DF", 29, 73),
+         P("Antonio Blanco", "MF", 25, 76), P("Carlos Vicente", "MF", 27, 75), P("Denis Suárez", "MF", 32, 75), P("Pablo Ibáñez", "MF", 27, 74), P("Jony", "MF", 35, 72),
+         P("Stoichkov", "FW", 30, 74), P("Toni Martínez", "FW", 28, 75), P("Carles Aleñá", "MF", 28, 75), P("Lucas Boyé", "FW", 30, 76), P("Mariano Díaz", "FW", 33, 72),
+       ]},
+     { id: "elc", name: "Elche", short: "ELC", nick: "Los Franjiverdes", city: "Elche", stadium: "Martínez Valero", colors: ["#00913F", "#FFFFFF"], tier: 2,
+       squad: [
+         P("Matías Dituro", "GK", 38, 74), P("Iñaki Peña", "GK", 27, 76),
+         P("Pedro Bigas", "DF", 36, 73), P("Víctor Chust", "DF", 26, 74), P("Adrià Pedrosa", "DF", 27, 73), P("Álvaro Núñez", "DF", 26, 74), P("Héctor Fort", "DF", 20, 74), P("John Donald", "DF", 24, 72),
+         P("Aleix Febas", "MF", 30, 74), P("Marc Aguado", "MF", 24, 74), P("Nordin Amrabat", "MF", 39, 72), P("Josan", "MF", 36, 72), P("Nico Fernández", "FW", 25, 73),
+         P("André Silva", "FW", 30, 77), P("Germán Valera", "FW", 24, 73), P("Rodrigo Mendoza", "MF", 20, 74), P("Álvaro Rodríguez", "FW", 22, 74), P("Fábio Silva", "FW", 24, 76),
+       ]},
+     { id: "lev", name: "Levante", short: "LEV", nick: "Los Granotas", city: "Valencia", stadium: "Ciutat de València", colors: ["#9E1C31", "#004B9F"], tier: 2,
+       squad: [
+         P("Andrés Fernández", "GK", 39, 73), P("Mathew Ryan", "GK", 34, 76),
+         P("Unai Elgezabal", "DF", 32, 73), P("Matías Moreno", "DF", 22, 74), P("Jorge Cabello", "DF", 22, 72), P("Manu Sánchez", "DF", 26, 74), P("Adrián de la Fuente", "DF", 23, 72), P("Diego Pampín", "DF", 24, 72),
+         P("Unai Vencedor", "MF", 25, 75), P("Kervin Arriaga", "MF", 28, 74), P("Pablo Martínez", "MF", 27, 73), P("Oriol Rey", "MF", 26, 73), P("Carlos Álvarez", "MF", 23, 76),
+         P("Iván Romero", "FW", 24, 74), P("Etta Eyong", "FW", 22, 75), P("Goduine Koyalipou", "FW", 25, 73), P("Jeremy Toljan", "DF", 31, 73), P("José Luis Morales", "FW", 39, 73),
+       ]},
+     { id: "ovi", name: "Real Oviedo", short: "OVI", nick: "Los Carbayones", city: "Oviedo", stadium: "Carlos Tartiere", colors: ["#0033A0", "#FFFFFF"], tier: 2,
+       squad: [
+         P("Aarón Escandell", "GK", 30, 74), P("Braian Salvareschi", "GK", 26, 72),
+         P("David Costas", "DF", 28, 73), P("Dani Calvo", "DF", 31, 74), P("Rahim Alhassane", "DF", 24, 72), P("Lucas Ahijado", "DF", 29, 72), P("Javi López", "DF", 32, 72), P("Nacho Vidal", "DF", 30, 73),
+         P("Leander Dendoncker", "MF", 31, 77), P("Santiago Colombatto", "MF", 28, 74), P("Kwasi Sibo", "MF", 27, 73), P("Alberto Reina", "MF", 26, 73), P("Salomón Rondón", "FW", 37, 75),
+         P("Haissem Hassan", "FW", 24, 73), P("Ilyas Chaira", "FW", 25, 73), P("Federico Viñas", "FW", 27, 74), P("Josip Brekalo", "FW", 28, 76), P("Alberto Toril", "FW", 23, 72),
+       ]},
    ];
 
    // ---- SPAIN: SEGUNDA DIVISIÓN (22 — the lowest Spanish tier here) ----------
@@ -436,24 +560,132 @@
 
    // ---- GERMANY ----
    const RAW_DE_BL1 = [
-     { id: "ger_bay", name: "Bayern Munich", short: "BAY", city: "Munich", stadium: "Allianz Arena", colors: ["#DC052D", "#FFFFFF"], tier: 5, squad: [] },
-     { id: "ger_lev", name: "Bayer Leverkusen", short: "LEV", city: "Leverkusen", stadium: "BayArena", colors: ["#E32219", "#000000"], tier: 5, squad: [] },
-     { id: "ger_rbl", name: "RB Leipzig", short: "RBL", city: "Leipzig", stadium: "Red Bull Arena", colors: ["#DD0741", "#FFFFFF"], tier: 4, squad: [] },
-     { id: "ger_bvb", name: "Borussia Dortmund", short: "BVB", city: "Dortmund", stadium: "Signal Iduna Park", colors: ["#FDE100", "#000000"], tier: 5, squad: [] },
-     { id: "ger_sge", name: "Eintracht Frankfurt", short: "SGE", city: "Frankfurt", stadium: "Deutsche Bank Park", colors: ["#E1000F", "#000000"], tier: 4, squad: [] },
-     { id: "ger_vfb", name: "VfB Stuttgart", short: "VFB", city: "Stuttgart", stadium: "MHPArena", colors: ["#FFFFFF", "#E32219"], tier: 4, squad: [] },
-     { id: "ger_wob", name: "VfL Wolfsburg", short: "WOB", city: "Wolfsburg", stadium: "Volkswagen Arena", colors: ["#65B32E", "#FFFFFF"], tier: 3, squad: [] },
-     { id: "ger_scf", name: "SC Freiburg", short: "SCF", city: "Freiburg", stadium: "Europa-Park Stadion", colors: ["#000000", "#E2001A"], tier: 3, squad: [] },
-     { id: "ger_svw", name: "Werder Bremen", short: "SVW", city: "Bremen", stadium: "Weserstadion", colors: ["#1D9053", "#FFFFFF"], tier: 3, squad: [] },
-     { id: "ger_fca", name: "FC Augsburg", short: "FCA", city: "Augsburg", stadium: "WWK Arena", colors: ["#BA3733", "#FFFFFF"], tier: 2, squad: [] },
-     { id: "ger_bmg", name: "Bor. Mönchengladbach", short: "BMG", city: "Mönchengladbach", stadium: "Borussia-Park", colors: ["#000000", "#FFFFFF"], tier: 3, squad: [] },
-     { id: "ger_fcu", name: "Union Berlin", short: "FCU", city: "Berlin", stadium: "An der Alten Försterei", colors: ["#EB1923", "#FFFFFF"], tier: 3, squad: [] },
-     { id: "ger_m05", name: "Mainz 05", short: "M05", city: "Mainz", stadium: "Mewa Arena", colors: ["#C3141E", "#FFFFFF"], tier: 3, squad: [] },
-     { id: "ger_tsg", name: "TSG Hoffenheim", short: "TSG", city: "Sinsheim", stadium: "PreZero Arena", colors: ["#1C63B7", "#FFFFFF"], tier: 3, squad: [] },
-     { id: "ger_hdh", name: "1. FC Heidenheim", short: "HDH", city: "Heidenheim", stadium: "Voith-Arena", colors: ["#E30613", "#003DA5"], tier: 2, squad: [] },
-     { id: "ger_koe", name: "1. FC Köln", short: "KOE", city: "Cologne", stadium: "RheinEnergieStadion", colors: ["#ED1C24", "#FFFFFF"], tier: 3, squad: [] },
-     { id: "ger_hsv", name: "Hamburger SV", short: "HSV", city: "Hamburg", stadium: "Volksparkstadion", colors: ["#0A3F88", "#FFFFFF"], tier: 3, squad: [] },
-     { id: "ger_stp", name: "FC St. Pauli", short: "STP", city: "Hamburg", stadium: "Millerntor", colors: ["#61371F", "#FFFFFF"], tier: 2, squad: [] },
+     { id: "ger_bay", name: "Bayern Munich", short: "BAY", city: "Munich", stadium: "Allianz Arena", colors: ["#DC052D", "#FFFFFF"], tier: 5,
+       squad: [
+         P("Manuel Neuer", "GK", 40, 84), P("Jonas Urbig", "GK", 23, 74),
+         P("Dayot Upamecano", "DF", 28, 85), P("Jonathan Tah", "DF", 30, 83), P("Kim Min-jae", "DF", 30, 82), P("Alphonso Davies", "DF", 26, 84), P("Josip Stanišić", "DF", 26, 78), P("Konrad Laimer", "DF", 29, 79), P("Sacha Boey", "DF", 26, 76),
+         P("Joshua Kimmich", "MF", 31, 87), P("Aleksandar Pavlović", "MF", 22, 81), P("Leon Goretzka", "MF", 31, 80), P("João Palhinha", "MF", 31, 80), P("Tom Bischof", "MF", 21, 76),
+         P("Harry Kane", "FW", 33, 89), P("Jamal Musiala", "FW", 23, 87), P("Michael Olise", "FW", 25, 86), P("Luis Díaz", "FW", 29, 84), P("Serge Gnabry", "FW", 31, 82), P("Kingsley Coman", "FW", 30, 82),
+       ]},
+     { id: "ger_lev", name: "Bayer Leverkusen", short: "LEV", city: "Leverkusen", stadium: "BayArena", colors: ["#E32219", "#000000"], tier: 5,
+       squad: [
+         P("Mark Flekken", "GK", 33, 79), P("Niklas Lomb", "GK", 33, 72),
+         P("Edmond Tapsoba", "DF", 27, 82), P("Jarell Quansah", "DF", 23, 79), P("Alejandro Grimaldo", "DF", 31, 82), P("Nordi Mukiele", "DF", 28, 78), P("Arthur", "DF", 22, 76), P("Ibrahim Maza", "DF", 20, 76),
+         P("Robert Andrich", "MF", 31, 79), P("Aleix García", "MF", 28, 79), P("Ezequiel Palacios", "MF", 27, 80), P("Equi Fernández", "MF", 23, 78), P("Claudio Echeverri", "MF", 20, 77),
+         P("Patrik Schick", "FW", 30, 82), P("Malik Tillman", "FW", 24, 81), P("Eliesse Ben Seghir", "FW", 21, 78), P("Nathan Tella", "FW", 27, 78), P("Jonas Hofmann", "FW", 34, 76), P("Christian Kofane", "FW", 19, 74),
+       ]},
+     { id: "ger_rbl", name: "RB Leipzig", short: "RBL", city: "Leipzig", stadium: "Red Bull Arena", colors: ["#DD0741", "#FFFFFF"], tier: 4,
+       squad: [
+         P("Péter Gulácsi", "GK", 36, 79), P("Maarten Vandevoordt", "GK", 24, 76),
+         P("Castello Lukeba", "DF", 24, 81), P("Willi Orbán", "DF", 34, 78), P("Lutsharel Geertruida", "DF", 26, 79), P("David Raum", "DF", 28, 80), P("El Chadaille Bitshiabu", "DF", 21, 77), P("Ridle Baku", "DF", 28, 77),
+         P("Nicolas Seiwald", "MF", 25, 78), P("Xaver Schlager", "MF", 29, 79), P("Christoph Baumgartner", "MF", 27, 79), P("Assan Ouédraogo", "MF", 20, 77), P("Kevin Kampl", "MF", 35, 74),
+         P("Loïs Openda", "FW", 26, 82), P("Johan Bakayoko", "FW", 23, 80), P("Antonio Nusa", "FW", 21, 80), P("Rômulo", "FW", 21, 77), P("Yussuf Poulsen", "FW", 32, 74),
+       ]},
+     { id: "ger_bvb", name: "Borussia Dortmund", short: "BVB", city: "Dortmund", stadium: "Signal Iduna Park", colors: ["#FDE100", "#000000"], tier: 5,
+       squad: [
+         P("Gregor Kobel", "GK", 29, 84), P("Alexander Meyer", "GK", 35, 72),
+         P("Nico Schlotterbeck", "DF", 26, 83), P("Waldemar Anton", "DF", 29, 79), P("Niklas Süle", "DF", 31, 79), P("Ramy Bensebaini", "DF", 31, 78), P("Julian Ryerson", "DF", 29, 78), P("Yan Couto", "DF", 24, 78), P("Daniel Svensson", "DF", 24, 76),
+         P("Marcel Sabitzer", "MF", 32, 79), P("Felix Nmecha", "MF", 26, 78), P("Jobe Bellingham", "MF", 21, 80), P("Pascal Groß", "MF", 35, 78), P("Carney Chukwuemeka", "MF", 22, 77),
+         P("Serhou Guirassy", "FW", 30, 84), P("Karim Adeyemi", "FW", 25, 81), P("Julian Brandt", "FW", 30, 81), P("Maximilian Beier", "FW", 24, 79), P("Julien Duranville", "FW", 20, 75),
+       ]},
+     { id: "ger_sge", name: "Eintracht Frankfurt", short: "SGE", city: "Frankfurt", stadium: "Deutsche Bank Park", colors: ["#E1000F", "#000000"], tier: 4,
+       squad: [
+         P("Michael Zetterer", "GK", 31, 77), P("Kaua Santos", "GK", 23, 74),
+         P("Robin Koch", "DF", 30, 80), P("Arthur Theate", "DF", 26, 78), P("Tuta", "DF", 27, 79), P("Rasmus Kristensen", "DF", 29, 76), P("Nathaniel Brown", "DF", 22, 76), P("Aurèle Amenda", "DF", 22, 75),
+         P("Hugo Larsson", "MF", 22, 81), P("Ellyes Skhiri", "MF", 31, 78), P("Mario Götze", "MF", 34, 77), P("Farès Chaïbi", "MF", 24, 77), P("Can Uzun", "MF", 20, 78),
+         P("Jonathan Burkardt", "FW", 26, 79), P("Ritsu Dōan", "FW", 28, 79), P("Ansgar Knauff", "FW", 24, 77), P("Jean-Mattéo Bahoya", "FW", 21, 77), P("Elye Wahi", "FW", 23, 78),
+       ]},
+     { id: "ger_vfb", name: "VfB Stuttgart", short: "VFB", city: "Stuttgart", stadium: "MHPArena", colors: ["#FFFFFF", "#E32219"], tier: 4,
+       squad: [
+         P("Alexander Nübel", "GK", 30, 82), P("Fabian Bredlow", "GK", 31, 73),
+         P("Jeff Chabot", "DF", 28, 78), P("Ramon Hendriks", "DF", 24, 76), P("Maximilian Mittelstädt", "DF", 29, 79), P("Josha Vagnoman", "DF", 25, 76), P("Lorenz Assignon", "DF", 25, 77), P("Pascal Stenzel", "DF", 30, 73),
+         P("Angelo Stiller", "MF", 25, 82), P("Atakan Karazor", "MF", 29, 77), P("Bilal El Khannouss", "MF", 22, 79), P("Chema Andrés", "MF", 21, 77), P("Yannik Keitel", "MF", 26, 74),
+         P("Deniz Undav", "FW", 30, 82), P("Ermedin Demirović", "FW", 28, 79), P("Jamie Leweling", "FW", 25, 78), P("Badredine Bouanani", "FW", 21, 77), P("Chris Führich", "FW", 28, 78),
+       ]},
+     { id: "ger_wob", name: "VfL Wolfsburg", short: "WOB", city: "Wolfsburg", stadium: "Volkswagen Arena", colors: ["#65B32E", "#FFFFFF"], tier: 3,
+       squad: [
+         P("Kamil Grabara", "GK", 27, 77), P("Marius Müller", "GK", 32, 73),
+         P("Konstantinos Koulierakis", "DF", 22, 77), P("Sebastiaan Bornauw", "DF", 27, 76), P("Denis Vavro", "DF", 30, 75), P("Joakim Mæhle", "DF", 29, 76), P("Kilian Fischer", "DF", 26, 74), P("Aleksandar Cvetković", "DF", 22, 73),
+         P("Maximilian Arnold", "MF", 32, 77), P("Mattias Svanberg", "MF", 27, 77), P("Aster Vranckx", "MF", 24, 76), P("Yannick Gerhardt", "MF", 32, 74), P("Bence Dárdai", "MF", 20, 74),
+         P("Mohamed Amoura", "FW", 26, 80), P("Jonas Wind", "FW", 27, 79), P("Andreas Skov Olsen", "FW", 26, 77), P("Patrick Wimmer", "FW", 25, 76), P("Tiago Tomás", "FW", 24, 76),
+       ]},
+     { id: "ger_scf", name: "SC Freiburg", short: "SCF", city: "Freiburg", stadium: "Europa-Park Stadion", colors: ["#000000", "#E2001A"], tier: 3,
+       squad: [
+         P("Noah Atubolu", "GK", 24, 77), P("Florian Müller", "GK", 28, 73),
+         P("Philipp Lienhart", "DF", 30, 76), P("Matthias Ginter", "DF", 32, 77), P("Christian Günter", "DF", 33, 75), P("Jordy Makengo", "DF", 27, 74), P("Max Rosenfelder", "DF", 21, 74), P("Lukas Kübler", "DF", 33, 73),
+         P("Vincenzo Grifo", "MF", 33, 78), P("Maximilian Eggestein", "MF", 29, 76), P("Merlin Röhl", "MF", 23, 76), P("Patrick Osterhage", "MF", 25, 75), P("Nicolas Höfler", "MF", 35, 74),
+         P("Lucas Höler", "FW", 31, 74), P("Junior Adamu", "FW", 24, 75), P("Michael Gregoritsch", "FW", 32, 76), P("Igor Matanović", "FW", 22, 75), P("Eren Dinkçi", "FW", 24, 76),
+       ]},
+     { id: "ger_svw", name: "Werder Bremen", short: "SVW", city: "Bremen", stadium: "Weserstadion", colors: ["#1D9053", "#FFFFFF"], tier: 3,
+       squad: [
+         P("Mio Backhaus", "GK", 22, 75), P("Karl Hein", "GK", 24, 73),
+         P("Marco Friedl", "DF", 28, 77), P("Amos Pieper", "DF", 28, 75), P("Niklas Stark", "DF", 31, 75), P("Mitchell Weiser", "DF", 32, 76), P("Julián Malatini", "DF", 24, 74), P("Felix Agu", "DF", 26, 74),
+         P("Jens Stage", "MF", 29, 75), P("Romano Schmid", "MF", 26, 77), P("Leonardo Bittencourt", "MF", 33, 75), P("Senne Lynen", "MF", 26, 75), P("Karim Coulibaly", "MF", 22, 73),
+         P("Marvin Ducksch", "FW", 32, 78), P("Justin Njinmah", "FW", 25, 76), P("Samuel Mbangula", "FW", 22, 77), P("Keke Topp", "FW", 22, 75), P("Isaac Schmidt", "FW", 26, 74),
+       ]},
+     { id: "ger_fca", name: "FC Augsburg", short: "FCA", city: "Augsburg", stadium: "WWK Arena", colors: ["#BA3733", "#FFFFFF"], tier: 2,
+       squad: [
+         P("Finn Dahmen", "GK", 28, 75), P("Nediljko Labrović", "GK", 26, 72),
+         P("Jeffrey Gouweleeuw", "DF", 34, 73), P("Keven Schlotterbeck", "DF", 29, 73), P("Mads Pedersen", "DF", 30, 75), P("Chrislain Matsima", "DF", 24, 75), P("Henri Koudossou", "DF", 22, 73), P("Robert Gumny", "DF", 28, 73),
+         P("Elvis Rexhbeçaj", "MF", 28, 74), P("Arne Maier", "MF", 27, 74), P("Kristijan Jakić", "MF", 28, 75), P("Fabian Rieder", "MF", 24, 77), P("Noahkai Banks", "MF", 19, 73),
+         P("Alexis Claude-Maurice", "FW", 27, 76), P("Phillip Tietz", "FW", 28, 74), P("Mert Kömür", "FW", 20, 74), P("Samuel Essende", "FW", 27, 75),
+       ]},
+     { id: "ger_bmg", name: "Bor. Mönchengladbach", short: "BMG", city: "Mönchengladbach", stadium: "Borussia-Park", colors: ["#000000", "#FFFFFF"], tier: 3,
+       squad: [
+         P("Moritz Nicolas", "GK", 28, 74), P("Jan Olschowsky", "GK", 24, 72),
+         P("Ko Itakura", "DF", 29, 78), P("Nico Elvedi", "DF", 29, 77), P("Marvin Friedrich", "DF", 30, 74), P("Joe Scally", "DF", 23, 76), P("Lukas Ullrich", "DF", 22, 73), P("Fabio Chiarodia", "DF", 21, 73),
+         P("Julian Weigl", "MF", 30, 76), P("Rocco Reitz", "MF", 23, 77), P("Kevin Stöger", "MF", 32, 75), P("Florian Neuhaus", "MF", 29, 75), P("Philipp Sander", "MF", 27, 74),
+         P("Tim Kleindienst", "FW", 30, 79), P("Franck Honorat", "FW", 29, 78), P("Haris Tabaković", "FW", 31, 75), P("Shuto Machino", "FW", 26, 76), P("Nathan Ngoumou", "FW", 25, 75),
+       ]},
+     { id: "ger_fcu", name: "Union Berlin", short: "FCU", city: "Berlin", stadium: "An der Alten Försterei", colors: ["#EB1923", "#FFFFFF"], tier: 3,
+       squad: [
+         P("Frederik Rønnow", "GK", 33, 77), P("Alexander Schwolow", "GK", 33, 72),
+         P("Danilho Doekhi", "DF", 28, 77), P("Diogo Leite", "DF", 27, 77), P("Leopold Querfeld", "DF", 22, 74), P("Josip Juranović", "DF", 30, 76), P("Tom Rothe", "DF", 21, 75), P("Christopher Trimmel", "DF", 39, 72),
+         P("Rani Khedira", "MF", 32, 76), P("András Schäfer", "MF", 27, 75), P("Janik Haberer", "MF", 32, 74), P("Aljoša Vasić", "MF", 23, 73), P("Ilyas Ansah", "MF", 21, 74),
+         P("Andrej Ilić", "FW", 25, 76), P("Benedict Hollerbach", "FW", 24, 76), P("Woo-yeong Jeong", "FW", 26, 75), P("Oliver Burke", "FW", 29, 74), P("Tim Skarke", "FW", 29, 73),
+       ]},
+     { id: "ger_m05", name: "Mainz 05", short: "M05", city: "Mainz", stadium: "Mewa Arena", colors: ["#C3141E", "#FFFFFF"], tier: 3,
+       squad: [
+         P("Robin Zentner", "GK", 31, 76), P("Lasse Rieß", "GK", 24, 71),
+         P("Sepp van den Berg", "DF", 24, 78), P("Andreas Hanche-Olsen", "DF", 29, 75), P("Stefan Bell", "DF", 34, 73), P("Maxim Leitsch", "DF", 28, 74), P("Phillipp Mwene", "DF", 32, 74), P("Danny da Costa", "DF", 33, 73),
+         P("Kaishu Sano", "MF", 25, 77), P("Nadiem Amiri", "MF", 30, 78), P("Dominik Kohr", "MF", 32, 74), P("Paul Nebel", "MF", 23, 76), P("Lee Jae-sung", "MF", 34, 76),
+         P("Nelson Weiper", "FW", 21, 75), P("Armindo Sieb", "FW", 23, 75), P("Aymen Barkok", "FW", 27, 74), P("Nikolas Veratschnig", "FW", 21, 73), P("Marco Richter", "FW", 28, 74),
+       ]},
+     { id: "ger_tsg", name: "TSG Hoffenheim", short: "TSG", city: "Sinsheim", stadium: "PreZero Arena", colors: ["#1C63B7", "#FFFFFF"], tier: 3,
+       squad: [
+         P("Oliver Baumann", "GK", 36, 77), P("Luca Philipp", "GK", 25, 71),
+         P("Ozan Kabak", "DF", 26, 78), P("Stanley Nsoki", "DF", 27, 75), P("Robin Hranáč", "DF", 26, 75), P("Koki Machida", "DF", 28, 75), P("Bernardo", "DF", 31, 74), P("Melayro Bogarde", "DF", 24, 73),
+         P("Anton Stach", "MF", 27, 77), P("Grischa Prömel", "MF", 31, 76), P("Dennis Geiger", "MF", 28, 74), P("Umut Tohumcu", "MF", 22, 74), P("Muhammed Damar", "MF", 22, 73),
+         P("Andrej Kramarić", "FW", 35, 77), P("Adam Hložek", "FW", 23, 78), P("Fisnik Asllani", "FW", 23, 76), P("Max Moerstedt", "FW", 20, 74), P("Bazoumana Touré", "FW", 21, 75),
+       ]},
+     { id: "ger_hdh", name: "1. FC Heidenheim", short: "HDH", city: "Heidenheim", stadium: "Voith-Arena", colors: ["#E30613", "#003DA5"], tier: 2,
+       squad: [
+         P("Kevin Müller", "GK", 34, 73), P("Diant Ramaj", "GK", 24, 75),
+         P("Patrick Mainka", "DF", 31, 73), P("Benedikt Gimber", "DF", 28, 72), P("Tim Siersleben", "DF", 25, 73), P("Jonas Föhrenbach", "DF", 29, 72), P("Omar Traoré", "DF", 26, 72), P("Lennard Maloney", "DF", 26, 73),
+         P("Niklas Dorsch", "MF", 28, 74), P("Julian Niehues", "MF", 24, 73), P("Léo Scienza", "MF", 27, 75), P("Adrian Beck", "MF", 29, 73), P("Mathias Honsak", "MF", 29, 73),
+         P("Budu Zivzivadze", "FW", 31, 74), P("Sirlord Conteh", "FW", 29, 72), P("Marvin Pieringer", "FW", 26, 72), P("Stefan Schimmer", "FW", 31, 71),
+       ]},
+     { id: "ger_koe", name: "1. FC Köln", short: "KOE", city: "Cologne", stadium: "RheinEnergieStadion", colors: ["#ED1C24", "#FFFFFF"], tier: 3,
+       squad: [
+         P("Marvin Schwäbe", "GK", 31, 75), P("Matthias Köbbing", "GK", 32, 71),
+         P("Timo Hübers", "DF", 30, 74), P("Dominique Heintz", "DF", 33, 72), P("Joel Schmied", "DF", 27, 73), P("Rav van den Berg", "DF", 21, 75), P("Leart Paçarada", "DF", 28, 72), P("Elias Bakatukanda", "DF", 21, 73),
+         P("Eric Martel", "MF", 24, 75), P("Denis Huseinbašić", "MF", 25, 73), P("Isak Johannesson", "MF", 23, 74), P("Florian Kainz", "MF", 33, 75), P("Marius Bülter", "MF", 33, 75),
+         P("Ragnar Ache", "FW", 27, 77), P("Jakub Kamiński", "FW", 24, 76), P("Luca Waldschmidt", "FW", 30, 75), P("Said El Mala", "FW", 20, 75), P("Damion Downs", "FW", 21, 74),
+       ]},
+     { id: "ger_hsv", name: "Hamburger SV", short: "HSV", city: "Hamburg", stadium: "Volksparkstadion", colors: ["#0A3F88", "#FFFFFF"], tier: 3,
+       squad: [
+         P("Daniel Heuer Fernandes", "GK", 33, 74), P("Matheo Raab", "GK", 26, 71),
+         P("Sebastian Schonlau", "DF", 32, 73), P("Luka Vušković", "DF", 19, 76), P("Dennis Hadžikadunić", "DF", 27, 73), P("Miro Muheim", "DF", 28, 74), P("Guilherme Ramos", "DF", 28, 73), P("William Mikelbrencis", "DF", 22, 72),
+         P("Ludovit Reis", "MF", 25, 76), P("Jonas Meffert", "MF", 31, 74), P("Nicolai Remberg", "MF", 25, 73), P("Immanuel Pherai", "MF", 24, 74), P("Fabio Baldé", "MF", 20, 73),
+         P("Robert Glatzel", "FW", 32, 76), P("Ransford Königsdörffer", "FW", 24, 75), P("Jean-Luc Dompé", "FW", 30, 76), P("Rayan Philippe", "FW", 25, 75), P("Bakery Jatta", "FW", 28, 74),
+       ]},
+     { id: "ger_stp", name: "FC St. Pauli", short: "STP", city: "Hamburg", stadium: "Millerntor", colors: ["#61371F", "#FFFFFF"], tier: 2,
+       squad: [
+         P("Nikola Vasilj", "GK", 30, 74), P("Ben Voll", "GK", 22, 70),
+         P("Hauke Wahl", "DF", 32, 73), P("Karol Mets", "DF", 32, 72), P("Eric Smith", "DF", 29, 73), P("Philipp Treu", "DF", 24, 73), P("Lars Ritzka", "DF", 28, 72), P("James Sands", "DF", 25, 73),
+         P("Jackson Irvine", "MF", 33, 75), P("Carlo Boukhalfa", "MF", 26, 73), P("Danel Sinani", "MF", 29, 74), P("Connor Metcalfe", "MF", 26, 74), P("Mathias Pereira Lage", "MF", 28, 73),
+         P("Andreas Albers", "FW", 35, 72), P("Oladapo Afolayan", "FW", 28, 74), P("Elias Saad", "FW", 26, 75), P("Martijn Kaars", "FW", 27, 74),
+       ]},
    ];
    const RAW_DE_BL2 = [
      { id: "ger_s04", name: "Schalke 04", short: "S04", colors: ["#004D9D", "#FFFFFF"], tier: 3, squad: [] },
@@ -478,26 +710,146 @@
 
    // ---- ITALY ----
    const RAW_IT_SA = [
-     { id: "ita_int", name: "Inter", short: "INT", city: "Milan", stadium: "San Siro", colors: ["#0068A8", "#000000"], tier: 5, squad: [] },
-     { id: "ita_mil", name: "AC Milan", short: "MIL", city: "Milan", stadium: "San Siro", colors: ["#FB090B", "#000000"], tier: 5, squad: [] },
-     { id: "ita_juv", name: "Juventus", short: "JUV", city: "Turin", stadium: "Allianz Stadium", colors: ["#000000", "#FFFFFF"], tier: 5, squad: [] },
-     { id: "ita_nap", name: "Napoli", short: "NAP", city: "Naples", stadium: "Diego Maradona", colors: ["#12A0D7", "#FFFFFF"], tier: 5, squad: [] },
-     { id: "ita_rom", name: "AS Roma", short: "ROM", city: "Rome", stadium: "Stadio Olimpico", colors: ["#8E1F2F", "#F0BC42"], tier: 4, squad: [] },
-     { id: "ita_laz", name: "Lazio", short: "LAZ", city: "Rome", stadium: "Stadio Olimpico", colors: ["#87D8F7", "#FFFFFF"], tier: 4, squad: [] },
-     { id: "ita_ata", name: "Atalanta", short: "ATA", city: "Bergamo", stadium: "Gewiss Stadium", colors: ["#1E71B8", "#000000"], tier: 4, squad: [] },
-     { id: "ita_fio", name: "Fiorentina", short: "FIO", city: "Florence", stadium: "Artemio Franchi", colors: ["#592C82", "#FFFFFF"], tier: 3, squad: [] },
-     { id: "ita_bol", name: "Bologna", short: "BOL", city: "Bologna", stadium: "Renato Dall'Ara", colors: ["#A21C26", "#1A2F48"], tier: 4, squad: [] },
-     { id: "ita_tor", name: "Torino", short: "TOR", city: "Turin", stadium: "Olimpico Grande Torino", colors: ["#8A1E03", "#FFFFFF"], tier: 3, squad: [] },
-     { id: "ita_udi", name: "Udinese", short: "UDI", city: "Udine", stadium: "Bluenergy Stadium", colors: ["#000000", "#FFFFFF"], tier: 3, squad: [] },
-     { id: "ita_gen", name: "Genoa", short: "GEN", city: "Genoa", stadium: "Luigi Ferraris", colors: ["#A21C26", "#0A2340"], tier: 2, squad: [] },
-     { id: "ita_com", name: "Como", short: "COM", city: "Como", stadium: "Giuseppe Sinigaglia", colors: ["#003DA5", "#FFFFFF"], tier: 2, squad: [] },
-     { id: "ita_cag", name: "Cagliari", short: "CAG", city: "Cagliari", stadium: "Unipol Domus", colors: ["#A50021", "#00286B"], tier: 2, squad: [] },
-     { id: "ita_ver", name: "Hellas Verona", short: "VER", city: "Verona", stadium: "Marcantonio Bentegodi", colors: ["#FFD700", "#0A2340"], tier: 2, squad: [] },
-     { id: "ita_lec", name: "Lecce", short: "LEC", city: "Lecce", stadium: "Via del Mare", colors: ["#FFD700", "#E30613"], tier: 2, squad: [] },
-     { id: "ita_par", name: "Parma", short: "PAR", city: "Parma", stadium: "Ennio Tardini", colors: ["#FFD700", "#0A2340"], tier: 2, squad: [] },
-     { id: "ita_pis", name: "Pisa", short: "PIS", city: "Pisa", stadium: "Arena Garibaldi", colors: ["#0A2340", "#FFFFFF"], tier: 2, squad: [] },
-     { id: "ita_cre", name: "Cremonese", short: "CRE", city: "Cremona", stadium: "Giovanni Zini", colors: ["#A21C26", "#808080"], tier: 1, squad: [] },
-     { id: "ita_sas", name: "Sassuolo", short: "SAS", city: "Sassuolo", stadium: "Mapei Stadium", colors: ["#00A752", "#000000"], tier: 2, squad: [] },
+     { id: "ita_int", name: "Inter", short: "INT", city: "Milan", stadium: "San Siro", colors: ["#0068A8", "#000000"], tier: 5,
+       squad: [
+         P("Yann Sommer", "GK", 37, 82), P("Josep Martínez", "GK", 28, 76),
+         P("Alessandro Bastoni", "DF", 27, 86), P("Benjamin Pavard", "DF", 30, 82), P("Federico Dimarco", "DF", 29, 83), P("Denzel Dumfries", "DF", 30, 82), P("Yann Bisseck", "DF", 25, 79), P("Francesco Acerbi", "DF", 38, 78), P("Stefan de Vrij", "DF", 34, 77),
+         P("Nicolò Barella", "MF", 29, 87), P("Hakan Çalhanoğlu", "MF", 32, 85), P("Davide Frattesi", "MF", 26, 81), P("Piotr Zieliński", "MF", 32, 79), P("Petar Sučić", "MF", 22, 78), P("Henrikh Mkhitaryan", "MF", 37, 77),
+         P("Lautaro Martínez", "FW", 29, 88), P("Marcus Thuram", "FW", 29, 85), P("Mehdi Taremi", "FW", 34, 78), P("Ange-Yoan Bonny", "FW", 22, 78), P("Francesco Pio Esposito", "FW", 21, 76),
+       ]},
+     { id: "ita_mil", name: "AC Milan", short: "MIL", city: "Milan", stadium: "San Siro", colors: ["#FB090B", "#000000"], tier: 5,
+       squad: [
+         P("Mike Maignan", "GK", 31, 85), P("Marco Sportiello", "GK", 34, 73),
+         P("Fikayo Tomori", "DF", 28, 82), P("Strahinja Pavlović", "DF", 25, 80), P("Matteo Gabbia", "DF", 27, 79), P("Pervis Estupiñán", "DF", 28, 79), P("Koni De Winter", "DF", 23, 78), P("Davide Bartesaghi", "DF", 20, 74),
+         P("Youssouf Fofana", "MF", 27, 81), P("Samuele Ricci", "MF", 24, 79), P("Luka Modrić", "MF", 40, 80), P("Ardon Jashari", "MF", 23, 78), P("Ruben Loftus-Cheek", "MF", 30, 79), P("Yunus Musah", "MF", 23, 76),
+         P("Rafael Leão", "FW", 27, 85), P("Christian Pulisic", "FW", 28, 84), P("Christopher Nkunku", "FW", 28, 81), P("Santiago Giménez", "FW", 25, 79), P("Samuel Chukwueze", "FW", 26, 78),
+       ]},
+     { id: "ita_juv", name: "Juventus", short: "JUV", city: "Turin", stadium: "Allianz Stadium", colors: ["#000000", "#FFFFFF"], tier: 5,
+       squad: [
+         P("Michele Di Gregorio", "GK", 29, 81), P("Mattia Perin", "GK", 33, 74),
+         P("Gleison Bremer", "DF", 29, 84), P("Andrea Cambiaso", "DF", 26, 81), P("Federico Gatti", "DF", 28, 79), P("Pierre Kalulu", "DF", 26, 79), P("Lloyd Kelly", "DF", 27, 76), P("Juan Cabal", "DF", 24, 76), P("Daniele Rugani", "DF", 32, 73),
+         P("Khéphren Thuram", "MF", 25, 81), P("Manuel Locatelli", "MF", 28, 80), P("Teun Koopmeiners", "MF", 28, 80), P("Douglas Luiz", "MF", 28, 78), P("Weston McKennie", "MF", 28, 78), P("Fabio Miretti", "MF", 23, 76),
+         P("Kenan Yıldız", "FW", 21, 83), P("Dušan Vlahović", "FW", 26, 82), P("Jonathan David", "FW", 26, 82), P("Randal Kolo Muani", "FW", 27, 81), P("Francisco Conceição", "FW", 23, 79),
+       ]},
+     { id: "ita_nap", name: "Napoli", short: "NAP", city: "Naples", stadium: "Diego Maradona", colors: ["#12A0D7", "#FFFFFF"], tier: 5,
+       squad: [
+         P("Alex Meret", "GK", 29, 80), P("Vanja Milinković-Savić", "GK", 29, 78),
+         P("Alessandro Buongiorno", "DF", 27, 82), P("Amir Rrahmani", "DF", 32, 81), P("Giovanni Di Lorenzo", "DF", 33, 82), P("Sam Beukema", "DF", 27, 79), P("Mathías Olivera", "DF", 28, 78), P("Leonardo Spinazzola", "DF", 33, 77), P("Juan Jesus", "DF", 35, 73),
+         P("Kevin De Bruyne", "MF", 35, 86), P("Scott McTominay", "MF", 29, 84), P("Stanislav Lobotka", "MF", 31, 82), P("Frank Anguissa", "MF", 30, 82), P("Billy Gilmour", "MF", 25, 77), P("Eljif Elmas", "MF", 26, 77),
+         P("Romelu Lukaku", "FW", 33, 82), P("Rasmus Højlund", "FW", 23, 80), P("David Neres", "FW", 29, 80), P("Lorenzo Lucca", "FW", 25, 78), P("Noa Lang", "FW", 26, 78), P("Matteo Politano", "FW", 33, 78),
+       ]},
+     { id: "ita_rom", name: "AS Roma", short: "ROM", city: "Rome", stadium: "Stadio Olimpico", colors: ["#8E1F2F", "#F0BC42"], tier: 4,
+       squad: [
+         P("Mile Svilar", "GK", 27, 82), P("Pierluigi Gollini", "GK", 31, 73),
+         P("Evan Ndicka", "DF", 27, 81), P("Gianluca Mancini", "DF", 30, 80), P("Mario Hermoso", "DF", 31, 78), P("Angeliño", "DF", 29, 79), P("Wesley", "DF", 22, 77), P("Zeki Çelik", "DF", 29, 76), P("Devyne Rensch", "DF", 23, 76),
+         P("Manu Koné", "MF", 25, 82), P("Lorenzo Pellegrini", "MF", 30, 80), P("Leandro Paredes", "MF", 32, 79), P("Bryan Cristante", "MF", 31, 78), P("Neil El Aynaoui", "MF", 24, 76), P("Niccolò Pisilli", "MF", 21, 75),
+         P("Paulo Dybala", "FW", 33, 83), P("Matías Soulé", "FW", 23, 80), P("Artem Dovbyk", "FW", 28, 80), P("Evan Ferguson", "FW", 22, 77), P("Stephan El Shaarawy", "FW", 33, 76),
+       ]},
+     { id: "ita_laz", name: "Lazio", short: "LAZ", city: "Rome", stadium: "Stadio Olimpico", colors: ["#87D8F7", "#FFFFFF"], tier: 4,
+       squad: [
+         P("Ivan Provedel", "GK", 32, 79), P("Christos Mandas", "GK", 25, 75),
+         P("Alessio Romagnoli", "DF", 31, 80), P("Mario Gila", "DF", 26, 79), P("Nuno Tavares", "DF", 26, 78), P("Adam Marušić", "DF", 33, 76), P("Manuel Lazzari", "DF", 33, 74), P("Patric", "DF", 33, 73), P("Oliver Provstgaard", "DF", 22, 74),
+         P("Nicolò Rovella", "MF", 24, 81), P("Matteo Guendouzi", "MF", 27, 81), P("Mattia Zaccagni", "MF", 31, 81), P("Danilo Cataldi", "MF", 31, 75), P("Fisayo Dele-Bashiru", "MF", 24, 76), P("Toma Bašić", "MF", 29, 73),
+         P("Valentín Castellanos", "FW", 28, 79), P("Boulaye Dia", "FW", 30, 78), P("Gustav Isaksen", "FW", 25, 77), P("Pedro", "FW", 39, 76), P("Tijjani Noslin", "FW", 26, 75),
+       ]},
+     { id: "ita_ata", name: "Atalanta", short: "ATA", city: "Bergamo", stadium: "Gewiss Stadium", colors: ["#1E71B8", "#000000"], tier: 4,
+       squad: [
+         P("Marco Carnesecchi", "GK", 26, 81), P("Francesco Rossi", "GK", 34, 72),
+         P("Isak Hien", "DF", 27, 80), P("Giorgio Scalvini", "DF", 23, 79), P("Berat Djimsiti", "DF", 33, 78), P("Odilon Kossounou", "DF", 25, 77), P("Raoul Bellanova", "DF", 26, 80), P("Davide Zappacosta", "DF", 34, 76), P("Sead Kolašinac", "DF", 33, 76),
+         P("Éderson", "MF", 27, 83), P("Charles De Ketelaere", "MF", 25, 82), P("Mario Pašalić", "MF", 31, 78), P("Marten de Roon", "MF", 35, 77), P("Lazar Samardžić", "MF", 24, 78), P("Marc Brescianini", "MF", 23, 76),
+         P("Ademola Lookman", "FW", 29, 84), P("Gianluca Scamacca", "FW", 28, 81), P("Nikola Krstović", "FW", 25, 79), P("Daniel Maldini", "FW", 24, 77),
+       ]},
+     { id: "ita_fio", name: "Fiorentina", short: "FIO", city: "Florence", stadium: "Artemio Franchi", colors: ["#592C82", "#FFFFFF"], tier: 3,
+       squad: [
+         P("David de Gea", "GK", 36, 81), P("Tommaso Martinelli", "GK", 20, 72),
+         P("Pietro Comuzzo", "DF", 21, 78), P("Luca Ranieri", "DF", 27, 77), P("Marin Pongračić", "DF", 29, 77), P("Dodô", "DF", 27, 80), P("Robin Gosens", "DF", 32, 78), P("Pablo Marí", "DF", 33, 74), P("Niccolò Fortini", "DF", 20, 73),
+         P("Nicolò Fagioli", "MF", 25, 78), P("Rolando Mandragora", "MF", 29, 77), P("Simon Sohm", "MF", 24, 77), P("Hans Nicolussi Caviglia", "MF", 26, 75), P("Cher Ndour", "MF", 21, 75),
+         P("Moise Kean", "FW", 26, 83), P("Albert Guðmundsson", "FW", 29, 80), P("Roberto Piccoli", "FW", 24, 78), P("Edin Džeko", "FW", 40, 76),
+       ]},
+     { id: "ita_bol", name: "Bologna", short: "BOL", city: "Bologna", stadium: "Renato Dall'Ara", colors: ["#A21C26", "#1A2F48"], tier: 4,
+       squad: [
+         P("Łukasz Skorupski", "GK", 35, 78), P("Federico Ravaglia", "GK", 26, 73),
+         P("Jhon Lucumí", "DF", 27, 79), P("Torbjørn Heggem", "DF", 26, 77), P("Martin Vitík", "DF", 22, 76), P("Emil Holm", "DF", 25, 76), P("Nadir Zortea", "DF", 26, 76), P("Juan Miranda", "DF", 26, 75), P("Charalampos Lykogiannis", "DF", 32, 74),
+         P("Lewis Ferguson", "MF", 27, 80), P("Remo Freuler", "MF", 34, 78), P("Giovanni Fabbian", "MF", 22, 77), P("Nikola Moro", "MF", 27, 75), P("Tommaso Pobega", "MF", 26, 76),
+         P("Riccardo Orsolini", "FW", 29, 81), P("Santiago Castro", "FW", 21, 79), P("Thijs Dallinga", "FW", 25, 77), P("Jens Odgaard", "FW", 26, 76), P("Federico Bernardeschi", "FW", 32, 76),
+       ]},
+     { id: "ita_tor", name: "Torino", short: "TOR", city: "Turin", stadium: "Olimpico Grande Torino", colors: ["#8A1E03", "#FFFFFF"], tier: 3,
+       squad: [
+         P("Franco Israel", "GK", 25, 75), P("Alberto Paleari", "GK", 33, 72),
+         P("Saúl Coco", "DF", 26, 77), P("Guillermo Maripán", "DF", 32, 77), P("Adam Masina", "DF", 32, 74), P("Marcus Pedersen", "DF", 25, 74), P("Valentino Lazaro", "DF", 30, 74), P("Ali Dembélé", "DF", 21, 73),
+         P("Cesare Casadei", "MF", 23, 78), P("Nikola Vlašić", "MF", 28, 78), P("Ivan Ilić", "MF", 25, 76), P("Gvidas Gineitis", "MF", 22, 74), P("Emirhan İlkhan", "MF", 21, 73),
+         P("Che Adams", "FW", 30, 77), P("Giovanni Simeone", "FW", 30, 78), P("Duván Zapata", "FW", 35, 76), P("Cyril Ngonge", "FW", 25, 76), P("Antonio Sanabria", "FW", 30, 75),
+       ]},
+     { id: "ita_udi", name: "Udinese", short: "UDI", city: "Udine", stadium: "Bluenergy Stadium", colors: ["#000000", "#FFFFFF"], tier: 3,
+       squad: [
+         P("Maduka Okoye", "GK", 26, 75), P("Razvan Sava", "GK", 23, 73),
+         P("Oumar Solet", "DF", 26, 78), P("Thomas Kristensen", "DF", 28, 74), P("Lautaro Giannetti", "DF", 32, 74), P("Kingsley Ehizibue", "DF", 30, 73), P("Jordan Zemura", "DF", 26, 74), P("Hassane Kamara", "DF", 31, 75), P("Christian Kabasele", "DF", 34, 72),
+         P("Sandi Lovrić", "MF", 27, 77), P("Arthur Atta", "MF", 22, 76), P("Jesper Karlström", "MF", 30, 74), P("Jurgen Ekkelenkamp", "MF", 25, 74), P("Oier Zarraga", "MF", 26, 74),
+         P("Keinan Davis", "FW", 27, 75), P("Iker Bravo", "FW", 20, 74), P("Vakoun Bayo", "FW", 28, 74), P("Nicolò Zaniolo", "FW", 26, 77),
+       ]},
+     { id: "ita_gen", name: "Genoa", short: "GEN", city: "Genoa", stadium: "Luigi Ferraris", colors: ["#A21C26", "#0A2340"], tier: 2,
+       squad: [
+         P("Nicola Leali", "GK", 32, 75), P("Daniele Sommariva", "GK", 26, 71),
+         P("Johan Vásquez", "DF", 27, 77), P("Alessandro Vogliacco", "DF", 28, 73), P("Aaron Martín", "DF", 29, 74), P("Brooke Norton-Cuffy", "DF", 21, 74), P("Stefano Sabelli", "DF", 33, 73), P("Sebastian Otoa", "DF", 22, 72),
+         P("Morten Frendrup", "MF", 25, 77), P("Ruslan Malinovskyi", "MF", 32, 78), P("Nicolae Stanciu", "MF", 33, 76), P("Patrizio Masini", "MF", 23, 73), P("Milan Badelj", "MF", 37, 72),
+         P("Andrea Pinamonti", "FW", 27, 78), P("Vitinha", "FW", 25, 76), P("Lorenzo Colombo", "FW", 24, 75), P("Junior Messias", "FW", 35, 74), P("Caleb Ekuban", "FW", 31, 73),
+       ]},
+     { id: "ita_com", name: "Como", short: "COM", city: "Como", stadium: "Giuseppe Sinigaglia", colors: ["#003DA5", "#FFFFFF"], tier: 2,
+       squad: [
+         P("Jean Butez", "GK", 30, 75), P("Pepe Reina", "GK", 44, 72),
+         P("Marc-Oliver Kempf", "DF", 31, 74), P("Alberto Dossena", "DF", 27, 75), P("Jacobo Ramón", "DF", 20, 74), P("Alex Valle", "DF", 22, 74), P("Fellipe Jack", "DF", 20, 73), P("Edoardo Goldaniga", "DF", 33, 73),
+         P("Nico Paz", "MF", 22, 82), P("Máximo Perrone", "MF", 23, 76), P("Sergi Roberto", "MF", 34, 75), P("Lucas Da Cunha", "MF", 24, 75), P("Simone Verdi", "MF", 33, 73),
+         P("Álvaro Morata", "FW", 33, 79), P("Assane Diao", "FW", 20, 77), P("Anastasios Douvikas", "FW", 26, 76), P("Patrick Cutrone", "FW", 28, 75), P("Jesús Rodríguez", "FW", 20, 74),
+       ]},
+     { id: "ita_cag", name: "Cagliari", short: "CAG", city: "Cagliari", stadium: "Unipol Domus", colors: ["#A50021", "#00286B"], tier: 2,
+       squad: [
+         P("Elia Caprile", "GK", 24, 76), P("Simone Scuffet", "GK", 29, 73),
+         P("Yerry Mina", "DF", 31, 76), P("Sebastiano Luperto", "DF", 29, 74), P("Adam Obert", "DF", 23, 73), P("Gabriele Zappa", "DF", 26, 74), P("Tommaso Augello", "DF", 31, 73), P("Riyad Idrissi", "DF", 21, 72),
+         P("Antoine Makoumbou", "MF", 27, 74), P("Michel Adopo", "MF", 25, 73), P("Michele Prati", "MF", 22, 73), P("Yerson Mosquera", "MF", 24, 73), P("Matteo Prati", "MF", 22, 74),
+         P("Sebastiano Esposito", "FW", 23, 76), P("Andrea Belotti", "FW", 32, 76), P("Zito Luvumbo", "FW", 23, 76), P("Leonardo Pavoletti", "FW", 37, 73), P("Gennaro Borrelli", "FW", 25, 73),
+       ]},
+     { id: "ita_ver", name: "Hellas Verona", short: "VER", city: "Verona", stadium: "Marcantonio Bentegodi", colors: ["#FFD700", "#0A2340"], tier: 2,
+       squad: [
+         P("Lorenzo Montipò", "GK", 30, 75), P("Simone Perilli", "GK", 31, 71),
+         P("Martin Frese", "DF", 24, 73), P("Daniele Ghilardi", "DF", 23, 74), P("Unai Núñez", "DF", 29, 75), P("Victor Nelsson", "DF", 27, 76), P("Jackson Tchatchoua", "DF", 24, 74), P("Nicolò Bella", "DF", 21, 71),
+         P("Suat Serdar", "MF", 29, 75), P("Reda Belahyane", "MF", 22, 74), P("Grigoris Kastanos", "MF", 28, 74), P("Antoine Bernede", "MF", 27, 73), P("Ondrej Duda", "MF", 31, 74),
+         P("Gift Orban", "FW", 23, 76), P("Amin Sarr", "FW", 24, 74), P("Casper Tengstedt", "FW", 26, 74), P("Daniel Mosquera", "FW", 24, 73),
+       ]},
+     { id: "ita_lec", name: "Lecce", short: "LEC", city: "Lecce", stadium: "Via del Mare", colors: ["#FFD700", "#E30613"], tier: 2,
+       squad: [
+         P("Wladimiro Falcone", "GK", 30, 76), P("Christian Früchtl", "GK", 26, 72),
+         P("Federico Baschirotto", "DF", 30, 75), P("Kialonda Gaspar", "DF", 24, 73), P("Frederic Guilbert", "DF", 31, 73), P("Antonino Gallo", "DF", 26, 74), P("Danilo Veiga", "DF", 22, 72), P("Tiago Gabriel", "DF", 21, 73),
+         P("Ylber Ramadani", "MF", 29, 75), P("Balthazar Pierret", "MF", 25, 73), P("Lassana Coulibaly", "MF", 29, 74), P("Medon Berisha", "MF", 22, 73), P("Hamza Rafia", "MF", 26, 73),
+         P("Nikola Štulić", "FW", 24, 74), P("Santiago Pierotti", "FW", 24, 73), P("Lameck Banda", "FW", 24, 74), P("Francesco Camarda", "FW", 18, 74),
+       ]},
+     { id: "ita_par", name: "Parma", short: "PAR", city: "Parma", stadium: "Ennio Tardini", colors: ["#FFD700", "#0A2340"], tier: 2,
+       squad: [
+         P("Zion Suzuki", "GK", 24, 78), P("Filippo Corvi", "GK", 22, 71),
+         P("Giovanni Leoni", "DF", 19, 77), P("Yordan Osorio", "DF", 32, 73), P("Lautaro Valenti", "DF", 25, 73), P("Emanuele Valeri", "DF", 28, 73), P("Alessandro Circati", "DF", 22, 75), P("Enrico Delprato", "DF", 26, 74),
+         P("Nahuel Estévez", "MF", 30, 73), P("Adrián Bernabé", "MF", 24, 76), P("Drissa Camara", "MF", 24, 73), P("Mandela Keita", "MF", 23, 74), P("Christian Ordóñez", "MF", 21, 73),
+         P("Pontus Almqvist", "FW", 26, 74), P("Mateo Pellegrino", "FW", 24, 75), P("Chaka Traoré", "FW", 21, 73), P("Dennis Man", "FW", 28, 77),
+       ]},
+     { id: "ita_pis", name: "Pisa", short: "PIS", city: "Pisa", stadium: "Arena Garibaldi", colors: ["#0A2340", "#FFFFFF"], tier: 2,
+       squad: [
+         P("Adrian Šemper", "GK", 28, 73), P("Nicolas Andrade", "GK", 27, 70),
+         P("Antonio Caracciolo", "DF", 34, 72), P("Simone Canestrelli", "DF", 25, 75), P("Arturo Calabresi", "DF", 29, 72), P("Giovanni Bonfanti", "DF", 23, 72), P("Michel Aebischer", "DF", 28, 76), P("Samuele Angori", "DF", 22, 72),
+         P("Marius Marin", "MF", 27, 74), P("Idrissa Touré", "MF", 27, 73), P("Ebenezer Akinsanmiro", "MF", 21, 74), P("Isak Vural", "MF", 21, 72), P("Daniel Denøli", "MF", 22, 71),
+         P("M'Bala Nzola", "FW", 29, 75), P("Henrik Meister", "FW", 22, 73), P("Stefano Moreo", "FW", 32, 72), P("Juan Cuadrado", "FW", 38, 74),
+       ]},
+     { id: "ita_cre", name: "Cremonese", short: "CRE", city: "Cremona", stadium: "Giovanni Zini", colors: ["#A21C26", "#808080"], tier: 1,
+       squad: [
+         P("Emil Audero", "GK", 29, 75), P("Marco Silvestri", "GK", 35, 73),
+         P("Matteo Bianchetti", "DF", 32, 72), P("Filippo Terracciano", "DF", 22, 74), P("Luka Lochoshvili", "DF", 27, 73), P("Alessio Zerbin", "DF", 26, 73), P("Palmer Salvador", "DF", 24, 71), P("Bartosz Bereszyński", "DF", 33, 72),
+         P("Michele Castagnetti", "MF", 36, 71), P("Warren Bondo", "MF", 22, 74), P("Romano Floriani Mussolini", "MF", 22, 72), P("Alberto Grassi", "MF", 30, 72), P("Jamie Vardy", "FW", 39, 75),
+         P("Federico Bonazzoli", "FW", 28, 74), P("David Okereke", "FW", 28, 74), P("Manuel De Luca", "FW", 27, 72), P("Franco Vázquez", "FW", 37, 73),
+       ]},
+     { id: "ita_sas", name: "Sassuolo", short: "SAS", city: "Sassuolo", stadium: "Mapei Stadium", colors: ["#00A752", "#000000"], tier: 2,
+       squad: [
+         P("Stefano Turati", "GK", 24, 74), P("Alessio Cragno", "GK", 32, 72),
+         P("Josh Doig", "DF", 24, 74), P("Tarik Muharemović", "DF", 22, 74), P("Filippo Romagna", "DF", 29, 72), P("Jay Idzes", "DF", 26, 77), P("Wisdom Amey", "DF", 20, 72), P("Fali Candé", "DF", 27, 73),
+         P("Kristian Thorstvedt", "MF", 27, 76), P("Daniel Boloca", "MF", 27, 74), P("Nedim Bajrami", "MF", 27, 75), P("Matías Vecino", "MF", 35, 73), P("Ismaël Koné", "MF", 24, 74),
+         P("Luca Moro", "FW", 24, 73), P("Domenico Berardi", "FW", 32, 80), P("Armand Laurienté", "FW", 27, 78), P("Walid Cheddira", "FW", 28, 74),
+       ]},
    ];
    const RAW_IT_SB = [
      { id: "ita_pal", name: "Palermo", short: "PAL", colors: ["#E5A6C8", "#000000"], tier: 2, squad: [] },
@@ -520,11 +872,41 @@
 
    // ---- PORTUGAL ----
    const RAW_PT_PP = [
-     { id: "por_slb", name: "Benfica", short: "SLB", city: "Lisbon", stadium: "Estádio da Luz", colors: ["#E30613", "#FFFFFF"], tier: 5, squad: [] },
-     { id: "por_fcp", name: "Porto", short: "POR", city: "Porto", stadium: "Estádio do Dragão", colors: ["#003DA5", "#FFFFFF"], tier: 5, squad: [] },
-     { id: "por_scp", name: "Sporting CP", short: "SCP", city: "Lisbon", stadium: "José Alvalade", colors: ["#008057", "#FFFFFF"], tier: 5, squad: [] },
-     { id: "por_bra", name: "SC Braga", short: "BRA", city: "Braga", stadium: "Estádio Municipal de Braga", colors: ["#E30613", "#FFFFFF"], tier: 4, squad: [] },
-     { id: "por_vsc", name: "Vitória SC", short: "VSC", city: "Guimarães", stadium: "D. Afonso Henriques", colors: ["#FFFFFF", "#000000"], tier: 3, squad: [] },
+     { id: "por_slb", name: "Benfica", short: "SLB", city: "Lisbon", stadium: "Estádio da Luz", colors: ["#E30613", "#FFFFFF"], tier: 5,
+       squad: [
+         P("Anatoliy Trubin", "GK", 25, 82), P("Samuel Soares", "GK", 23, 74),
+         P("António Silva", "DF", 22, 81), P("Nicolás Otamendi", "DF", 38, 80), P("Tomás Araújo", "DF", 23, 78), P("Álvaro Carreras", "DF", 24, 79), P("Alexander Bah", "DF", 28, 77), P("Samuel Dahl", "DF", 22, 75), P("António Bernardo", "DF", 20, 74),
+         P("Fredrik Aursnes", "MF", 30, 80), P("Florentino Luís", "MF", 26, 79), P("Enzo Barrenechea", "MF", 24, 77), P("Orkun Kökçü", "MF", 25, 80), P("João Veloso", "MF", 20, 74),
+         P("Vangelis Pavlidis", "FW", 27, 81), P("Kerem Aktürkoğlu", "FW", 27, 80), P("Ángel Di María", "FW", 38, 80), P("Andreas Schjelderup", "FW", 21, 77), P("Franjo Ivanović", "FW", 22, 77), P("Gianluca Prestianni", "FW", 19, 76),
+       ]},
+     { id: "por_fcp", name: "Porto", short: "POR", city: "Porto", stadium: "Estádio do Dragão", colors: ["#003DA5", "#FFFFFF"], tier: 5,
+       squad: [
+         P("Diogo Costa", "GK", 26, 83), P("Cláudio Ramos", "GK", 34, 73),
+         P("Zaidu Sanusi", "DF", 28, 77), P("Nehuén Pérez", "DF", 25, 78), P("Otávio", "DF", 24, 76), P("Alberto Costa", "DF", 22, 76), P("Francisco Moura", "DF", 26, 75), P("Martim Fernandes", "DF", 20, 76), P("Jan Bednarek", "DF", 30, 78),
+         P("Alan Varela", "MF", 24, 81), P("Stephen Eustáquio", "MF", 29, 79), P("Rodrigo Mora", "MF", 19, 79), P("Gabri Veiga", "MF", 24, 80), P("Tomás Pérez", "MF", 21, 75),
+         P("Samu Aghehowa", "FW", 21, 81), P("William Gomes", "FW", 19, 76), P("Pepê", "FW", 28, 79), P("Borja Sainz", "FW", 24, 78), P("Deniz Gül", "FW", 22, 74),
+       ]},
+     { id: "por_scp", name: "Sporting CP", short: "SCP", city: "Lisbon", stadium: "José Alvalade", colors: ["#008057", "#FFFFFF"], tier: 5,
+       squad: [
+         P("Rui Silva", "GK", 32, 79), P("João Virgínia", "GK", 26, 73),
+         P("Gonçalo Inácio", "DF", 25, 82), P("Ousmane Diomande", "DF", 22, 81), P("Zeno Debast", "DF", 22, 78), P("Matheus Reis", "DF", 30, 76), P("Iván Fresneda", "DF", 21, 76), P("Maxi Araújo", "DF", 26, 77), P("Eduardo Quaresma", "DF", 24, 76),
+         P("Morten Hjulmand", "MF", 27, 82), P("Hidemasa Morita", "MF", 31, 78), P("João Simões", "MF", 20, 75), P("Pedro Gonçalves", "MF", 27, 81), P("Geny Catamo", "MF", 25, 77),
+         P("Geovany Quenda", "FW", 18, 78), P("Francisco Trincão", "FW", 26, 80), P("Conrad Harder", "FW", 20, 77), P("Fotis Ioannidis", "FW", 26, 79), P("Luis Suárez", "FW", 28, 78),
+       ]},
+     { id: "por_bra", name: "SC Braga", short: "BRA", city: "Braga", stadium: "Estádio Municipal de Braga", colors: ["#E30613", "#FFFFFF"], tier: 4,
+       squad: [
+         P("Matheus", "GK", 30, 77), P("Tiago Sá", "GK", 29, 73),
+         P("Sikou Niakaté", "DF", 27, 76), P("Paulo Oliveira", "DF", 34, 74), P("Adrián Marín", "DF", 29, 74), P("Víctor Gómez", "DF", 26, 75), P("Robson Bambu", "DF", 28, 74), P("Gabri Martínez", "DF", 22, 74),
+         P("João Moutinho", "MF", 39, 74), P("Ricardo Horta", "MF", 32, 78), P("Rodrigo Zalazar", "MF", 26, 77), P("André Horta", "MF", 29, 76), P("Vitor Carvalho", "MF", 25, 74),
+         P("Fran Navarro", "FW", 27, 76), P("Bruma", "FW", 31, 75), P("Roger Fernandes", "FW", 24, 75), P("El Ouazzani", "FW", 24, 74), P("Pau Víctor", "FW", 24, 76),
+       ]},
+     { id: "por_vsc", name: "Vitória SC", short: "VSC", city: "Guimarães", stadium: "D. Afonso Henriques", colors: ["#FFFFFF", "#000000"], tier: 3,
+       squad: [
+         P("Bruno Varela", "GK", 31, 75), P("Jhonatan", "GK", 24, 70),
+         P("Zé Carlos", "DF", 27, 73), P("Mikel Villanueva", "DF", 32, 73), P("Bruno Gaspar", "DF", 32, 73), P("Maga", "DF", 24, 73), P("Afonso Freitas", "DF", 25, 73), P("Tomás Ribeiro", "DF", 26, 74),
+         P("Tomás Händel", "MF", 24, 75), P("Ismael Gharbi", "MF", 21, 74), P("Mané", "MF", 25, 74), P("Nélson da Luz", "MF", 28, 74), P("Dani Silva", "MF", 22, 72),
+         P("Nuno Santos", "FW", 27, 74), P("Kaio César", "FW", 24, 74), P("Telmo Arcanjo", "FW", 22, 74), P("Gustavo Silva", "FW", 22, 73),
+       ]},
      { id: "por_mor", name: "Moreirense", short: "MOR", colors: ["#FFD700", "#0A2340"], tier: 2, squad: [] },
      { id: "por_fam", name: "Famalicão", short: "FAM", colors: ["#005CA9", "#FFFFFF"], tier: 2, squad: [] },
      { id: "por_gil", name: "Gil Vicente", short: "GIL", colors: ["#E30613", "#0A2340"], tier: 2, squad: [] },
@@ -560,12 +942,48 @@
 
    // ---- NETHERLANDS ----
    const RAW_NL_ER = [
-     { id: "ned_aja", name: "Ajax", short: "AJA", city: "Amsterdam", stadium: "Johan Cruijff ArenA", colors: ["#E30613", "#FFFFFF"], tier: 5, squad: [] },
-     { id: "ned_psv", name: "PSV", short: "PSV", city: "Eindhoven", stadium: "Philips Stadion", colors: ["#E30613", "#FFFFFF"], tier: 5, squad: [] },
-     { id: "ned_fey", name: "Feyenoord", short: "FEY", city: "Rotterdam", stadium: "De Kuip", colors: ["#E30613", "#000000"], tier: 5, squad: [] },
-     { id: "ned_az", name: "AZ", short: "AZ", city: "Alkmaar", stadium: "AFAS Stadion", colors: ["#E30613", "#FFFFFF"], tier: 4, squad: [] },
-     { id: "ned_twe", name: "FC Twente", short: "TWE", city: "Enschede", stadium: "De Grolsch Veste", colors: ["#E30613", "#FFFFFF"], tier: 3, squad: [] },
-     { id: "ned_utr", name: "FC Utrecht", short: "UTR", city: "Utrecht", stadium: "Stadion Galgenwaard", colors: ["#E30613", "#FFFFFF"], tier: 3, squad: [] },
+     { id: "ned_aja", name: "Ajax", short: "AJA", city: "Amsterdam", stadium: "Johan Cruijff ArenA", colors: ["#E30613", "#FFFFFF"], tier: 5,
+       squad: [
+         P("Remko Pasveer", "GK", 42, 76), P("Vítězslav Jaroš", "GK", 24, 75),
+         P("Josip Šutalo", "DF", 26, 78), P("Youri Baas", "DF", 23, 76), P("Owen Wijndal", "DF", 26, 75), P("Anton Gaaei", "DF", 23, 75), P("Lucas Rosa", "DF", 25, 74), P("Aaron Bouwman", "DF", 20, 73),
+         P("Kenneth Taylor", "MF", 24, 79), P("Davy Klaassen", "MF", 33, 77), P("Branco van den Boomen", "MF", 30, 75), P("Sivert Mannsverk", "MF", 23, 75), P("Jorthy Mokio", "MF", 18, 75),
+         P("Brian Brobbey", "FW", 24, 79), P("Wout Weghorst", "FW", 34, 78), P("Steven Berghuis", "FW", 34, 77), P("Kasper Dolberg", "FW", 28, 77), P("Mika Godts", "FW", 20, 76), P("Bertrand Traoré", "FW", 31, 76),
+       ]},
+     { id: "ned_psv", name: "PSV", short: "PSV", city: "Eindhoven", stadium: "Philips Stadion", colors: ["#E30613", "#FFFFFF"], tier: 5,
+       squad: [
+         P("Walter Benítez", "GK", 33, 80), P("Joël Drommel", "GK", 29, 73),
+         P("Olivier Boscagli", "DF", 28, 79), P("Ryan Flamingo", "DF", 23, 77), P("Sergiño Dest", "DF", 26, 78), P("Armando Obispo", "DF", 27, 75), P("Mauro Júnior", "DF", 27, 75), P("Anass Salah-Eddine", "DF", 23, 75),
+         P("Joey Veerman", "MF", 28, 81), P("Jerdy Schouten", "MF", 29, 80), P("Ismael Saibari", "MF", 24, 80), P("Guus Til", "MF", 28, 78), P("Richard Ledezma", "MF", 25, 74),
+         P("Luuk de Jong", "FW", 36, 78), P("Ivan Perišić", "FW", 37, 78), P("Ricardo Pepi", "FW", 23, 78), P("Myron Boadu", "FW", 25, 76), P("Couhaib Driouech", "FW", 23, 75), P("Esmir Bajraktarević", "FW", 20, 74),
+       ]},
+     { id: "ned_fey", name: "Feyenoord", short: "FEY", city: "Rotterdam", stadium: "De Kuip", colors: ["#E30613", "#000000"], tier: 5,
+       squad: [
+         P("Timon Wellenreuther", "GK", 30, 76), P("Justin Bijlow", "GK", 28, 76),
+         P("Anel Ahmedhodžić", "DF", 27, 78), P("Gernot Trauner", "DF", 34, 76), P("Tsuyoshi Watanabe", "DF", 29, 75), P("Gijs Smal", "DF", 28, 75), P("Bart Nieuwkoop", "DF", 30, 74), P("Jordan Lotomba", "DF", 27, 75),
+         P("Quinten Timber", "MF", 25, 81), P("Sem Steijn", "MF", 24, 79), P("Hwang In-beom", "MF", 30, 78), P("Luciano Valente", "MF", 22, 76), P("Jakub Moder", "MF", 25, 74),
+         P("Ayase Ueda", "FW", 27, 78), P("Anis Hadj Moussa", "FW", 23, 77), P("Julián Carranza", "FW", 25, 76), P("Gonçalo Borges", "FW", 24, 75), P("Ibrahim Osman", "FW", 21, 75),
+       ]},
+     { id: "ned_az", name: "AZ", short: "AZ", city: "Alkmaar", stadium: "AFAS Stadion", colors: ["#E30613", "#FFFFFF"], tier: 4,
+       squad: [
+         P("Rome-Jayden Owusu-Oduro", "GK", 21, 75), P("Hobie Verhulst", "GK", 32, 72),
+         P("Wouter Goes", "DF", 21, 77), P("Alexandre Penetra", "DF", 24, 75), P("Maxim Dekker", "DF", 21, 75), P("Denso Kasius", "DF", 23, 74), P("Mees de Wit", "DF", 27, 74), P("David MÃ¸ller Wolfe", "DF", 24, 72),
+         P("Sven Mijnans", "MF", 26, 78), P("Jordy Clasie", "MF", 34, 75), P("Kees Smit", "MF", 19, 76), P("Peer Koopmeiners", "MF", 26, 75), P("Mayckel Lahdo", "MF", 20, 74),
+         P("Troy Parrott", "FW", 24, 78), P("Ruben van Bommel", "FW", 22, 76), P("Ibrahim Sadiq", "FW", 25, 75), P("Ernest Poku", "FW", 21, 75), P("Mexx Meerdink", "FW", 22, 74),
+       ]},
+     { id: "ned_twe", name: "FC Twente", short: "TWE", city: "Enschede", stadium: "De Grolsch Veste", colors: ["#E30613", "#FFFFFF"], tier: 3,
+       squad: [
+         P("Lars Unnerstall", "GK", 35, 75), P("Przemysław Tytoń", "GK", 39, 72),
+         P("Mees Hilgers", "DF", 25, 78), P("Robin Pröpper", "DF", 32, 74), P("Bas Kuipers", "DF", 31, 73), P("Anton Fase", "DF", 22, 73), P("Max Bruns", "DF", 23, 74), P("Gijs Besselink", "DF", 24, 72),
+         P("Youri Regeer", "MF", 22, 76), P("Michel Vlap", "MF", 28, 75), P("Carel Eiting", "MF", 28, 75), P("Sayfallah Ltaief", "MF", 25, 74), P("Michal Sadílek", "MF", 26, 74),
+         P("Sam Lammers", "FW", 29, 76), P("Ricky van Wolfswinkel", "FW", 37, 73), P("Daan Rots", "FW", 25, 74), P("Naci Ünüvar", "FW", 22, 74), P("Mitchell van Bergen", "FW", 26, 75),
+       ]},
+     { id: "ned_utr", name: "FC Utrecht", short: "UTR", city: "Utrecht", stadium: "Stadion Galgenwaard", colors: ["#E30613", "#FFFFFF"], tier: 3,
+       squad: [
+         P("Vasilis Barkas", "GK", 32, 75), P("Michael Brouwer", "GK", 25, 71),
+         P("Mike van der Hoorn", "DF", 33, 74), P("Nick Viergever", "DF", 36, 72), P("Souffian El Karouani", "DF", 25, 76), P("Siebe Horemans", "DF", 24, 73), P("Alonzo Engwanda", "DF", 24, 73), P("Hidde ter Avest", "DF", 28, 73),
+         P("Can Bozdoğan", "MF", 24, 75), P("Oscar Fraulo", "MF", 22, 74), P("Yoann Cathline", "MF", 22, 75), P("Miguel Rodríguez", "MF", 25, 74), P("Sander van de Streek", "MF", 22, 72),
+         P("Sébastien Haller", "FW", 32, 77), P("Victor Jensen", "FW", 25, 75), P("David Min", "FW", 24, 74), P("Ole Romeny", "FW", 24, 75), P("Isac Lidberg", "FW", 26, 74),
+       ]},
      { id: "ned_spr", name: "Sparta Rotterdam", short: "SPR", colors: ["#E30613", "#FFFFFF"], tier: 2, squad: [] },
      { id: "ned_gae", name: "Go Ahead Eagles", short: "GAE", colors: ["#E30613", "#FFD700"], tier: 2, squad: [] },
      { id: "ned_hee", name: "sc Heerenveen", short: "HEE", colors: ["#005CA9", "#FFFFFF"], tier: 2, squad: [] },
@@ -600,10 +1018,34 @@
 
    // ---- POLAND ----
    const RAW_PL_EK = [
-     { id: "pol_lgw", name: "Legia Warsaw", short: "LGW", city: "Warsaw", stadium: "Stadion Wojska Polskiego", colors: ["#004B23", "#FFFFFF"], tier: 4, squad: [] },
-     { id: "pol_lep", name: "Lech Poznań", short: "LEP", city: "Poznań", stadium: "Enea Stadion", colors: ["#005CA9", "#FFFFFF"], tier: 4, squad: [] },
-     { id: "pol_rak", name: "Raków Częstochowa", short: "RAK", city: "Częstochowa", stadium: "Stadion Miejski", colors: ["#E30613", "#0A2340"], tier: 4, squad: [] },
-     { id: "pol_jag", name: "Jagiellonia Białystok", short: "JAG", city: "Białystok", stadium: "Stadion Miejski", colors: ["#FFD700", "#E30613"], tier: 4, squad: [] },
+     { id: "pol_lgw", name: "Legia Warsaw", short: "LGW", city: "Warsaw", stadium: "Stadion Wojska Polskiego", colors: ["#004B23", "#FFFFFF"], tier: 4,
+       squad: [
+         P("Kacper Tobiasz", "GK", 23, 73),
+         P("Steve Kapuadi", "DF", 28, 73), P("Radovan Pankov", "DF", 30, 73), P("Jan Ziółkowski", "DF", 20, 74), P("Ruben Vinagre", "DF", 27, 74), P("Patryk Kun", "DF", 30, 72),
+         P("Bartosz Kapustka", "MF", 29, 74), P("Rafał Augustyniak", "MF", 32, 73), P("Claude Gonçalves", "MF", 31, 72), P("Juergen Elitim", "MF", 27, 73),
+         P("Marc Gual", "FW", 29, 74), P("Jean-Pierre Nsame", "FW", 32, 74), P("Ilya Shkurin", "FW", 25, 73), P("Kacper Chodyna", "FW", 26, 73),
+       ]},
+     { id: "pol_lep", name: "Lech Poznań", short: "LEP", city: "Poznań", stadium: "Enea Stadion", colors: ["#005CA9", "#FFFFFF"], tier: 4,
+       squad: [
+         P("Bartosz Mrozek", "GK", 26, 72),
+         P("Antonio Milić", "DF", 31, 73), P("Tomasz Kędziora", "DF", 31, 73), P("Elias Andersson", "DF", 24, 73), P("Joel Pereira", "DF", 28, 72), P("Alan Czerwiński", "DF", 30, 72),
+         P("Antoni Kozubal", "MF", 20, 74), P("Radosław Murawski", "MF", 31, 72), P("Afonso Sousa", "MF", 25, 74), P("Dani Ramírez", "MF", 30, 73),
+         P("Mikael Ishak", "FW", 33, 75), P("Luis Palma", "FW", 26, 75), P("Filip Szymczak", "FW", 23, 73), P("Bryan Fiabema", "FW", 22, 73),
+       ]},
+     { id: "pol_rak", name: "Raków Częstochowa", short: "RAK", city: "Częstochowa", stadium: "Stadion Miejski", colors: ["#E30613", "#0A2340"], tier: 4,
+       squad: [
+         P("Kacper Trelowski", "GK", 22, 72),
+         P("Zoran Arsenić", "DF", 32, 73), P("Bogdan Racovițan", "DF", 25, 73), P("Stratos Svarnas", "DF", 28, 73), P("Fran Tudor", "DF", 30, 72),
+         P("John Yeboah", "MF", 25, 73), P("Giannis Papanikolaou", "MF", 26, 72), P("Vladyslav Kochergin", "MF", 28, 72), P("Jean Carlos", "MF", 27, 73),
+         P("Łukasz Zwoliński", "FW", 32, 72), P("Sonny Kittel", "FW", 32, 73), P("Leonardo Rocha", "FW", 26, 73),
+       ]},
+     { id: "pol_jag", name: "Jagiellonia Białystok", short: "JAG", city: "Białystok", stadium: "Stadion Miejski", colors: ["#FFD700", "#E30613"], tier: 4,
+       squad: [
+         P("Sławomir Abramowicz", "GK", 24, 72),
+         P("Taras Romanczuk", "DF", 34, 72), P("Nene", "DF", 30, 72), P("Bartłomiej Wdowik", "DF", 23, 73), P("Norbert Wojtuszek", "DF", 24, 72),
+         P("Jesús Imaz", "MF", 35, 75), P("Miki Villar", "MF", 26, 73), P("Darko Churlinov", "MF", 25, 73), P("Oskar Pietuszewski", "MF", 18, 74),
+         P("Afimico Pululu", "FW", 26, 74), P("Lamine Diaby-Fadiga", "FW", 25, 73), P("Dušan Stojinović", "FW", 27, 72),
+       ]},
      { id: "pol_pog", name: "Pogoń Szczecin", short: "POG", colors: ["#005CA9", "#800000"], tier: 3, squad: [] },
      { id: "pol_gor", name: "Górnik Zabrze", short: "GOR", colors: ["#005CA9", "#FFFFFF"], tier: 3, squad: [] },
      { id: "pol_cra", name: "Cracovia", short: "CRA", colors: ["#E30613", "#FFFFFF"], tier: 3, squad: [] },
@@ -640,11 +1082,41 @@
 
    // ---- TURKEY ----
    const RAW_TR_SL = [
-     { id: "tur_gal", name: "Galatasaray", short: "GAL", city: "Istanbul", stadium: "RAMS Park", colors: ["#E30613", "#FFD700"], tier: 5, squad: [] },
-     { id: "tur_fen", name: "Fenerbahçe", short: "FEN", city: "Istanbul", stadium: "Şükrü Saracoğlu", colors: ["#FFED00", "#0A2340"], tier: 5, squad: [] },
-     { id: "tur_bjk", name: "Beşiktaş", short: "BJK", city: "Istanbul", stadium: "Tüpraş Stadyumu", colors: ["#000000", "#FFFFFF"], tier: 4, squad: [] },
-     { id: "tur_tra", name: "Trabzonspor", short: "TRA", city: "Trabzon", stadium: "Papara Park", colors: ["#6C1D45", "#87CEEB"], tier: 4, squad: [] },
-     { id: "tur_ibb", name: "Başakşehir", short: "IBB", colors: ["#E67E22", "#0A2340"], tier: 3, squad: [] },
+     { id: "tur_gal", name: "Galatasaray", short: "GAL", city: "Istanbul", stadium: "RAMS Park", colors: ["#E30613", "#FFD700"], tier: 5,
+       squad: [
+         P("Fernando Muslera", "GK", 40, 78), P("Günay Güvenç", "GK", 34, 72),
+         P("Davinson Sánchez", "DF", 30, 80), P("Abdülkerim Bardakcı", "DF", 31, 78), P("Kaan Ayhan", "DF", 31, 76), P("Wilfried Singo", "DF", 25, 80), P("Ismail Jakobs", "DF", 26, 76), P("Eren Elmalı", "DF", 25, 75), P("Roland Sallai", "DF", 29, 77),
+         P("Lucas Torreira", "MF", 30, 81), P("Gabriel Sara", "MF", 27, 81), P("İlkay Gündoğan", "MF", 35, 81), P("Berkan Kutlu", "MF", 28, 75), P("Yunus Akgün", "MF", 26, 77),
+         P("Victor Osimhen", "FW", 27, 87), P("Mauro Icardi", "FW", 33, 82), P("Barış Alper Yılmaz", "FW", 26, 79), P("Leroy Sané", "FW", 30, 83), P("Yusuf Demir", "FW", 23, 74),
+       ]},
+     { id: "tur_fen", name: "Fenerbahçe", short: "FEN", city: "Istanbul", stadium: "Şükrü Saracoğlu", colors: ["#FFED00", "#0A2340"], tier: 5,
+       squad: [
+         P("Ederson", "GK", 32, 84), P("İrfan Can Eğribayat", "GK", 27, 74),
+         P("Milan Škriniar", "DF", 31, 82), P("Çağlar Söyüncü", "DF", 30, 78), P("Jayden Oosterwolde", "DF", 25, 77), P("Alexander Djiku", "DF", 32, 76), P("Levent Mercan", "DF", 25, 74), P("Archie Brown", "DF", 23, 76), P("Nélson Semedo", "DF", 33, 78),
+         P("İsmail Yüksek", "MF", 27, 77), P("Sofyan Amrabat", "MF", 30, 79), P("Fred", "MF", 33, 79), P("Edson Álvarez", "MF", 28, 80), P("Marco Asensio", "MF", 30, 82),
+         P("Youssef En-Nesyri", "FW", 29, 81), P("Talisca", "FW", 32, 80), P("Sebastian Szymański", "FW", 27, 78), P("Dorgeles Nene", "FW", 22, 77), P("Cenk Tosun", "FW", 35, 74),
+       ]},
+     { id: "tur_bjk", name: "Beşiktaş", short: "BJK", city: "Istanbul", stadium: "Tüpraş Stadyumu", colors: ["#000000", "#FFFFFF"], tier: 4,
+       squad: [
+         P("Mert Günok", "GK", 37, 78), P("Ersin Destanoğlu", "GK", 25, 76),
+         P("Gabriel Paulista", "DF", 35, 76), P("Felix Uduokhai", "DF", 28, 76), P("Emirhan Topçu", "DF", 25, 74), P("Jonas Svensson", "DF", 33, 73), P("Arthur Masuaku", "DF", 32, 74), P("Taylan Bulut", "DF", 20, 74),
+         P("Gedson Fernandes", "MF", 27, 77), P("Salih Uçan", "MF", 32, 74), P("Wilfred Ndidi", "MF", 29, 79), P("Demir Ege Tıknaz", "MF", 22, 73), P("Necip Uysal", "MF", 34, 72),
+         P("Tammy Abraham", "FW", 28, 79), P("El Bilal Touré", "FW", 24, 77), P("Rafa Silva", "FW", 33, 81), P("Ernest Muçi", "FW", 25, 76), P("Cengiz Ünder", "FW", 29, 77),
+       ]},
+     { id: "tur_tra", name: "Trabzonspor", short: "TRA", city: "Trabzon", stadium: "Papara Park", colors: ["#6C1D45", "#87CEEB"], tier: 4,
+       squad: [
+         P("Uğurcan Çakır", "GK", 30, 81), P("Erce Kardeşler", "GK", 30, 72),
+         P("Stefan Savić", "DF", 35, 76), P("Arseniy Batagov", "DF", 25, 74), P("Rayyan Baniya", "DF", 26, 74), P("Mustafa Eskihellaç", "DF", 27, 73), P("Pape Meïssa Ba", "DF", 24, 73), P("John Lundstram", "DF", 32, 76),
+         P("Okay Yokuşlu", "MF", 32, 76), P("Tom Krauß", "MF", 25, 76), P("Ozan Tufan", "MF", 31, 76), P("Christ Oulaï", "MF", 20, 74), P("Edin Višća", "MF", 36, 74),
+         P("Paul Onuachu", "FW", 32, 78), P("Felipe Augusto", "FW", 24, 75), P("Anthony Nwakaeme", "FW", 37, 73), P("Simon Banza", "FW", 29, 76), P("Danylo Sikan", "FW", 25, 75),
+       ]},
+     { id: "tur_ibb", name: "Başakşehir", short: "IBB", colors: ["#E67E22", "#0A2340"], tier: 3,
+       squad: [
+         P("Volkan Babacan", "GK", 37, 74), P("Muhammed Şengezer", "GK", 26, 72),
+         P("Leo Dubois", "DF", 31, 74), P("Onur Bulut", "DF", 31, 73), P("Ousseynou Ba", "DF", 29, 74), P("Christopher Operi", "DF", 28, 73), P("Ahmed Touba", "DF", 27, 73), P("Yuki Kobayashi", "DF", 26, 73),
+         P("Berkay Özcan", "MF", 28, 74), P("Deian Sorescu", "MF", 28, 74), P("Ömer Ali Şahiner", "MF", 30, 73), P("Mahmut Tekdemir", "MF", 38, 71), P("Amine Harit", "MF", 29, 77),
+         P("Nuno da Costa", "FW", 34, 73), P("Davie Selke", "FW", 31, 75), P("Deniz Türüç", "FW", 33, 74), P("Eldor Shomurodov", "FW", 30, 76),
+       ]},
      { id: "tur_sms", name: "Samsunspor", short: "SMS", colors: ["#E30613", "#FFFFFF"], tier: 2, squad: [] },
      { id: "tur_eyp", name: "Eyüpspor", short: "EYP", colors: ["#4B006E", "#FFD700"], tier: 2, squad: [] },
      { id: "tur_kas", name: "Kasımpaşa", short: "KAS", colors: ["#0A2340", "#FFFFFF"], tier: 2, squad: [] },
@@ -684,12 +1156,48 @@
 
    // ---- BELGIUM (Pro League splits 8/8, points halved rounded UP) ----
    const RAW_BE_BPL = [
-     { id: "bel_clb", name: "Club Brugge", short: "CLB", city: "Bruges", stadium: "Jan Breydel", colors: ["#005CA9", "#000000"], tier: 4, squad: [] },
-     { id: "bel_usg", name: "Union SG", short: "USG", city: "Brussels", stadium: "Joseph Marien", colors: ["#FFD700", "#005CA9"], tier: 4, squad: [] },
-     { id: "bel_and", name: "Anderlecht", short: "AND", city: "Brussels", stadium: "Lotto Park", colors: ["#4B2E83", "#FFFFFF"], tier: 4, squad: [] },
-     { id: "bel_gnk", name: "Genk", short: "GNK", city: "Genk", stadium: "Cegeka Arena", colors: ["#005CA9", "#FFFFFF"], tier: 4, squad: [] },
-     { id: "bel_ant", name: "Antwerp", short: "ANT", city: "Antwerp", stadium: "Bosuilstadion", colors: ["#E30613", "#FFFFFF"], tier: 3, squad: [] },
-     { id: "bel_gnt", name: "Gent", short: "GNT", city: "Ghent", stadium: "Ghelamco Arena", colors: ["#005CA9", "#FFFFFF"], tier: 3, squad: [] },
+     { id: "bel_clb", name: "Club Brugge", short: "CLB", city: "Bruges", stadium: "Jan Breydel", colors: ["#005CA9", "#000000"], tier: 4,
+       squad: [
+         P("Simon Mignolet", "GK", 38, 78), P("Nordin Jackers", "GK", 27, 73),
+         P("Joel Ordóñez", "DF", 21, 78), P("Brandon Mechele", "DF", 33, 75), P("Bjorn Meijer", "DF", 23, 75), P("Kyriani Sabbe", "DF", 21, 74), P("Joaquín Seys", "DF", 20, 74), P("Zaid Romero", "DF", 23, 74),
+         P("Hans Vanaken", "MF", 33, 79), P("Raphael Onyedika", "MF", 25, 78), P("Aleksandar Stanković", "MF", 21, 76), P("Hugo Vetlesen", "MF", 25, 75), P("Cisse Sandra", "MF", 21, 74),
+         P("Christos Tzolis", "FW", 24, 79), P("Ferran Jutglà", "FW", 27, 77), P("Chemsdine Talbi", "FW", 20, 76), P("Nicolò Tresoldi", "FW", 21, 75), P("Romeo Vermant", "FW", 21, 75),
+       ]},
+     { id: "bel_usg", name: "Union SG", short: "USG", city: "Brussels", stadium: "Joseph Marien", colors: ["#FFD700", "#005CA9"], tier: 4,
+       squad: [
+         P("Kjell Scherpen", "GK", 26, 76), P("Anthony Moris", "GK", 36, 73),
+         P("Christian Burgess", "DF", 34, 74), P("Kevin Mac Allister", "DF", 26, 75), P("Ismaël Kandouss", "DF", 27, 74), P("Ross Sykes", "DF", 27, 74), P("Fedde Leysen", "DF", 20, 74), P("Marc Giger", "DF", 24, 73),
+         P("Noah Sadiki", "MF", 21, 76), P("Alessio Castro-Montes", "MF", 28, 74), P("Anan Khalaili", "MF", 22, 74), P("Mathias Rasmussen", "MF", 28, 74), P("Ousseynou Niang", "MF", 22, 74),
+         P("Promise David", "FW", 25, 77), P("Raúl Florucz", "FW", 24, 76), P("Kevin Rodríguez", "FW", 26, 75), P("Dennis Eckert Ayensa", "FW", 28, 74),
+       ]},
+     { id: "bel_and", name: "Anderlecht", short: "AND", city: "Brussels", stadium: "Lotto Park", colors: ["#4B2E83", "#FFFFFF"], tier: 4,
+       squad: [
+         P("Colin Coosemans", "GK", 33, 74), P("Mads Kikkenborg", "GK", 26, 72),
+         P("Jan Vertonghen", "DF", 39, 75), P("Killian Sardella", "DF", 25, 75), P("Lucas Hey", "DF", 22, 74), P("Ludwig Augustinsson", "DF", 32, 74), P("Thomas Foket", "DF", 31, 73), P("Moussa N'Diaye", "DF", 23, 73),
+         P("Yari Verschaeren", "MF", 24, 76), P("Mario Stroeykens", "MF", 21, 76), P("Théo Leoni", "MF", 24, 74), P("Enric Llansana", "MF", 23, 74), P("Nathan De Cat", "MF", 18, 74),
+         P("Luis Vázquez", "FW", 26, 75), P("Adriano Bertaccini", "FW", 25, 76), P("Thorgan Hazard", "FW", 33, 75), P("Mihajlo Cvetković", "FW", 21, 74),
+       ]},
+     { id: "bel_gnk", name: "Genk", short: "GNK", city: "Genk", stadium: "Cegeka Arena", colors: ["#005CA9", "#FFFFFF"], tier: 4,
+       squad: [
+         P("Hendrik Van Crombrugge", "GK", 33, 76), P("Tobias Lawal", "GK", 25, 72),
+         P("Matte Smets", "DF", 22, 75), P("Mujaid Sadick", "DF", 27, 73), P("Zakaria El Ouahdi", "DF", 25, 75), P("Joris Kayembe", "DF", 30, 74), P("Ken Nkuba", "DF", 22, 73), P("Robin Seppuri", "DF", 24, 72),
+         P("Bryan Heynen", "MF", 29, 77), P("Patrik Hrošovský", "MF", 34, 73), P("Aziz Ouattara", "MF", 24, 74), P("Nikolas Sattlberger", "MF", 24, 73), P("Jarne Steuckers", "MF", 22, 74),
+         P("Tolu Arokodare", "FW", 25, 79), P("Yira Sor", "FW", 25, 76), P("Oh Hyun-gyu", "FW", 25, 76), P("Ianis Hagi", "FW", 27, 76),
+       ]},
+     { id: "bel_ant", name: "Antwerp", short: "ANT", city: "Antwerp", stadium: "Bosuilstadion", colors: ["#E30613", "#FFFFFF"], tier: 3,
+       squad: [
+         P("Ortwin De Wolf", "GK", 28, 73), P("Kjell Peersman", "GK", 28, 71),
+         P("Toby Alderweireld", "DF", 37, 75), P("Zeno Van Den Bosch", "DF", 22, 74), P("Jelle Bataille", "DF", 26, 73), P("Bjorn Engels", "DF", 31, 73), P("Denis Odoi", "DF", 24, 72), P("Dinis Almeida", "DF", 32, 72),
+         P("Dennis Praet", "MF", 32, 75), P("Alhassan Yusuf", "MF", 26, 74), P("Mahamadou Doumbia", "MF", 23, 73), P("Kobe Corbanie", "MF", 20, 73), P("Mohamed Bangoura", "MF", 22, 73),
+         P("Vincent Janssen", "FW", 32, 74), P("Michel-Ange Balikwisha", "FW", 25, 76), P("Gyrano Kerk", "FW", 30, 73), P("Tjaronn Chery", "FW", 37, 73),
+       ]},
+     { id: "bel_gnt", name: "Gent", short: "GNT", city: "Ghent", stadium: "Ghelamco Arena", colors: ["#005CA9", "#FFFFFF"], tier: 3,
+       squad: [
+         P("Paul Nardi", "GK", 32, 73), P("Davy Roef", "GK", 31, 72),
+         P("Michael Ngadeu", "DF", 35, 73), P("Jordan Torunarigha", "DF", 29, 74), P("Nurio Fortuna", "DF", 30, 73), P("Matisse Samoise", "DF", 24, 73), P("Ilay Camara", "DF", 22, 74), P("Noah Fadiga", "DF", 25, 73),
+         P("Sven Kums", "MF", 38, 73), P("Pieter Gerkens", "MF", 30, 73), P("Jens Petter Hauge", "MF", 27, 76), P("Andrew Hjulsager", "MF", 30, 74), P("Yuki Hirata", "MF", 24, 73),
+         P("Andri Gudjohnsen", "FW", 27, 75), P("Max Dean", "FW", 23, 73), P("Franck Surano", "FW", 21, 72), P("Omri Gandelman", "FW", 22, 73),
+       ]},
      { id: "bel_cer", name: "Cercle Brugge", short: "CER", city: "Bruges", stadium: "Jan Breydel", colors: ["#00A650", "#000000"], tier: 2, squad: [] },
      { id: "bel_std", name: "Standard Liège", short: "STD", city: "Liège", stadium: "Maurice Dufrasne", colors: ["#E30613", "#FFFFFF"], tier: 3, squad: [] },
      { id: "bel_cha", name: "Charleroi", short: "CHA", colors: ["#000000", "#FFFFFF"], tier: 2, squad: [] },
@@ -720,10 +1228,34 @@
 
    // ---- AUSTRIA (Bundesliga splits 6/6, points halved rounded DOWN) ----
    const RAW_AT_ABL = [
-     { id: "aut_sal", name: "RB Salzburg", short: "SAL", city: "Salzburg", stadium: "Red Bull Arena", colors: ["#E2001A", "#FFFFFF"], tier: 5, squad: [] },
-     { id: "aut_stu", name: "Sturm Graz", short: "STU", city: "Graz", stadium: "Merkur Arena", colors: ["#000000", "#FFFFFF"], tier: 4, squad: [] },
-     { id: "aut_las", name: "LASK", short: "LAS", city: "Linz", stadium: "Raiffeisen Arena", colors: ["#000000", "#FFFFFF"], tier: 3, squad: [] },
-     { id: "aut_rap", name: "Rapid Wien", short: "RAP", city: "Vienna", stadium: "Allianz Stadion", colors: ["#00A650", "#FFFFFF"], tier: 3, squad: [] },
+     { id: "aut_sal", name: "RB Salzburg", short: "SAL", city: "Salzburg", stadium: "Red Bull Arena", colors: ["#E2001A", "#FFFFFF"], tier: 5,
+       squad: [
+         P("Alexander Schlager", "GK", 30, 77), P("Janis Blaswich", "GK", 34, 76),
+         P("Aleksa Terzić", "DF", 26, 74), P("Hendry Blank", "DF", 21, 75), P("Frans Krätzig", "DF", 23, 75), P("Joane Gadou", "DF", 20, 74), P("Daouda Guindo", "DF", 23, 73),
+         P("Oscar Gloukh", "MF", 22, 78), P("Mads Bidstrup", "MF", 25, 76), P("Maurits Kjærgaard", "MF", 23, 76), P("Bobby Clark", "MF", 21, 75), P("Sota Kitano", "MF", 21, 75),
+         P("Petar Ratkov", "FW", 22, 76), P("Karim Onisiwo", "FW", 34, 74), P("Edmund Baidoo", "FW", 22, 74), P("Kerim Alajbegović", "FW", 19, 74),
+       ]},
+     { id: "aut_stu", name: "Sturm Graz", short: "STU", city: "Graz", stadium: "Merkur Arena", colors: ["#000000", "#FFFFFF"], tier: 4,
+       squad: [
+         P("Oliver Christensen", "GK", 26, 75),
+         P("Gregory Wüthrich", "DF", 31, 73), P("Max Johnston", "DF", 22, 74), P("Jusuf Gazibegović", "DF", 26, 73), P("Saïdou Sow", "DF", 23, 74),
+         P("Otar Kiteishvili", "MF", 30, 76), P("Malick Yalcouyé", "MF", 20, 75), P("Jon Gorenc Stanković", "MF", 30, 73), P("Tomi Horvat", "MF", 26, 74), P("Dimitri Lavalée", "MF", 28, 73),
+         P("William Böving", "FW", 22, 74), P("Seedy Jatta", "FW", 21, 73), P("Belmin Beganović", "FW", 20, 73),
+       ]},
+     { id: "aut_las", name: "LASK", short: "LAS", city: "Linz", stadium: "Raiffeisen Arena", colors: ["#000000", "#FFFFFF"], tier: 3,
+       squad: [
+         P("Lukas Jungwirth", "GK", 23, 72),
+         P("Philipp Ziereis", "DF", 32, 72), P("Maximilian Talovierov", "DF", 25, 73), P("Andrés Andrade", "DF", 27, 73), P("Jérôme Boateng", "DF", 37, 73),
+         P("Sascha Horvath", "MF", 29, 72), P("Ibrahim Mustapha", "MF", 22, 72), P("Valentino Müller", "MF", 26, 72), P("Branko Jovičić", "MF", 31, 72),
+         P("Robert Žulj", "FW", 33, 73), P("Moses Usor", "FW", 23, 73), P("Florian Flecker", "FW", 30, 72),
+       ]},
+     { id: "aut_rap", name: "Rapid Wien", short: "RAP", city: "Vienna", stadium: "Allianz Stadion", colors: ["#00A650", "#FFFFFF"], tier: 3,
+       squad: [
+         P("Niklas Hedl", "GK", 24, 74),
+         P("Martin Koscelník", "DF", 31, 73), P("Serge-Philippe Raux-Yao", "DF", 22, 73), P("Nenad Cvetković", "DF", 24, 72), P("Jonas Auer", "DF", 25, 72),
+         P("Matthias Seidl", "MF", 25, 74), P("Nikolaus Wurmbrand", "MF", 20, 74), P("Louis Schaub", "MF", 31, 73), P("Petter Nosa Dahl", "MF", 20, 73),
+         P("Guido Burgstaller", "FW", 37, 73), P("Claudy Mbuyi", "FW", 23, 73), P("Janis Antiste", "FW", 23, 73),
+       ]},
      { id: "aut_auw", name: "Austria Wien", short: "AUW", city: "Vienna", stadium: "Generali Arena", colors: ["#4B2E83", "#FFFFFF"], tier: 3, squad: [] },
      { id: "aut_wac", name: "Wolfsberger AC", short: "WAC", colors: ["#FFFFFF", "#000000"], tier: 2, squad: [] },
      { id: "aut_har", name: "Hartberg", short: "HAR", colors: ["#005CA9", "#FFFFFF"], tier: 2, squad: [] },
@@ -754,9 +1286,27 @@
 
    // ---- DENMARK (Superliga splits 6/6, points carried) ----
    const RAW_DK_DSL = [
-     { id: "den_fck", name: "FC København", short: "FCK", city: "Copenhagen", stadium: "Parken", colors: ["#FFFFFF", "#005CA9"], tier: 4, squad: [] },
-     { id: "den_fcm", name: "Midtjylland", short: "FCM", city: "Herning", stadium: "MCH Arena", colors: ["#000000", "#E30613"], tier: 4, squad: [] },
-     { id: "den_bif", name: "Brøndby", short: "BIF", city: "Brøndby", stadium: "Brøndby Stadion", colors: ["#FFD700", "#005CA9"], tier: 4, squad: [] },
+     { id: "den_fck", name: "FC København", short: "FCK", city: "Copenhagen", stadium: "Parken", colors: ["#FFFFFF", "#005CA9"], tier: 4,
+       squad: [
+         P("Theo Sander", "GK", 22, 73),
+         P("Elias Jelert", "DF", 22, 74), P("Kye Rowles", "DF", 27, 74), P("Pantelis Hatzidiakos", "DF", 29, 74), P("Birger Meling", "DF", 31, 73), P("Gabriel Pereira", "DF", 24, 73),
+         P("Rasmus Falk", "MF", 34, 74), P("Lukas Lerager", "MF", 32, 73), P("Magnus Mattsson", "MF", 25, 73), P("William Clem", "MF", 21, 73),
+         P("Jordan Larsson", "FW", 28, 75), P("Viktor Claesson", "FW", 34, 74), P("Youssoufa Moukoko", "FW", 21, 76), P("Andreas Cornelius", "FW", 33, 73),
+       ]},
+     { id: "den_fcm", name: "Midtjylland", short: "FCM", city: "Herning", stadium: "MCH Arena", colors: ["#000000", "#E30613"], tier: 4,
+       squad: [
+         P("Elias Olafsson", "GK", 26, 73),
+         P("Stefan Gartenmann", "DF", 29, 73), P("Kevin Mbabu", "DF", 31, 74), P("Frederik Alves", "DF", 26, 73), P("Valdemar Byskov", "DF", 22, 73),
+         P("Kristoffer Olsson", "MF", 30, 74), P("Aral Şimşir", "MF", 21, 73), P("Mikel Gogorza", "MF", 27, 73), P("Charles", "MF", 26, 73),
+         P("Franculino Djú", "FW", 21, 76), P("Darío Osorio", "FW", 22, 75), P("Mikael Anderson", "FW", 27, 74), P("Junior Brumado", "FW", 26, 73),
+       ]},
+     { id: "den_bif", name: "Brøndby", short: "BIF", city: "Brøndby", stadium: "Brøndby Stadion", colors: ["#FFD700", "#005CA9"], tier: 4,
+       squad: [
+         P("Patrick Pentz", "GK", 28, 74),
+         P("Rasmus Lauritsen", "DF", 29, 73), P("Sean Klaiber", "DF", 31, 72), P("Daniel Wass", "DF", 37, 73), P("Frederik Bak", "DF", 24, 72),
+         P("Nicolai Vallys", "MF", 28, 73), P("Josip Radošević", "MF", 31, 72), P("Matt Smith", "MF", 26, 72), P("Sofus Berger", "MF", 22, 72),
+         P("Mathias Kvistgaarden", "FW", 23, 74), P("Ohi Omoijuanfo", "FW", 31, 74), P("Emil Højlund", "FW", 21, 73), P("Marko Divković", "FW", 25, 72),
+       ]},
      { id: "den_fcn", name: "Nordsjælland", short: "FCN", city: "Farum", stadium: "Right to Dream Park", colors: ["#E30613", "#FFD700"], tier: 3, squad: [] },
      { id: "den_agf", name: "AGF Aarhus", short: "AGF", city: "Aarhus", stadium: "Ceres Park", colors: ["#FFFFFF", "#005CA9"], tier: 3, squad: [] },
      { id: "den_ran", name: "Randers", short: "RAN", colors: ["#005CA9", "#FFFFFF"], tier: 2, squad: [] },
@@ -784,10 +1334,34 @@
 
    // ---- GREECE (Super League splits 7/7, points carried) ----
    const RAW_GR_GSL = [
-     { id: "gre_oly", name: "Olympiacos", short: "OLY", city: "Piraeus", stadium: "Karaiskakis", colors: ["#E30613", "#FFFFFF"], tier: 5, squad: [] },
-     { id: "gre_pao", name: "PAOK", short: "PAO", city: "Thessaloniki", stadium: "Toumba", colors: ["#000000", "#FFFFFF"], tier: 4, squad: [] },
-     { id: "gre_aek", name: "AEK Athens", short: "AEK", city: "Athens", stadium: "OPAP Arena", colors: ["#FFD700", "#000000"], tier: 4, squad: [] },
-     { id: "gre_pan", name: "Panathinaikos", short: "PAN", city: "Athens", stadium: "Apostolos Nikolaidis", colors: ["#00A650", "#FFFFFF"], tier: 4, squad: [] },
+     { id: "gre_oly", name: "Olympiacos", short: "OLY", city: "Piraeus", stadium: "Karaiskakis", colors: ["#E30613", "#FFFFFF"], tier: 5,
+       squad: [
+         P("Konstantinos Tzolakis", "GK", 23, 77), P("Alexandros Paschalakis", "GK", 36, 72),
+         P("Panagiotis Retsos", "DF", 28, 76), P("David Carmo", "DF", 26, 76), P("Francisco Ortega", "DF", 26, 74), P("Rodinei", "DF", 34, 74), P("Bruno Onyemaechi", "DF", 27, 74), P("Lorenzo Scipioni", "DF", 24, 73),
+         P("Santiago Hezze", "MF", 24, 77), P("Chiquinho", "MF", 30, 76), P("Gabriel Neves", "MF", 28, 74), P("Dani García", "MF", 35, 74), P("Willian Arão", "MF", 33, 74),
+         P("Ayoub El Kaabi", "FW", 33, 80), P("Gelson Martins", "FW", 31, 77), P("Daniel Podence", "FW", 30, 77), P("Roman Yaremchuk", "FW", 30, 75), P("Mehdi Taremi", "FW", 34, 79),
+       ]},
+     { id: "gre_pao", name: "PAOK", short: "PAO", city: "Thessaloniki", stadium: "Toumba", colors: ["#000000", "#FFFFFF"], tier: 4,
+       squad: [
+         P("Dominik Kotarski", "GK", 26, 76), P("Antonis Tsiftsis", "GK", 24, 72),
+         P("Giannis Michailidis", "DF", 26, 75), P("Abdul Rahman Baba", "DF", 32, 74), P("Rafa Soares", "DF", 29, 73), P("Loukas Vrousai", "DF", 22, 73), P("Mario Branco", "DF", 24, 72), P("Otto Baker", "DF", 23, 72),
+         P("Andrija Živković", "MF", 30, 77), P("Soualiho Meïté", "MF", 32, 75), P("Magomed Ozdoev", "MF", 33, 74), P("Mady Camara", "MF", 29, 76), P("Giannis Konstantelias", "MF", 23, 78),
+         P("Chuba Akpom", "FW", 30, 76), P("Kiril Despodov", "FW", 30, 77), P("Fedor Chalov", "FW", 28, 75), P("Luka Ivanušec", "FW", 27, 76),
+       ]},
+     { id: "gre_aek", name: "AEK Athens", short: "AEK", city: "Athens", stadium: "OPAP Arena", colors: ["#FFD700", "#000000"], tier: 4,
+       squad: [
+         P("Thomas Strakosha", "GK", 31, 75), P("Cican Stanković", "GK", 33, 73),
+         P("Harold Moukoudi", "DF", 28, 75), P("Gerasimos Mitoglou", "DF", 28, 73), P("Milad Mohammadi", "DF", 32, 73), P("Lazaros Rota", "DF", 27, 73), P("Domagoj Vida", "DF", 37, 73), P("Filip Mladenović", "DF", 34, 72),
+         P("Orbelín Pineda", "MF", 30, 77), P("Erik Lamela", "MF", 34, 76), P("Petros Mantalos", "MF", 34, 74), P("Damian Szymański", "MF", 31, 74), P("Roberto Pereyra", "MF", 35, 75),
+         P("Anthony Martial", "FW", 30, 77), P("Levi García", "FW", 28, 77), P("Ezequiel Ponce", "FW", 28, 76), P("Niclas Eliasson", "FW", 30, 75),
+       ]},
+     { id: "gre_pan", name: "Panathinaikos", short: "PAN", city: "Athens", stadium: "Apostolos Nikolaidis", colors: ["#00A650", "#FFFFFF"], tier: 4,
+       squad: [
+         P("Bartłomiej Drągowski", "GK", 28, 76), P("Yannis Kotsiras", "GK", 24, 71),
+         P("Tin Jedvaj", "DF", 30, 74), P("Giorgos Vagiannidis", "DF", 24, 74), P("Bart Schenkeveld", "DF", 34, 73), P("Georgios Kyriakopoulos", "DF", 29, 74), P("Juankar", "DF", 34, 72), P("Vasilis Sourlis", "DF", 27, 73),
+         P("Adam Gnezda Čerin", "MF", 26, 75), P("Facundo Pellistri", "MF", 24, 76), P("Filip Đuričić", "MF", 34, 75), P("Tonny Vilhena", "MF", 31, 74), P("Rúben Pérez", "MF", 36, 72),
+         P("Karol Świderski", "FW", 29, 76), P("Bernard Tekpetey", "FW", 28, 75), P("Andraž Šporar", "FW", 32, 74), P("Tetê", "FW", 26, 78),
+       ]},
      { id: "gre_ari", name: "Aris", short: "ARI", city: "Thessaloniki", stadium: "Kleanthis Vikelidis", colors: ["#FFD700", "#000000"], tier: 3, squad: [] },
      { id: "gre_pae", name: "Panetolikos", short: "PAE", colors: ["#00A650", "#FFFFFF"], tier: 2, squad: [] },
      { id: "gre_ofi", name: "OFI Crete", short: "OFI", colors: ["#000000", "#FFFFFF"], tier: 2, squad: [] },
@@ -822,10 +1396,34 @@
 
    // ---- SCOTLAND (Premiership: triple round-robin then 6/6 split) ----
    const RAW_SC_SPL = [
-     { id: "sco_cel", name: "Celtic", short: "CEL", city: "Glasgow", stadium: "Celtic Park", colors: ["#16984B", "#FFFFFF"], tier: 4, squad: [] },
-     { id: "sco_ran", name: "Rangers", short: "RAN", city: "Glasgow", stadium: "Ibrox", colors: ["#1B458F", "#FFFFFF"], tier: 4, squad: [] },
-     { id: "sco_abe", name: "Aberdeen", short: "ABE", city: "Aberdeen", stadium: "Pittodrie", colors: ["#E03A3E", "#FFFFFF"], tier: 3, squad: [] },
-     { id: "sco_hea", name: "Hearts", short: "HEA", city: "Edinburgh", stadium: "Tynecastle", colors: ["#7A263A", "#FFFFFF"], tier: 3, squad: [] },
+     { id: "sco_cel", name: "Celtic", short: "CEL", city: "Glasgow", stadium: "Celtic Park", colors: ["#16984B", "#FFFFFF"], tier: 4,
+       squad: [
+         P("Kasper Schmeichel", "GK", 39, 78), P("Viljami Sinisalo", "GK", 24, 73),
+         P("Cameron Carter-Vickers", "DF", 28, 79), P("Liam Scales", "DF", 27, 76), P("Auston Trusty", "DF", 27, 77), P("Alistair Johnston", "DF", 27, 77), P("Kieran Tierney", "DF", 29, 78), P("Anthony Ralston", "DF", 27, 73),
+         P("Callum McGregor", "MF", 32, 78), P("Reo Hatate", "MF", 28, 78), P("Arne Engels", "MF", 22, 77), P("Paulo Bernardo", "MF", 24, 75), P("Benjamin Nygren", "MF", 24, 76),
+         P("Daizen Maeda", "FW", 28, 79), P("Johnny Kenny", "FW", 22, 73), P("Nicolas Kühn", "FW", 26, 78), P("Adam Idah", "FW", 25, 75), P("Luke McCowan", "FW", 27, 73),
+       ]},
+     { id: "sco_ran", name: "Rangers", short: "RAN", city: "Glasgow", stadium: "Ibrox", colors: ["#1B458F", "#FFFFFF"], tier: 4,
+       squad: [
+         P("Jack Butland", "GK", 33, 78), P("Liam Kelly", "GK", 30, 72),
+         P("John Souttar", "DF", 30, 76), P("Nasser Djiga", "DF", 23, 75), P("Dujon Sterling", "DF", 26, 74), P("James Tavernier", "DF", 34, 75), P("Jefté", "DF", 22, 74), P("Max Aarons", "DF", 26, 76),
+         P("Nicolas Raskin", "MF", 25, 77), P("Mohamed Diomande", "MF", 24, 76), P("Connor Barron", "MF", 23, 74), P("Vaclav Cerny", "MF", 28, 76), P("Joe Rothwell", "MF", 31, 74),
+         P("Cyriel Dessers", "FW", 31, 76), P("Danilo", "FW", 26, 75), P("Oscar Cortés", "FW", 22, 74), P("Findlay Curtis", "FW", 20, 73), P("Djeidi Gassama", "FW", 22, 74),
+       ]},
+     { id: "sco_abe", name: "Aberdeen", short: "ABE", city: "Aberdeen", stadium: "Pittodrie", colors: ["#E03A3E", "#FFFFFF"], tier: 3,
+       squad: [
+         P("Dimitar Mitov", "GK", 28, 74), P("Ross Doohan", "GK", 28, 71),
+         P("Slobodan Rubežić", "DF", 25, 74), P("Angus MacDonald", "DF", 33, 72), P("Jack MacKenzie", "DF", 25, 73), P("Nicky Devlin", "DF", 32, 73), P("Gavin Molloy", "DF", 24, 73), P("Mats Knoester", "DF", 27, 73),
+         P("Graeme Shinnie", "MF", 34, 73), P("Sivert Heltne Nilsen", "MF", 34, 73), P("Leighton Clarkson", "MF", 24, 75), P("Dante Polvara", "MF", 25, 72), P("Topi Keskinen", "MF", 22, 73),
+         P("Kevin Nisbet", "FW", 29, 74), P("Ester Sokler", "FW", 26, 73), P("Pape Habib Gueye", "FW", 26, 73), P("Shayden Morris", "FW", 23, 73),
+       ]},
+     { id: "sco_hea", name: "Hearts", short: "HEA", city: "Edinburgh", stadium: "Tynecastle", colors: ["#7A263A", "#FFFFFF"], tier: 3,
+       squad: [
+         P("Craig Gordon", "GK", 43, 74), P("Zander Clark", "GK", 33, 73),
+         P("Frankie Kent", "DF", 30, 73), P("Craig Halkett", "DF", 30, 72), P("Stephen Kingsley", "DF", 31, 73), P("Adam Forrester", "DF", 22, 72), P("Gerald Taylor", "DF", 23, 72), P("Michael Steinwender", "DF", 27, 73),
+         P("Cammy Devlin", "MF", 27, 74), P("Beni Baningime", "MF", 27, 74), P("Calem Nieuwenhof", "MF", 24, 74), P("Blair Spittal", "MF", 30, 73), P("Yan Dhanda", "MF", 27, 73),
+         P("Lawrence Shankland", "FW", 30, 76), P("Musa Drammeh", "FW", 22, 72), P("Elton Kabangu", "FW", 27, 73), P("James Wilson", "FW", 19, 73),
+       ]},
      { id: "sco_hib", name: "Hibernian", short: "HIB", city: "Edinburgh", stadium: "Easter Road", colors: ["#00752F", "#FFFFFF"], tier: 2, squad: [] },
      { id: "sco_dun", name: "Dundee United", short: "DUN", colors: ["#FF6600", "#000000"], tier: 2, squad: [] },
      { id: "sco_kil", name: "Kilmarnock", short: "KIL", colors: ["#003399", "#FFFFFF"], tier: 2, squad: [] },
@@ -851,10 +1449,34 @@
    // ---- SWITZERLAND (Super League: triple round-robin then 6/6 split) ----
    // FC Vaduz (Liechtenstein) plays in the Swiss pyramid — folded in here.
    const RAW_CH_SSL = [
-     { id: "sui_ybb", name: "Young Boys", short: "YBB", city: "Bern", stadium: "Wankdorf", colors: ["#FFD700", "#000000"], tier: 4, squad: [] },
-     { id: "sui_bas", name: "Basel", short: "BAS", city: "Basel", stadium: "St. Jakob-Park", colors: ["#E30613", "#005CA9"], tier: 4, squad: [] },
-     { id: "sui_ser", name: "Servette", short: "SER", city: "Geneva", stadium: "Stade de Genève", colors: ["#7A263A", "#FFFFFF"], tier: 3, squad: [] },
-     { id: "sui_lug", name: "Lugano", short: "LUG", city: "Lugano", stadium: "Cornaredo", colors: ["#000000", "#FFFFFF"], tier: 3, squad: [] },
+     { id: "sui_ybb", name: "Young Boys", short: "YBB", city: "Bern", stadium: "Wankdorf", colors: ["#FFD700", "#000000"], tier: 4,
+       squad: [
+         P("Marvin Keller", "GK", 23, 74),
+         P("Loris Benito", "DF", 33, 73), P("Mohamed Ali Camara", "DF", 25, 73), P("Jaouen Hadjam", "DF", 23, 74), P("Saidy Janko", "DF", 30, 73), P("Lewin Blum", "DF", 24, 73),
+         P("Sandro Lauper", "MF", 29, 73), P("Darian Males", "MF", 25, 74), P("Filip Ugrinic", "MF", 26, 74), P("Lukasz Lakomy", "MF", 24, 73),
+         P("Cedric Itten", "FW", 29, 74), P("Joël Monteiro", "FW", 26, 74), P("Chris Bedia", "FW", 29, 73), P("Alan Virginius", "FW", 23, 73),
+       ]},
+     { id: "sui_bas", name: "Basel", short: "BAS", city: "Basel", stadium: "St. Jakob-Park", colors: ["#E30613", "#005CA9"], tier: 4,
+       squad: [
+         P("Marwin Hitz", "GK", 38, 74),
+         P("Adrian Barišić", "DF", 24, 73), P("Jonas Adjetey", "DF", 22, 74), P("Nicolas Vouilloz", "DF", 24, 73), P("Dominik Schmid", "DF", 27, 73), P("Finn van Breemen", "DF", 22, 73),
+         P("Xherdan Shaqiri", "MF", 34, 78), P("Leon Avdullahu", "MF", 22, 74), P("Marin Šoticek", "MF", 24, 73), P("Koba Koindredi", "MF", 23, 73),
+         P("Philip Otele", "FW", 26, 74), P("Albian Ajeti", "FW", 28, 73), P("Bénie Traoré", "FW", 23, 74), P("Ibrahim Salah", "FW", 24, 73),
+       ]},
+     { id: "sui_ser", name: "Servette", short: "SER", city: "Geneva", stadium: "Stade de Genève", colors: ["#7A263A", "#FFFFFF"], tier: 3,
+       squad: [
+         P("Jérémy Frick", "GK", 32, 73),
+         P("Steve Rouiller", "DF", 34, 72), P("Yoan Severin", "DF", 28, 72), P("Bradley Mazikou", "DF", 28, 72), P("Keigo Tsunemoto", "DF", 25, 73),
+         P("Timothé Cognat", "MF", 27, 73), P("Gaël Ondoua", "MF", 30, 72), P("Alexis Antunes", "MF", 24, 73), P("Miroslav Stevanović", "MF", 35, 73),
+         P("Dereck Kutesa", "FW", 27, 74), P("Enzo Crivelli", "FW", 30, 73), P("Jérémy Guillemenot", "FW", 27, 72),
+       ]},
+     { id: "sui_lug", name: "Lugano", short: "LUG", city: "Lugano", stadium: "Cornaredo", colors: ["#000000", "#FFFFFF"], tier: 3,
+       squad: [
+         P("Amir Saipi", "GK", 25, 72),
+         P("Jonathan Sabbatini", "DF", 33, 72), P("Albian Hajdari", "DF", 22, 73), P("Martim Marques", "DF", 24, 72), P("Ousmane Doumbia", "DF", 33, 72),
+         P("Uran Bislimi", "MF", 26, 73), P("Anto Grgić", "MF", 28, 72), P("Mohamed Mahou", "MF", 22, 72), P("Hicham Mahou", "MF", 22, 72),
+         P("Renato Steffen", "FW", 34, 74), P("Žan Celar", "FW", 26, 73), P("Shkelqim Vladi", "FW", 23, 72),
+       ]},
      { id: "sui_sga", name: "St. Gallen", short: "SGA", colors: ["#00A650", "#FFFFFF"], tier: 2, squad: [] },
      { id: "sui_zur", name: "Zürich", short: "ZUR", colors: ["#005CA9", "#FFFFFF"], tier: 2, squad: [] },
      { id: "sui_lau", name: "Lausanne", short: "LAU", colors: ["#005CA9", "#FFFFFF"], tier: 2, squad: [] },
@@ -879,8 +1501,20 @@
 
    // ---- CROATIA (HNL: quadruple round-robin) ----
    const RAW_HR_HNL = [
-     { id: "cro_din", name: "Dinamo Zagreb", short: "DIN", city: "Zagreb", stadium: "Maksimir", colors: ["#005CA9", "#FFFFFF"], tier: 4, squad: [] },
-     { id: "cro_haj", name: "Hajduk Split", short: "HAJ", city: "Split", stadium: "Poljud", colors: ["#005CA9", "#FFFFFF"], tier: 4, squad: [] },
+     { id: "cro_din", name: "Dinamo Zagreb", short: "DIN", city: "Zagreb", stadium: "Maksimir", colors: ["#005CA9", "#FFFFFF"], tier: 4,
+       squad: [
+         P("Ivan Nevistić", "GK", 27, 74),
+         P("Scott McKenna", "DF", 29, 75), P("Maroje Brajković", "DF", 22, 73), P("Moris Valinčić", "DF", 25, 73), P("Stefan Ristovski", "DF", 34, 72), P("Mario Stojaković", "DF", 22, 72),
+         P("Dejan Ljubičić", "MF", 27, 75), P("Josip Mišić", "MF", 31, 74), P("Miha Zajc", "MF", 31, 74), P("Gabriel Vidović", "MF", 22, 74), P("Luka Stojković", "MF", 20, 73),
+         P("Bruno Petković", "FW", 31, 76), P("Sandro Kulenović", "FW", 25, 74), P("Arber Hoxha", "FW", 26, 74), P("Dion Drena Beljo", "FW", 23, 74),
+       ]},
+     { id: "cro_haj", name: "Hajduk Split", short: "HAJ", city: "Split", stadium: "Poljud", colors: ["#005CA9", "#FFFFFF"], tier: 4,
+       squad: [
+         P("Ivan Lučić", "GK", 30, 73),
+         P("Zvonimir Šarlija", "DF", 29, 73), P("Filip Uremović", "DF", 28, 73), P("Niko Sigur", "DF", 24, 73), P("Dario Melnjak", "DF", 32, 72), P("Branimir Mlačić", "DF", 22, 72),
+         P("Filip Krovinović", "MF", 30, 75), P("Emir Sahiti", "MF", 25, 74), P("Rokas Pukštas", "MF", 21, 74), P("Nikola Kalinić", "MF", 27, 73), P("Anthony Kalik", "MF", 27, 73),
+         P("Marko Livaja", "FW", 32, 77), P("Adrion Pajaziti", "FW", 21, 72), P("Roko Brajković", "FW", 20, 72),
+       ]},
      { id: "cro_rij", name: "Rijeka", short: "RIJ", city: "Rijeka", stadium: "Rujevica", colors: ["#FFFFFF", "#005CA9"], tier: 3, squad: [] },
      { id: "cro_osi", name: "Osijek", short: "OSI", city: "Osijek", stadium: "Opus Arena", colors: ["#005CA9", "#FFFFFF"], tier: 3, squad: [] },
      { id: "cro_sla", name: "Slaven Belupo", short: "SLA", colors: ["#005CA9", "#FFFFFF"], tier: 2, squad: [] },
@@ -907,7 +1541,13 @@
 
    // ---- HUNGARY (NB I: triple round-robin, no split) ----
    const RAW_HU_NB1 = [
-     { id: "hun_fer", name: "Ferencváros", short: "FER", city: "Budapest", stadium: "Groupama Aréna", colors: ["#00A650", "#FFFFFF"], tier: 4, squad: [] },
+     { id: "hun_fer", name: "Ferencváros", short: "FER", city: "Budapest", stadium: "Groupama Aréna", colors: ["#00A650", "#FFFFFF"], tier: 4,
+       squad: [
+         P("Dénes Dibusz", "GK", 35, 74),
+         P("Cebrail Makreckis", "DF", 25, 72), P("Samy Mmaee", "DF", 28, 73), P("Raul Gustavo", "DF", 26, 73), P("Ibrahim Cissé", "DF", 24, 73), P("Eldar ÄiviÄ", "DF", 29, 72),
+         P("Naby Keïta", "MF", 31, 74), P("Mohammed Abu Fani", "MF", 27, 74), P("Kristoffer Zachariassen", "MF", 31, 73), P("Callum O'Dowda", "MF", 30, 73), P("Gabi Kanichowsky", "MF", 27, 73),
+         P("Barnabás Varga", "FW", 26, 75), P("Adama Traoré", "FW", 30, 73), P("Aleksandar Pešić", "FW", 34, 72),
+       ]},
      { id: "hun_pus", name: "Puskás Akadémia", short: "PUS", city: "Felcsút", stadium: "Pancho Aréna", colors: ["#005CA9", "#FFD700"], tier: 3, squad: [] },
      { id: "hun_pak", name: "Paks", short: "PAK", colors: ["#00A650", "#FFFFFF"], tier: 3, squad: [] },
      { id: "hun_feh", name: "Fehérvár", short: "FEH", colors: ["#E30613", "#005CA9"], tier: 2, squad: [] },
@@ -946,24 +1586,132 @@
 
    // ---- FRANCE (Ligue 1 / Ligue 2 / National / National 2) ----
    const RAW_FR_FL1 = [
-     { id: "fra_psg", name: "Paris Saint-Germain", short: "PSG", city: "Paris", stadium: "Parc des Princes", colors: ["#004170", "#E30613"], tier: 5, squad: [] },
-     { id: "fra_mar", name: "Marseille", short: "MAR", city: "Marseille", stadium: "Vélodrome", colors: ["#2FAEE0", "#FFFFFF"], tier: 4, squad: [] },
-     { id: "fra_mon", name: "Monaco", short: "MON", city: "Monaco", stadium: "Louis II", colors: ["#E30613", "#FFFFFF"], tier: 4, squad: [] },
-     { id: "fra_lil", name: "Lille", short: "LIL", city: "Lille", stadium: "Pierre-Mauroy", colors: ["#E30613", "#005CA9"], tier: 4, squad: [] },
-     { id: "fra_lyo", name: "Lyon", short: "LYO", city: "Lyon", stadium: "Groupama Stadium", colors: ["#005CA9", "#E30613"], tier: 3, squad: [] },
-     { id: "fra_nic", name: "Nice", short: "NIC", city: "Nice", stadium: "Allianz Riviera", colors: ["#E30613", "#000000"], tier: 3, squad: [] },
-     { id: "fra_len", name: "Lens", short: "LEN", city: "Lens", stadium: "Bollaert-Delelis", colors: ["#FFD700", "#E30613"], tier: 3, squad: [] },
-     { id: "fra_ren", name: "Rennes", short: "REN", city: "Rennes", stadium: "Roazhon Park", colors: ["#E30613", "#000000"], tier: 3, squad: [] },
-     { id: "fra_str", name: "Strasbourg", short: "STR", colors: ["#005CA9", "#FFFFFF"], tier: 2, squad: [] },
-     { id: "fra_bre", name: "Brest", short: "BRE", colors: ["#E30613", "#FFFFFF"], tier: 2, squad: [] },
-     { id: "fra_tou", name: "Toulouse", short: "TOU", colors: ["#4B2E83", "#FFFFFF"], tier: 2, squad: [] },
-     { id: "fra_nan", name: "Nantes", short: "NAN", colors: ["#FFD700", "#00A650"], tier: 2, squad: [] },
-     { id: "fra_lha", name: "Le Havre", short: "LHA", colors: ["#005CA9", "#87CEEB"], tier: 2, squad: [] },
-     { id: "fra_rei", name: "Reims", short: "REI", colors: ["#E30613", "#FFFFFF"], tier: 2, squad: [] },
-     { id: "fra_aux", name: "Auxerre", short: "AUX", colors: ["#005CA9", "#FFFFFF"], tier: 2, squad: [] },
-     { id: "fra_ang", name: "Angers", short: "ANG", colors: ["#000000", "#FFFFFF"], tier: 2, squad: [] },
-     { id: "fra_set", name: "Saint-Étienne", short: "SET", colors: ["#00A650", "#FFFFFF"], tier: 2, squad: [] },
-     { id: "fra_mtp", name: "Montpellier", short: "MTP", colors: ["#005CA9", "#FF6600"], tier: 2, squad: [] },
+     { id: "fra_psg", name: "Paris Saint-Germain", short: "PSG", city: "Paris", stadium: "Parc des Princes", colors: ["#004170", "#E30613"], tier: 5,
+       squad: [
+         P("Lucas Chevalier", "GK", 24, 81), P("Matvey Safonov", "GK", 27, 77),
+         P("Marquinhos", "DF", 32, 84), P("Willian Pacho", "DF", 25, 83), P("Achraf Hakimi", "DF", 28, 86), P("Nuno Mendes", "DF", 24, 84), P("Lucas Beraldo", "DF", 22, 78), P("Lucas Hernández", "DF", 30, 79), P("Presnel Kimpembe", "DF", 31, 76),
+         P("Vitinha", "MF", 26, 86), P("João Neves", "MF", 22, 84), P("Fabián Ruiz", "MF", 30, 83), P("Warren Zaïre-Emery", "MF", 20, 82), P("Lee Kang-in", "MF", 25, 80), P("Senny Mayulu", "MF", 20, 77),
+         P("Ousmane Dembélé", "FW", 29, 88), P("Khvicha Kvaratskhelia", "FW", 25, 87), P("Bradley Barcola", "FW", 24, 84), P("Désiré Doué", "FW", 21, 83), P("Gonçalo Ramos", "FW", 25, 80),
+       ]},
+     { id: "fra_mar", name: "Marseille", short: "MAR", city: "Marseille", stadium: "Vélodrome", colors: ["#2FAEE0", "#FFFFFF"], tier: 4,
+       squad: [
+         P("Gerónimo Rulli", "GK", 34, 79), P("Jeffrey de Lange", "GK", 27, 72),
+         P("Leonardo Balerdi", "DF", 27, 79), P("Facundo Medina", "DF", 27, 78), P("CJ Egan-Riley", "DF", 24, 76), P("Emerson", "DF", 27, 76), P("Amir Murillo", "DF", 30, 75), P("Ulisses Garcia", "DF", 29, 74),
+         P("Pierre-Emile Højbjerg", "MF", 31, 80), P("Geoffrey Kondogbia", "MF", 33, 77), P("Angel Gomes", "MF", 26, 78), P("Matt O'Riley", "MF", 25, 79), P("Arthur Vermeeren", "MF", 21, 77),
+         P("Mason Greenwood", "FW", 25, 82), P("Amine Gouiri", "FW", 26, 79), P("Igor Paixão", "FW", 26, 79), P("Pierre-Emerick Aubameyang", "FW", 37, 78), P("Neal Maupay", "FW", 30, 75),
+       ]},
+     { id: "fra_mon", name: "Monaco", short: "MON", city: "Monaco", stadium: "Louis II", colors: ["#E30613", "#FFFFFF"], tier: 4,
+       squad: [
+         P("Philipp Köhn", "GK", 28, 77), P("Radosław Majecki", "GK", 26, 74),
+         P("Thilo Kehrer", "DF", 30, 78), P("Mohammed Salisu", "DF", 27, 78), P("Vanderson", "DF", 25, 79), P("Caio Henrique", "DF", 29, 77), P("Jordan Teze", "DF", 27, 76), P("Eric Dier", "DF", 32, 77),
+         P("Denis Zakaria", "MF", 29, 81), P("Maghnes Akliouche", "MF", 24, 81), P("Aleksandr Golovin", "MF", 30, 79), P("Lamine Camara", "MF", 22, 79), P("Paul Pogba", "MF", 33, 76),
+         P("Folarin Balogun", "FW", 25, 79), P("Mika Biereth", "FW", 23, 79), P("Takumi Minamino", "FW", 31, 77), P("Ansu Fati", "FW", 24, 77), P("George Ilenikhena", "FW", 20, 76),
+       ]},
+     { id: "fra_lil", name: "Lille", short: "LIL", city: "Lille", stadium: "Pierre-Mauroy", colors: ["#E30613", "#005CA9"], tier: 4,
+       squad: [
+         P("Berke Özer", "GK", 26, 76), P("Arnaud Bodart", "GK", 28, 75),
+         P("Alexsandro", "DF", 26, 78), P("Nathan Ngoy", "DF", 22, 75), P("Aïssa Mandi", "DF", 34, 74), P("Thomas Meunier", "DF", 34, 74), P("Gabriel Gudmundsson", "DF", 27, 76), P("Ismaily", "DF", 36, 72),
+         P("Benjamin André", "MF", 35, 76), P("Ayyoub Bouaddi", "MF", 19, 77), P("Ngal'ayel Mukau", "MF", 21, 76), P("Rémy Cabella", "MF", 36, 75), P("Ethan Mbappé", "MF", 19, 74),
+         P("Olivier Giroud", "FW", 40, 76), P("Hamza Igamane", "FW", 23, 77), P("Félix Correia", "FW", 25, 75), P("Matias Fernandez-Pardo", "FW", 20, 75), P("Osame Sahraoui", "FW", 24, 76),
+       ]},
+     { id: "fra_lyo", name: "Lyon", short: "LYO", city: "Lyon", stadium: "Groupama Stadium", colors: ["#005CA9", "#E30613"], tier: 3,
+       squad: [
+         P("Rémy Descamps", "GK", 29, 74), P("Dominik Greif", "GK", 29, 74),
+         P("Moussa Niakhaté", "DF", 30, 77), P("Clinton Mata", "DF", 33, 76), P("Nicolás Tagliafico", "DF", 34, 76), P("Abner", "DF", 26, 75), P("Saël Kumbedi", "DF", 21, 75), P("Ainsley Maitland-Niles", "DF", 29, 76),
+         P("Corentin Tolisso", "MF", 32, 78), P("Tanner Tessmann", "MF", 24, 77), P("Pavel Šulc", "MF", 25, 78), P("Tyler Morton", "MF", 23, 77), P("Nemanja Matić", "MF", 38, 75),
+         P("Malick Fofana", "FW", 21, 79), P("Martín Satriano", "FW", 25, 75), P("Afonso Moreira", "FW", 21, 74), P("Rachid Ghezzal", "FW", 34, 73),
+       ]},
+     { id: "fra_nic", name: "Nice", short: "NIC", city: "Nice", stadium: "Allianz Riviera", colors: ["#E30613", "#000000"], tier: 3,
+       squad: [
+         P("Marcin Bułka", "GK", 26, 78), P("Teddy Boulhendi", "GK", 24, 72),
+         P("Dante", "DF", 43, 72), P("Moïse Bombito", "DF", 26, 77), P("Melvin Bard", "DF", 26, 76), P("Antoine Mendy", "DF", 22, 74), P("Ali Abdi", "DF", 32, 74), P("Mohamed Abdelmonem", "DF", 27, 74),
+         P("Hicham Boudaoui", "MF", 27, 76), P("Sofiane Diop", "MF", 26, 77), P("Pablo Rosario", "MF", 29, 76), P("Morgan Sanson", "MF", 32, 75), P("Tom Louchet", "MF", 21, 73),
+         P("Terem Moffi", "FW", 27, 78), P("Jérémie Boga", "FW", 29, 77), P("Mohamed-Ali Cho", "FW", 22, 76), P("Kevin Carlos", "FW", 24, 75),
+       ]},
+     { id: "fra_len", name: "Lens", short: "LEN", city: "Lens", stadium: "Bollaert-Delelis", colors: ["#FFD700", "#E30613"], tier: 3,
+       squad: [
+         P("Robin Risser", "GK", 21, 74), P("Hervé Koffi", "GK", 29, 74),
+         P("Jonathan Gradit", "DF", 33, 74), P("Malang Sarr", "DF", 27, 75), P("Ruben Aguilar", "DF", 33, 73), P("Deiver Machado", "DF", 32, 74), P("Jhoanner Chávez", "DF", 23, 74), P("Ismaël Boura", "DF", 24, 73),
+         P("Adrien Thomasson", "MF", 32, 75), P("Andy Diouf", "MF", 23, 77), P("Hamzat Ojediran", "MF", 22, 73), P("Adrien Louveau", "MF", 21, 72),
+         P("Florian Sotoca", "FW", 35, 76), P("Odsonne Édouard", "FW", 28, 76), P("Wesley Saïd", "FW", 31, 74), P("Rayan Fofana", "FW", 20, 74),
+       ]},
+     { id: "fra_ren", name: "Rennes", short: "REN", city: "Rennes", stadium: "Roazhon Park", colors: ["#E30613", "#000000"], tier: 3,
+       squad: [
+         P("Brice Samba", "GK", 32, 79), P("Gauthier Gallon", "GK", 32, 73),
+         P("Christopher Wooh", "DF", 24, 77), P("Anthony Rouault", "DF", 25, 75), P("Jérémy Jacquet", "DF", 20, 75), P("Alidu Seidu", "DF", 26, 74), P("Brendan Chardonnet", "DF", 31, 74), P("Przemysław Frankowski", "DF", 31, 75),
+         P("Valentin Rongier", "MF", 31, 78), P("Djaoui Cissé", "MF", 21, 75), P("Azor Matusiwa", "MF", 27, 76), P("Ludovic Blas", "MF", 28, 77), P("Kader Meïté", "MF", 20, 74),
+         P("Esteban Lepaul", "FW", 25, 76), P("Breel Embolo", "FW", 29, 78), P("Jordan James", "FW", 21, 75), P("Henrik Meister", "FW", 22, 74),
+       ]},
+     { id: "fra_str", name: "Strasbourg", short: "STR", colors: ["#005CA9", "#FFFFFF"], tier: 2,
+       squad: [
+         P("Mike Penders", "GK", 20, 75), P("Alaa Bellaarouch", "GK", 21, 71),
+         P("Ismaël Doukouré", "DF", 23, 75), P("Abakar Sylla", "DF", 23, 74), P("Guela Doué", "DF", 23, 76), P("Marvin Senaya", "DF", 23, 74), P("Thomas Delaine", "DF", 33, 72), P("Mamadou Sarr", "DF", 20, 74),
+         P("Dilane Bakwa", "MF", 23, 78), P("Andrey Santos", "MF", 22, 78), P("Sebastian Nanasi", "MF", 23, 75), P("Valentín Barco", "MF", 21, 76), P("Pape Diong", "MF", 20, 73),
+         P("Emanuel Emegha", "FW", 23, 78), P("Joaquín Panichelli", "FW", 23, 76), P("Félix Lemaréchal", "FW", 20, 74), P("Abdoul Ouattara", "FW", 20, 73),
+       ]},
+     { id: "fra_bre", name: "Brest", short: "BRE", colors: ["#E30613", "#FFFFFF"], tier: 2,
+       squad: [
+         P("Marco Bizot", "GK", 35, 76), P("Grégoire Coudert", "GK", 26, 73),
+         P("Bradley Locko", "DF", 24, 75), P("Soumaïla Coulibaly", "DF", 22, 74), P("Kenny Lala", "DF", 34, 73), P("Massadio Haïdara", "DF", 33, 72), P("Julien Le Cardinal", "DF", 28, 73), P("Lilian Brassier", "DF", 26, 75),
+         P("Pierre Lees-Melou", "MF", 32, 76), P("Hugo Magnetti", "MF", 28, 74), P("Romain Del Castillo", "MF", 30, 75), P("Kamory Doumbia", "MF", 23, 75), P("Mahdi Camara", "MF", 27, 74),
+         P("Ludovic Ajorque", "FW", 32, 77), P("Abdallah Sima", "FW", 24, 76), P("Mama Baldé", "FW", 30, 74), P("Jérémy Le Douaron", "FW", 27, 74),
+       ]},
+     { id: "fra_tou", name: "Toulouse", short: "TOU", colors: ["#4B2E83", "#FFFFFF"], tier: 2,
+       squad: [
+         P("Guillaume Restes", "GK", 21, 77), P("Alban Lafont", "GK", 27, 76),
+         P("Charlie Cresswell", "DF", 24, 76), P("Rasmus Nicolaisen", "DF", 28, 73), P("Kevin Keben", "DF", 22, 73), P("Mikkel Desler", "DF", 30, 73), P("Warren Kamanzi", "DF", 24, 73), P("Jaydee Canvot", "DF", 19, 73),
+         P("Vincent Sierro", "MF", 30, 76), P("Cristian Cásseres", "MF", 26, 75), P("Aron Dønnum", "MF", 27, 75), P("Shavy Babicka", "MF", 22, 73),
+         P("Yann Gboho", "FW", 24, 75), P("Frank Magri", "FW", 26, 74), P("Santiago Hidalgo", "FW", 21, 73), P("Emersonn", "FW", 24, 76),
+       ]},
+     { id: "fra_nan", name: "Nantes", short: "NAN", colors: ["#FFD700", "#00A650"], tier: 2,
+       squad: [
+         P("Anthony Lopes", "GK", 36, 75), P("Patrik Carlgren", "GK", 33, 72),
+         P("Nicolas Cozza", "DF", 27, 74), P("Jean-Charles Castelletto", "DF", 31, 74), P("Nathan Zézé", "DF", 21, 75), P("Chidozie Awaziem", "DF", 29, 73), P("Jean-Kévin Duverne", "DF", 28, 73), P("Tylel Tati", "DF", 19, 73),
+         P("Pedro Chirivella", "MF", 28, 75), P("Douglas Augusto", "MF", 28, 74), P("Johann Lepenant", "MF", 24, 75), P("Kwon Hyeok-kyu", "MF", 24, 74), P("Sorba Thomas", "MF", 27, 74),
+         P("Matthis Abline", "FW", 23, 77), P("Mostafa Mohamed", "FW", 28, 76), P("Herba Guirassy", "FW", 22, 73), P("Bahereba Guirassy", "FW", 20, 72),
+       ]},
+     { id: "fra_lha", name: "Le Havre", short: "LHA", colors: ["#005CA9", "#87CEEB"], tier: 2,
+       squad: [
+         P("Mory Diaw", "GK", 32, 73), P("Arthur Desmas", "GK", 31, 71),
+         P("Arouna Sangante", "DF", 23, 73), P("Étienne Youte Kinkoue", "DF", 23, 73), P("Gautier Lloris", "DF", 28, 72), P("Christopher Opéri", "DF", 28, 72), P("Yoann Salmier", "DF", 33, 72), P("Emmanuel Sabbi", "DF", 28, 72),
+         P("Rassoul Ndiaye", "MF", 24, 73), P("Daler Kuzyaev", "MF", 32, 74), P("Abdoulaye Touré", "MF", 32, 74), P("Gökhan Gül", "MF", 27, 72), P("Yassine Kechta", "MF", 22, 73),
+         P("Issa Soumaré", "FW", 24, 73), P("Simon Ebonog", "FW", 21, 72), P("Godson Kyeremeh", "FW", 24, 72), P("Ahmed Hassan", "FW", 23, 72),
+       ]},
+     { id: "fra_rei", name: "Reims", short: "REI", colors: ["#E30613", "#FFFFFF"], tier: 2,
+       squad: [
+         P("Yehvann Diouf", "GK", 26, 74), P("Alexandre Olliero", "GK", 29, 71),
+         P("Yunis Abdelhamid", "DF", 38, 73), P("Cédric Kipré", "DF", 29, 74), P("Sergio Akieme", "DF", 28, 73), P("Thibault De Smet", "DF", 27, 72), P("Joseph Okumu", "DF", 28, 74), P("Maxime Busi", "DF", 26, 72),
+         P("Valentin Atangana", "MF", 20, 74), P("Teddy Teuma", "MF", 32, 74), P("Sekou Keita", "MF", 22, 73), P("Yaya Fofana", "MF", 24, 73), P("Ibrahim Diakité", "MF", 23, 72),
+         P("Keito Nakamura", "FW", 26, 76), P("Mohamed Daramy", "FW", 24, 75), P("Oumar Diakité", "FW", 22, 73), P("Amadou Koné", "FW", 22, 72),
+       ]},
+     { id: "fra_aux", name: "Auxerre", short: "AUX", colors: ["#005CA9", "#FFFFFF"], tier: 2,
+       squad: [
+         P("Donovan Léon", "GK", 33, 72), P("Théo De Percin", "GK", 24, 70),
+         P("Jubal", "DF", 32, 72), P("Clément Akpa", "DF", 25, 72), P("Sinaly Diomandé", "DF", 25, 73), P("Paul Joly", "DF", 26, 72), P("Gideon Mensah", "DF", 28, 72), P("Marvin Tshibuabua", "DF", 24, 72),
+         P("Gaëtan Perrin", "MF", 29, 74), P("Elisha Owusu", "MF", 28, 74), P("Rayan Raveloson", "MF", 29, 73), P("Lassine Sinayoko", "MF", 26, 74), P("Kevin Danois", "MF", 22, 71),
+         P("Sékou Mara", "FW", 24, 74), P("Ado Onaiwu", "FW", 30, 73), P("Hamed Traoré", "FW", 26, 75), P("Danay Ba", "FW", 22, 71),
+       ]},
+     { id: "fra_ang", name: "Angers", short: "ANG", colors: ["#000000", "#FFFFFF"], tier: 2,
+       squad: [
+         P("Yahia Fofana", "GK", 25, 73), P("Paul Bernardoni", "GK", 29, 74),
+         P("Chico Lamba", "DF", 23, 73), P("Yan Valery", "DF", 27, 73), P("Jacques Ekomié", "DF", 30, 72), P("Lilian Raolisoa", "DF", 22, 72), P("Ondřej Mihálik", "DF", 28, 71), P("Emmanuel Bianchini", "DF", 21, 71),
+         P("Himad Abdelli", "MF", 26, 76), P("Jim Allevinah", "MF", 30, 73), P("Marius Courcoul", "MF", 21, 72), P("Yassin Belkhdim", "MF", 22, 72), P("Jean-Eudes Aholou", "MF", 32, 73),
+         P("Sidiki Chérif", "FW", 22, 73), P("Bamba Dieng", "FW", 26, 75), P("Farid El Melali", "FW", 28, 73), P("Zinédine Ould Khaled", "FW", 21, 72),
+       ]},
+     { id: "fra_set", name: "Saint-Étienne", short: "SET", colors: ["#00A650", "#FFFFFF"], tier: 2,
+       squad: [
+         P("Gautier Larsonneur", "GK", 29, 74), P("Brian Barnard", "GK", 22, 70),
+         P("Mickaël Nadé", "DF", 26, 73), P("Dylan Batubinsika", "DF", 30, 74), P("Dennis Appiah", "DF", 34, 72), P("Yvann Maçon", "DF", 27, 72), P("Léo Pétrot", "DF", 29, 72), P("Maxime Bernauer", "DF", 27, 72),
+         P("Pierre Ekwah", "MF", 24, 75), P("Aïmen Moueffek", "MF", 25, 74), P("Florian Tardieu", "MF", 33, 73), P("Benjamin Bouchouari", "MF", 24, 74), P("Igor Miladinović", "MF", 22, 73),
+         P("Lucas Stassin", "FW", 21, 77), P("Zuriko Davitashvili", "FW", 25, 77), P("Irvin Cardona", "FW", 28, 74), P("Ibrahim Sissoko", "FW", 28, 74),
+       ]},
+     { id: "fra_mtp", name: "Montpellier", short: "MTP", colors: ["#005CA9", "#FF6600"], tier: 2,
+       squad: [
+         P("Benjamin Lecomte", "GK", 34, 74), P("Dimitry Bertaud", "GK", 27, 73),
+         P("Théo Sainte-Luce", "DF", 24, 72), P("Modibo Sagnan", "DF", 26, 72), P("Enzo Tchato", "DF", 23, 73), P("Kiki Kouyaté", "DF", 28, 73), P("Christopher Jullien", "DF", 33, 73), P("Falaye Sacko", "DF", 30, 72),
+         P("Jordan Ferri", "MF", 33, 73), P("Téji Savanier", "MF", 34, 76), P("Joris Chotard", "MF", 24, 74), P("Khalil Fayad", "MF", 22, 74), P("Wahbi Khazri", "MF", 35, 73),
+         P("Musa Al-Taamari", "FW", 28, 76), P("Arnaud Nordin", "FW", 27, 74), P("Andy Delort", "FW", 34, 74), P("Junior Ndiaye", "FW", 22, 72),
+       ]},
    ];
    const RAW_FR_FL2 = [
      { id: "fra_met", name: "Metz", short: "MET", colors: ["#8A1538", "#FFFFFF"], tier: 2, squad: [] },
@@ -1146,8 +1894,20 @@
    // FURTHER UEFA NATIONS (batch 2) — top flight + second tier each.
    // =========================================================================
    const RAW_CZ_CZ1 = [
-     { id: "cze_sla", name: "Slavia Praha", short: "SLA", colors: ["#E30613", "#FFFFFF"], tier: 4, squad: [] },
-     { id: "cze_spa", name: "Sparta Praha", short: "SPA", colors: ["#8A1538", "#FFD700"], tier: 4, squad: [] },
+     { id: "cze_sla", name: "Slavia Praha", short: "SLA", colors: ["#E30613", "#FFFFFF"], tier: 4,
+       squad: [
+         P("Jindřich Staněk", "GK", 29, 77),
+         P("David Zima", "DF", 26, 75), P("Igoh Ogbu", "DF", 26, 75), P("David Jurásek", "DF", 25, 75), P("David Douděra", "DF", 27, 74), P("Štěpán Chaloupek", "DF", 22, 73),
+         P("Christos Zafeiris", "MF", 23, 76), P("Lukáš Provod", "MF", 29, 76), P("Oscar Dorley", "MF", 27, 74), P("Dominik Javorček", "MF", 25, 73), P("Michal Sadílek", "MF", 26, 73),
+         P("Tomáš Chorý", "FW", 31, 76), P("Ivan Schranz", "FW", 32, 75), P("Mojmír Chytil", "FW", 27, 75), P("Vasil Kušej", "FW", 27, 74),
+       ]},
+     { id: "cze_spa", name: "Sparta Praha", short: "SPA", colors: ["#8A1538", "#FFD700"], tier: 4,
+       squad: [
+         P("Peter Vindahl", "GK", 27, 75),
+         P("Asger Sørensen", "DF", 29, 74), P("Filip Panák", "DF", 30, 74), P("James Gomez", "DF", 23, 73), P("Angelo Preciado", "DF", 27, 74), P("Jaroslav Zelený", "DF", 33, 72),
+         P("Kaan Kairinen", "MF", 27, 75), P("Lukáš Haraslín", "MF", 29, 77), P("Veljko Birmančević", "MF", 27, 76), P("Qazim Laçi", "MF", 29, 73), P("Lukáš Sadílek", "MF", 29, 73),
+         P("Victor Olatunji", "FW", 26, 75), P("Albion Rrahmani", "FW", 25, 74), P("Ermal Krasniqi", "FW", 27, 73),
+       ]},
      { id: "cze_plz", name: "Viktoria Plzeň", short: "PLZ", colors: ["#005CA9", "#E30613"], tier: 3, squad: [] },
      { id: "cze_ban", name: "Baník Ostrava", short: "BAN", colors: ["#005CA9", "#FFFFFF"], tier: 3, squad: [] },
      { id: "cze_olo", name: "Sigma Olomouc", short: "OLO", colors: ["#005CA9", "#FFFFFF"], tier: 2, squad: [] },
@@ -1181,8 +1941,20 @@
    ];
 
    const RAW_SR_SR1 = [
-     { id: "srb_czv", name: "Crvena zvezda", short: "CZV", colors: ["#E30613", "#FFFFFF"], tier: 4, squad: [] },
-     { id: "srb_par", name: "Partizan", short: "PAR", colors: ["#000000", "#FFFFFF"], tier: 4, squad: [] },
+     { id: "srb_czv", name: "Crvena zvezda", short: "CZV", colors: ["#E30613", "#FFFFFF"], tier: 4,
+       squad: [
+         P("Omri Glazer", "GK", 29, 76),
+         P("Uroš Spajić", "DF", 32, 74), P("Seol Young-woo", "DF", 27, 73), P("Veljko Milosavljević", "DF", 18, 74), P("Milan Rodić", "DF", 34, 72), P("Nikola Stanković", "DF", 22, 72),
+         P("Timi Max Elšnik", "MF", 27, 76), P("Mirko Ivanić", "MF", 32, 76), P("Guélor Kanga", "MF", 35, 74), P("Kings Kangwa", "MF", 26, 74), P("Andrija Maksimović", "MF", 18, 75),
+         P("Marko Arnautović", "FW", 37, 76), P("Cherif Ndiaye", "FW", 29, 74), P("Nemanja Radonjić", "FW", 30, 75), P("Felício Milson", "FW", 25, 73),
+       ]},
+     { id: "srb_par", name: "Partizan", short: "PAR", colors: ["#000000", "#FFFFFF"], tier: 4,
+       squad: [
+         P("Aleksandar Jovanović", "GK", 26, 72),
+         P("Svetozar Marković", "DF", 25, 73), P("Aldo Kalulu", "DF", 29, 73), P("Slobodan Urošević", "DF", 28, 72), P("Nemanja Trifunović", "DF", 22, 72), P("Marko Milovanović", "DF", 22, 72),
+         P("Bibras Natcho", "MF", 37, 73), P("Vanja Dragojević", "MF", 24, 72), P("Andrej Kostić", "MF", 21, 73), P("Nemanja Jović", "MF", 22, 72), P("Mateus Fernandes", "MF", 22, 72),
+         P("Jovan Milošević", "FW", 21, 74), P("Milan Vukotić", "FW", 24, 72), P("Bogdan Kostić", "FW", 22, 72),
+       ]},
      { id: "srb_voj", name: "Vojvodina", short: "VOJ", colors: ["#E30613", "#FFFFFF"], tier: 3, squad: [] },
      { id: "srb_tsc", name: "TSC Bačka Topola", short: "TSC", colors: ["#005CA9", "#FFD700"], tier: 2, squad: [] },
      { id: "srb_cuk", name: "Čukarički", short: "CUK", colors: ["#005CA9", "#000000"], tier: 2, squad: [] },
@@ -1216,8 +1988,20 @@
    ];
 
    const RAW_UA_UA1 = [
-     { id: "ukr_sha", name: "Shakhtar Donetsk", short: "SHA", colors: ["#FF6600", "#000000"], tier: 4, squad: [] },
-     { id: "ukr_dyn", name: "Dynamo Kyiv", short: "DYN", colors: ["#005CA9", "#FFFFFF"], tier: 4, squad: [] },
+     { id: "ukr_sha", name: "Shakhtar Donetsk", short: "SHA", colors: ["#FF6600", "#000000"], tier: 4,
+       squad: [
+         P("Dmytro Riznyk", "GK", 26, 76),
+         P("Mykola Matviyenko", "DF", 29, 77), P("Yukhym Konoplia", "DF", 26, 75), P("Valeriy Bondar", "DF", 26, 74), P("Irakli Azarovi", "DF", 23, 74), P("Vinícius Tobias", "DF", 22, 74),
+         P("Georgiy Sudakov", "MF", 23, 80), P("Pedrinho", "MF", 27, 76), P("Marlon Gomes", "MF", 22, 75), P("Oleh Ocheretko", "MF", 21, 74), P("Dmytro Kryskiv", "MF", 22, 73),
+         P("Kaua Elias", "FW", 20, 75), P("Eguinaldo", "FW", 21, 75), P("Lucas Ferreira", "FW", 19, 74),
+       ]},
+     { id: "ukr_dyn", name: "Dynamo Kyiv", short: "DYN", colors: ["#005CA9", "#FFFFFF"], tier: 4,
+       squad: [
+         P("Ruslan Neshcheret", "GK", 23, 75),
+         P("Denys Popov", "DF", 26, 74), P("Oleksandr Tymchyk", "DF", 28, 74), P("Taras Mykhavko", "DF", 21, 74), P("Kostiantyn Vivcharenko", "DF", 24, 73), P("Christian Bilovar", "DF", 26, 73),
+         P("Mykola Shaparenko", "MF", 27, 76), P("Volodymyr Brazhko", "MF", 23, 76), P("Nazar Voloshyn", "MF", 23, 75), P("Oleksandr Pikhalyonok", "MF", 23, 74), P("Serhiy Buletsa", "MF", 26, 73),
+         P("Andriy Yarmolenko", "FW", 37, 74), P("Vladyslav Kabaiev", "FW", 30, 74), P("Matvii Ponomarenko", "FW", 19, 73),
+       ]},
      { id: "ukr_zor", name: "Zorya Luhansk", short: "ZOR", colors: ["#000000", "#E30613"], tier: 3, squad: [] },
      { id: "ukr_dn1", name: "Dnipro-1", short: "DN1", colors: ["#005CA9", "#FFFFFF"], tier: 2, squad: [] },
      { id: "ukr_vor", name: "Vorskla", short: "VOR", colors: ["#00A650", "#FFFFFF"], tier: 2, squad: [] },
@@ -1251,10 +2035,28 @@
    ];
 
    const RAW_SE_SE1 = [
-     { id: "swe_mal", name: "Malmö FF", short: "MAL", colors: ["#0072CE", "#FFFFFF"], tier: 4, squad: [] },
+     { id: "swe_mal", name: "Malmö FF", short: "MAL", colors: ["#0072CE", "#FFFFFF"], tier: 4,
+       squad: [
+         P("Melker Ellborg", "GK", 27, 72),
+         P("Pontus Jansson", "DF", 35, 73), P("Gabriel Busanello", "DF", 27, 72), P("Hugo Bolin", "DF", 21, 72), P("Colin Rösler", "DF", 26, 72),
+         P("Sergio Peña", "MF", 30, 73), P("Adi Nalić", "MF", 27, 72), P("Alexander Fransson", "MF", 31, 72), P("Johan Grahn", "MF", 22, 71),
+         P("Isaac Kiese Thelin", "FW", 33, 73), P("Erik Botheim", "FW", 26, 74), P("Taha Ali", "FW", 26, 72),
+       ]},
      { id: "swe_aik", name: "AIK", short: "AIK", colors: ["#000000", "#FFD700"], tier: 3, squad: [] },
-     { id: "swe_dju", name: "Djurgården", short: "DJU", colors: ["#005CA9", "#E30613"], tier: 3, squad: [] },
-     { id: "swe_ham", name: "Hammarby", short: "HAM", colors: ["#00A650", "#FFFFFF"], tier: 3, squad: [] },
+     { id: "swe_dju", name: "Djurgården", short: "DJU", colors: ["#005CA9", "#E30613"], tier: 3,
+       squad: [
+         P("Jacob Rinne", "GK", 32, 72),
+         P("Jacob Une Larsson", "DF", 30, 72), P("Marcus Danielson", "DF", 36, 72), P("Elliot Käck", "DF", 35, 71), P("Adam Adouani", "DF", 22, 71),
+         P("Hampus Finndell", "MF", 26, 73), P("Magnus Eriksson", "MF", 35, 73), P("Rasmus Schüller", "MF", 34, 72), P("Besard Sabovic", "MF", 26, 72),
+         P("Tobias Gulliksen", "FW", 22, 73), P("Joel Asoro", "FW", 26, 73), P("Tokmac Nguen", "FW", 32, 73),
+       ]},
+     { id: "swe_ham", name: "Hammarby", short: "HAM", colors: ["#00A650", "#FFFFFF"], tier: 3,
+       squad: [
+         P("Davor Blažević", "GK", 30, 72),
+         P("Simon Strand", "DF", 26, 72), P("Casper Källqvist", "DF", 22, 71), P("Nikola Vasić", "DF", 24, 71), P("Adam Ström", "DF", 22, 71),
+         P("Nahir Besara", "MF", 34, 73), P("Abdelrahman Saidi", "MF", 22, 72), P("Tesfaldet Tekie", "MF", 27, 72), P("Victor Djukanovic", "MF", 24, 72),
+         P("Deniz Hümmet", "FW", 26, 73), P("Jusef Erabi", "FW", 23, 73), P("Sander Svartedal", "FW", 23, 71),
+       ]},
      { id: "swe_gbg", name: "IFK Göteborg", short: "GBG", colors: ["#005CA9", "#FFFFFF"], tier: 3, squad: [] },
      { id: "swe_elf", name: "IF Elfsborg", short: "ELF", colors: ["#FFD700", "#000000"], tier: 3, squad: [] },
      { id: "swe_hac", name: "BK Häcken", short: "HAC", colors: ["#FFD700", "#000000"], tier: 3, squad: [] },
@@ -1286,9 +2088,27 @@
    ];
 
    const RAW_NO_NO1 = [
-     { id: "nor_bod", name: "Bodø/Glimt", short: "BOD", colors: ["#FFD700", "#000000"], tier: 4, squad: [] },
-     { id: "nor_mol", name: "Molde", short: "MOL", colors: ["#005CA9", "#FFFFFF"], tier: 3, squad: [] },
-     { id: "nor_bra", name: "Brann", short: "BRA", colors: ["#E30613", "#FFFFFF"], tier: 3, squad: [] },
+     { id: "nor_bod", name: "Bodø/Glimt", short: "BOD", colors: ["#FFD700", "#000000"], tier: 4,
+       squad: [
+         P("Nikita Haikin", "GK", 30, 74),
+         P("Brede Moe", "DF", 30, 73), P("Odin Bjørtuft", "DF", 25, 73), P("Villads Nielsen", "DF", 23, 73), P("Fredrik Sjøvold", "DF", 24, 72),
+         P("Patrick Berg", "MF", 28, 75), P("Håkon Evjen", "MF", 25, 74), P("Ulrik Saltnes", "MF", 33, 73), P("Sondre Brunstad Fet", "MF", 27, 73),
+         P("Kasper Høgh", "FW", 28, 74), P("Andreas Helmersen", "FW", 26, 73), P("Sondre Auklend", "FW", 24, 73), P("Ole Blomberg", "FW", 27, 73),
+       ]},
+     { id: "nor_mol", name: "Molde", short: "MOL", colors: ["#005CA9", "#FFFFFF"], tier: 3,
+       squad: [
+         P("Oliver Petersen", "GK", 22, 71),
+         P("Martin Bjørnbak", "DF", 33, 72), P("Kristoffer Haugen", "DF", 31, 72), P("Valon Zumberi", "DF", 23, 72), P("Mathis Bolly", "DF", 35, 71),
+         P("Emil Breivik", "MF", 25, 73), P("Kristian Eriksen", "MF", 27, 72), P("Mathias Løvik", "MF", 24, 72), P("Magnus Wolff Eikrem", "MF", 35, 73),
+         P("Ola Brynhildsen", "FW", 27, 73), P("Isak Amundsen", "FW", 21, 72), P("Endre Kupen", "FW", 23, 72),
+       ]},
+     { id: "nor_bra", name: "Brann", short: "BRA", colors: ["#E30613", "#FFFFFF"], tier: 3,
+       squad: [
+         P("Mathias Dyngeland", "GK", 30, 72),
+         P("Japhet Sery Larsen", "DF", 26, 72), P("Ruben Kristiansen", "DF", 34, 71), P("Fredrik Pallesen Knudsen", "DF", 24, 72), P("Vetle Dragsnes", "DF", 30, 72),
+         P("Felix Horn Myhre", "MF", 26, 72), P("Emil Kornvig", "MF", 27, 72), P("Bård Finne", "MF", 30, 72), P("Magnus Knudsen", "MF", 24, 72),
+         P("Aune Heggebø", "FW", 24, 73), P("Noah Holm", "FW", 27, 73), P("Bassel Jradi", "FW", 32, 72),
+       ]},
      { id: "nor_ros", name: "Rosenborg", short: "ROS", colors: ["#FFFFFF", "#000000"], tier: 3, squad: [] },
      { id: "nor_vik", name: "Viking", short: "VIK", colors: ["#005CA9", "#FFFFFF"], tier: 3, squad: [] },
      { id: "nor_lil", name: "Lillestrøm", short: "LIL", colors: ["#FFD700", "#000000"], tier: 2, squad: [] },
@@ -1321,7 +2141,13 @@
    ];
 
    const RAW_RO_RO1 = [
-     { id: "rou_fcs", name: "FCSB", short: "FCS", colors: ["#E30613", "#005CA9"], tier: 4, squad: [] },
+     { id: "rou_fcs", name: "FCSB", short: "FCS", colors: ["#E30613", "#005CA9"], tier: 4,
+       squad: [
+         P("Ștefan Târnovanu", "GK", 25, 74),
+         P("Siyabonga Ngezana", "DF", 27, 73), P("Mihai Popescu", "DF", 32, 72), P("Joyskim Dawa", "DF", 30, 72), P("Risto Radunović", "DF", 33, 72), P("Valentin Crețu", "DF", 37, 71),
+         P("Darius Olaru", "MF", 27, 75), P("Florin Tănase", "MF", 31, 75), P("Adrian Șut", "MF", 26, 73), P("Baba Alhassan", "MF", 26, 72), P("Vlad Chiricheș", "MF", 36, 73),
+         P("Daniel Bîrligea", "FW", 25, 74), P("David Miculescu", "FW", 24, 73), P("Juri Cisotti", "FW", 31, 72), P("Marius Ștefănescu", "FW", 27, 72),
+       ]},
      { id: "rou_cfr", name: "CFR Cluj", short: "CFR", colors: ["#8A1538", "#FFFFFF"], tier: 3, squad: [] },
      { id: "rou_ucr", name: "U. Craiova", short: "UCR", colors: ["#005CA9", "#FFFFFF"], tier: 3, squad: [] },
      { id: "rou_rap", name: "Rapid București", short: "RAP", colors: ["#8A1538", "#FFFFFF"], tier: 3, squad: [] },
@@ -1357,11 +2183,19 @@
 
    const RAW_CY_CY1 = [
      { id: "cyp_apo", name: "APOEL", short: "APO", colors: ["#FFD700", "#005CA9"], tier: 3, squad: [] },
-     { id: "cyp_omo", name: "Omonia", short: "OMO", colors: ["#00A650", "#FFFFFF"], tier: 3, squad: [] },
+     { id: "cyp_omo", name: "Omonia", short: "OMO", colors: ["#00A650", "#FFFFFF"], tier: 3,
+       squad: [
+         P("Loizos Loizou", "MF", 24, 73), P("Willy Semedo", "FW", 32, 73), P("Nikolas Panagiotou", "DF", 27, 72),
+         P("Bruno Felipe", "MF", 27, 72), P("Charalampos Kyriakou", "MF", 31, 72),
+       ]},
      { id: "cyp_aek", name: "AEK Larnaca", short: "AEK", colors: ["#FFD700", "#005CA9"], tier: 3, squad: [] },
      { id: "cyp_ari", name: "Aris Limassol", short: "ARI", colors: ["#005CA9", "#FFD700"], tier: 3, squad: [] },
      { id: "cyp_apl", name: "Apollon", short: "APL", colors: ["#005CA9", "#FFFFFF"], tier: 2, squad: [] },
-     { id: "cyp_paf", name: "Pafos", short: "PAF", colors: ["#005CA9", "#E30613"], tier: 2, squad: [] },
+     { id: "cyp_paf", name: "Pafos", short: "PAF", colors: ["#005CA9", "#E30613"], tier: 2,
+       squad: [
+         P("David Luiz", "DF", 39, 74), P("Mislav Oršić", "FW", 33, 74), P("Domingos Quina", "MF", 26, 73),
+         P("Jajá", "FW", 30, 73), P("João Correia", "FW", 26, 73), P("Pêpê Rodrigues", "MF", 28, 72), P("Vlad Dragomir", "MF", 26, 73),
+       ]},
      { id: "cyp_ael", name: "AEL Limassol", short: "AEL", colors: ["#FFD700", "#005CA9"], tier: 2, squad: [] },
      { id: "cyp_ano", name: "Anorthosis", short: "ANO", colors: ["#005CA9", "#FFFFFF"], tier: 2, squad: [] },
      { id: "cyp_eth", name: "Ethnikos Achna", short: "ETH", colors: ["#E30613", "#005CA9"], tier: 2, squad: [] },
@@ -1389,7 +2223,13 @@
    ];
 
    const RAW_SK_SK1 = [
-     { id: "svk_slo", name: "Slovan Bratislava", short: "SLO", colors: ["#005CA9", "#FFFFFF"], tier: 4, squad: [] },
+     { id: "svk_slo", name: "Slovan Bratislava", short: "SLO", colors: ["#005CA9", "#FFFFFF"], tier: 4,
+       squad: [
+         P("Dominik Takáč", "GK", 27, 72),
+         P("Guram Kashia", "DF", 38, 72), P("Kenan Bajrić", "DF", 30, 72), P("Lukáš Pauschek", "DF", 33, 72), P("César Blackman", "DF", 27, 72), P("Sebastian Kóša", "DF", 22, 72),
+         P("Juraj Kucka", "MF", 39, 73), P("Marko Tolić", "MF", 27, 73), P("Tigran Barseghyan", "MF", 32, 73), P("Ibrahim Rabii", "MF", 26, 72),
+         P("David Strelec", "FW", 24, 75), P("Mykola Kukharevych", "FW", 24, 73), P("Nino Marcelli", "FW", 24, 72), P("Rahim Ibrahim", "FW", 23, 72),
+       ]},
      { id: "svk_trn", name: "Spartak Trnava", short: "TRN", colors: ["#000000", "#E30613"], tier: 3, squad: [] },
      { id: "svk_zil", name: "Žilina", short: "ZIL", colors: ["#00A650", "#FFD700"], tier: 3, squad: [] },
      { id: "svk_dac", name: "Dunajská Streda", short: "DAC", colors: ["#FFD700", "#005CA9"], tier: 2, squad: [] },
@@ -1429,7 +2269,11 @@
    const RAW_SVN1 = [
      { id: "svn_oli", name: "Olimpija Ljubljana", short: "OLI", colors: ["#00A650", "#FFFFFF"], tier: 3, squad: [] },
      { id: "svn_mar", name: "Maribor", short: "MAR", colors: ["#4B2E83", "#FFD700"], tier: 3, squad: [] },
-     { id: "svn_cel", name: "Celje", short: "CEL", colors: ["#005CA9", "#FFD700"], tier: 3, squad: [] },
+     { id: "svn_cel", name: "Celje", short: "CEL", colors: ["#005CA9", "#FFD700"], tier: 3,
+       squad: [
+         P("Franko Kovačević", "FW", 26, 75), P("Aljoša Matko", "FW", 25, 73), P("Žan Karničnik", "DF", 30, 73),
+         P("Mark Zabukovnik", "MF", 22, 73), P("Nikita Iosifov", "MF", 22, 72), P("Klemen Nemanič", "DF", 22, 72),
+       ]},
      { id: "svn_mur", name: "Mura", short: "MUR", colors: ["#000000", "#FFFFFF"], tier: 2, squad: [] },
      { id: "svn_kop", name: "Koper", short: "KOP", colors: ["#00A650", "#FFFFFF"], tier: 2, squad: [] },
      { id: "svn_bra", name: "Bravo", short: "BRA", colors: ["#FFD700", "#000000"], tier: 2, squad: [] },
@@ -1453,8 +2297,20 @@
 
    // --- ISRAEL (Ligat ha'Al, split 7/7) ---
    const RAW_ISR1 = [
-     { id: "isr_mtl", name: "Maccabi Tel Aviv", short: "MTL", colors: ["#FFD700", "#005CA9"], tier: 4, squad: [] },
-     { id: "isr_mha", name: "Maccabi Haifa", short: "MHA", colors: ["#00A650", "#FFFFFF"], tier: 4, squad: [] },
+     { id: "isr_mtl", name: "Maccabi Tel Aviv", short: "MTL", colors: ["#FFD700", "#005CA9"], tier: 4,
+       squad: [
+         P("Roi Mishpati", "GK", 25, 72),
+         P("Tyrese Asante", "DF", 25, 73), P("Roy Revivo", "DF", 25, 72), P("Sean Goldberg", "DF", 27, 72), P("Idan Nachmias", "DF", 25, 72),
+         P("Dor Peretz", "MF", 30, 73), P("Ethan Azoulay", "MF", 22, 73), P("Osher Davida", "MF", 24, 73), P("Gaoussou Diarra", "MF", 24, 72),
+         P("Sagiv Jehezkel", "FW", 30, 74), P("Dor Turgeman", "FW", 22, 73), P("Elad Madmon", "FW", 23, 72),
+       ]},
+     { id: "isr_mha", name: "Maccabi Haifa", short: "MHA", colors: ["#00A650", "#FFFFFF"], tier: 4,
+       squad: [
+         P("Josh Cohen", "GK", 33, 72),
+         P("Abdoulaye Seck", "DF", 33, 73), P("Pierre Cornud", "DF", 28, 72), P("Daniel Sundgren", "DF", 34, 72), P("Ilay Feingold", "DF", 22, 72),
+         P("Ali Mohamed", "MF", 28, 73), P("Mahmoud Jaber", "MF", 23, 73), P("Goni Naor", "MF", 24, 72), P("Dolev Haziza", "MF", 29, 73),
+         P("Dean David", "FW", 28, 73), P("Frantzdy Pierrot", "FW", 30, 73), P("Suf Podgoreanu", "FW", 24, 72),
+       ]},
      { id: "isr_hbs", name: "Hapoel Beer Sheva", short: "HBS", colors: ["#E30613", "#FFFFFF"], tier: 3, squad: [] },
      { id: "isr_htl", name: "Hapoel Tel Aviv", short: "HTL", colors: ["#E30613", "#FFFFFF"], tier: 3, squad: [] },
      { id: "isr_bei", name: "Beitar Jerusalem", short: "BEI", colors: ["#FFD700", "#000000"], tier: 3, squad: [] },
@@ -1511,7 +2367,13 @@
 
    // --- BULGARIA (Parva Liga, split 8/8) ---
    const RAW_BUL1 = [
-     { id: "bul_lud", name: "Ludogorets", short: "LUD", colors: ["#00A650", "#FFFFFF"], tier: 4, squad: [] },
+     { id: "bul_lud", name: "Ludogorets", short: "LUD", colors: ["#00A650", "#FFFFFF"], tier: 4,
+       squad: [
+         P("Sergio Padt", "GK", 35, 73),
+         P("Igor Plastun", "DF", 35, 72), P("Olivier Verdon", "DF", 30, 73), P("Anton Nedyalkov", "DF", 33, 72), P("Son", "DF", 27, 72), P("Dinis Almeida", "DF", 32, 72),
+         P("Rick", "MF", 28, 73), P("Show", "MF", 33, 72), P("Dominik Yankov", "MF", 25, 72), P("Ivan Yordanov", "MF", 22, 72),
+         P("Kwadwo Duah", "FW", 28, 74), P("Erick Marcus", "FW", 22, 73), P("Matías Tissera", "FW", 24, 73), P("Nonso Anselm", "FW", 24, 72),
+       ]},
      { id: "bul_csk", name: "CSKA Sofia", short: "CSK", colors: ["#E30613", "#FFFFFF"], tier: 3, squad: [] },
      { id: "bul_lev", name: "Levski Sofia", short: "LEV", colors: ["#005CA9", "#FFFFFF"], tier: 3, squad: [] },
      { id: "bul_lpl", name: "Lokomotiv Plovdiv", short: "LPL", colors: ["#000000", "#E30613"], tier: 2, squad: [] },
@@ -1601,7 +2463,11 @@
 
    // --- REPUBLIC OF IRELAND (Premier Division, quad) ---
    const RAW_IRL1 = [
-     { id: "irl_sha", name: "Shamrock Rovers", short: "SHA", colors: ["#00A650", "#FFFFFF"], tier: 3, squad: [] },
+     { id: "irl_sha", name: "Shamrock Rovers", short: "SHA", colors: ["#00A650", "#FFFFFF"], tier: 3,
+       squad: [
+         P("Jack Byrne", "MF", 29, 74), P("Graham Burke", "FW", 32, 73), P("Roberto Lopes", "DF", 33, 72),
+         P("Lee Grace", "DF", 32, 72), P("Rory Gaffney", "FW", 36, 72), P("Josh Honohan", "DF", 24, 72),
+       ]},
      { id: "irl_she", name: "Shelbourne", short: "SHE", colors: ["#E30613", "#FFFFFF"], tier: 2, squad: [] },
      { id: "irl_der", name: "Derry City", short: "DER", colors: ["#E30613", "#FFFFFF"], tier: 2, squad: [] },
      { id: "irl_stp", name: "St Patrick's", short: "STP", colors: ["#E30613", "#FFFFFF"], tier: 2, squad: [] },
@@ -1737,7 +2603,13 @@
 
    // --- AZERBAIJAN (Premier League, quad) ---
    const RAW_AZE1 = [
-     { id: "aze_qar", name: "Qarabağ", short: "QAR", colors: ["#000000", "#FFFFFF"], tier: 3, squad: [] },
+     { id: "aze_qar", name: "Qarabağ", short: "QAR", colors: ["#000000", "#FFFFFF"], tier: 3,
+       squad: [
+         P("Mateusz Kochalski", "GK", 25, 73),
+         P("Bahlul Mustafazade", "DF", 28, 74), P("Elvin Cafarquliyev", "DF", 24, 73), P("Kevin Medina", "DF", 30, 73), P("Badavi Guseynov", "DF", 34, 72), P("Matheus Silva", "DF", 25, 73),
+         P("Marko Janković", "MF", 30, 73), P("Abdellah Zoubir", "MF", 34, 75), P("Leandro Andrade", "MF", 26, 74), P("Toral Bayramov", "MF", 25, 73), P("Ibrahima Wadji", "MF", 30, 72),
+         P("Nariman Akhundzade", "FW", 22, 75), P("Juninho", "FW", 28, 73), P("Emmanuel Addai", "FW", 24, 73), P("Kady Borges", "FW", 30, 73),
+       ]},
      { id: "aze_nef", name: "Neftçi", short: "NEF", colors: ["#000000", "#FFFFFF"], tier: 3, squad: [] },
      { id: "aze_zir", name: "Zira", short: "ZIR", colors: ["#005CA9", "#FFD700"], tier: 2, squad: [] },
      { id: "aze_sab", name: "Sabah", short: "SAB", colors: ["#005CA9", "#FFFFFF"], tier: 2, squad: [] },
@@ -1763,8 +2635,16 @@
 
    // --- KAZAKHSTAN (Premier League) ---
    const RAW_KAZ1 = [
-     { id: "kaz_ast", name: "Astana", short: "AST", colors: ["#FFD700", "#005CA9"], tier: 3, squad: [] },
-     { id: "kaz_kai", name: "Kairat", short: "KAI", colors: ["#FFD700", "#000000"], tier: 3, squad: [] },
+     { id: "kaz_ast", name: "Astana", short: "AST", colors: ["#FFD700", "#005CA9"], tier: 3,
+       squad: [
+         P("Marin Tomasov", "FW", 37, 73), P("Abzal Beysebekov", "DF", 33, 72), P("Askhat Tagybergen", "MF", 36, 72),
+         P("Dušan Jovančić", "MF", 31, 72),
+       ]},
+     { id: "kaz_kai", name: "Kairat", short: "KAI", colors: ["#FFD700", "#000000"], tier: 3,
+       squad: [
+         P("Dastan Satpaev", "FW", 18, 75), P("Jorginho", "FW", 27, 73), P("Valeriy Gromyko", "MF", 24, 72),
+         P("Aleksandr Martynovich", "DF", 38, 72),
+       ]},
      { id: "kaz_tob", name: "Tobol", short: "TOB", colors: ["#005CA9", "#FFFFFF"], tier: 2, squad: [] },
      { id: "kaz_akt", name: "Aktobe", short: "AKT", colors: ["#E30613", "#FFFFFF"], tier: 2, squad: [] },
      { id: "kaz_ord", name: "Ordabasy", short: "ORD", colors: ["#005CA9", "#FFD700"], tier: 2, squad: [] },
@@ -1793,7 +2673,11 @@
 
    // --- GEORGIA (Erovnuli Liga, quad) ---
    const RAW_GEO1 = [
-     { id: "geo_dtb", name: "Dinamo Tbilisi", short: "DTB", colors: ["#005CA9", "#FFFFFF"], tier: 3, squad: [] },
+     { id: "geo_dtb", name: "Dinamo Tbilisi", short: "DTB", colors: ["#005CA9", "#FFFFFF"], tier: 3,
+       squad: [
+         P("Giorgi Kvernadze", "FW", 23, 74), P("Luka Gagnidze", "MF", 22, 73), P("Nika Kvekveskiri", "MF", 34, 72),
+         P("Saba Sazonov", "DF", 23, 73),
+       ]},
      { id: "geo_dba", name: "Dinamo Batumi", short: "DBA", colors: ["#005CA9", "#FFFFFF"], tier: 2, squad: [] },
      { id: "geo_tor", name: "Torpedo Kutaisi", short: "TOR", colors: ["#E30613", "#FFFFFF"], tier: 2, squad: [] },
      { id: "geo_ibe", name: "Iberia 1999", short: "IBE", colors: ["#005CA9", "#E30613"], tier: 2, squad: [] },

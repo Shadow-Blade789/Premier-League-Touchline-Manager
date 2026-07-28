@@ -28,6 +28,7 @@ const Fitness = {
     (club.squad || []).forEach(p => {
       if (typeof p.fitness !== "number") p.fitness = 100;
       if (typeof p.injuryWeeks !== "number") p.injuryWeeks = 0;
+      if (typeof p.suspendedMatches !== "number") p.suspendedMatches = 0;
     });
   },
 
@@ -109,7 +110,7 @@ const Fitness = {
   seasonRollover(state) {
     const club = state.clubs.find(c => c.id === state.clubId);
     if (!club || !club.squad) return;
-    club.squad.forEach(p => { p.fitness = 100; p.injuryWeeks = 0; delete p._played; });
+    club.squad.forEach(p => { p.fitness = 100; p.injuryWeeks = 0; p.suspendedMatches = 0; delete p._played; });
   },
 
   // ---- UI helpers -----------------------------------------------------------
