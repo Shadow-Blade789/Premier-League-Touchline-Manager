@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PLFC Touchline Manager</title>
 <meta name="description" content="A Premier League club-management sim — pick your club, run the transfer market, set your lineup, and live the season.">
-<link rel="stylesheet" href="css/styles.css?v=49">
+<link rel="stylesheet" href="css/styles.css?v=51">
 </head>
 <body>
 
@@ -188,6 +188,23 @@
     </div>
   </section>
 
+  <!-- ============ PENALTY SHOOTOUT ============ -->
+  <section class="screen hidden" id="screen-shootout">
+    <div class="panel" id="shootoutPanel">
+      <div class="shootout-head">
+        <h2 id="shootoutTitle" style="margin:0;">Penalty Shootout</h2>
+        <div class="shootout-score" id="shootoutScore">0 – 0</div>
+      </div>
+      <div class="shootout-tallies" id="shootoutTallies"></div>
+      <div class="shootout-banner" id="shootoutBanner">—</div>
+      <div class="goal-wrap" id="goalWrap"></div>
+      <p class="muted shootout-hint" id="shootoutHint"></p>
+      <div style="text-align:center;">
+        <button class="primary hidden" id="btnShootoutContinue">Continue</button>
+      </div>
+    </div>
+  </section>
+
   <!-- ============ ACADEMY ============ -->
   <section class="screen hidden" id="screen-academy">
     <div class="panel">
@@ -289,7 +306,20 @@
         <button data-speed="2" class="speed-btn">2x</button>
         <button data-speed="4" class="speed-btn">4x</button>
       </div>
+      <button id="btnMatchSubs" class="hidden">🔁 Subs</button>
       <button id="btnMatchSkip">Skip to Full Time</button>
+    </div>
+
+    <div class="subs-panel hidden" id="subsPanel">
+      <div class="subs-head">
+        <span class="eyebrow">Substitutions — <span id="subsLeft">5</span> left</span>
+        <button class="small primary" id="btnSubsClose">Resume ▶</button>
+      </div>
+      <p class="muted" id="subsHint" style="font-size:0.78rem;margin:0.3rem 0 0.6rem;">Tap a player on the pitch, then a bench player to bring on.</p>
+      <div class="subs-cols">
+        <div><div class="eyebrow" style="margin-bottom:0.3rem;">On pitch</div><div id="subsOn"></div></div>
+        <div><div class="eyebrow" style="margin-bottom:0.3rem;">Bench</div><div id="subsBench"></div></div>
+      </div>
     </div>
 
     <div class="commentary-feed" id="commentaryFeed"></div>
@@ -304,22 +334,23 @@
 
 </div>
 
-<script src="js/data.js?v=49"></script>
-<script src="js/state.js?v=49"></script>
-<script src="js/lineup.js?v=49"></script>
-<script src="js/match.js?v=49"></script>
-<script src="js/stats.js?v=49"></script>
-<script src="js/cup.js?v=49"></script>
-<script src="js/vertu.js?v=49"></script>
-<script src="js/europe.js?v=49"></script>
-<script src="js/season.js?v=49"></script>
-<script src="js/squad.js?v=49"></script>
-<script src="js/coaches.js?v=49"></script>
-<script src="js/academy.js?v=49"></script>
-<script src="js/scouting.js?v=49"></script>
-<script src="js/fitness.js?v=49"></script>
-<script src="js/dynamics.js?v=49"></script>
-<script src="js/ui.js?v=49"></script>
-<script src="js/main.js?v=49"></script>
+<script src="js/data.js?v=51"></script>
+<script src="js/state.js?v=51"></script>
+<script src="js/lineup.js?v=51"></script>
+<script src="js/match.js?v=51"></script>
+<script src="js/stats.js?v=51"></script>
+<script src="js/cup.js?v=51"></script>
+<script src="js/vertu.js?v=51"></script>
+<script src="js/europe.js?v=51"></script>
+<script src="js/season.js?v=51"></script>
+<script src="js/squad.js?v=51"></script>
+<script src="js/coaches.js?v=51"></script>
+<script src="js/academy.js?v=51"></script>
+<script src="js/scouting.js?v=51"></script>
+<script src="js/fitness.js?v=51"></script>
+<script src="js/shootout.js?v=51"></script>
+<script src="js/dynamics.js?v=51"></script>
+<script src="js/ui.js?v=51"></script>
+<script src="js/main.js?v=51"></script>
 </body>
 </html>

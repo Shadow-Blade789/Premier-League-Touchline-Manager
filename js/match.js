@@ -263,6 +263,122 @@
   
       return { timeline, hg, ag, hStarters, aStarters, homeScorers, awayScorers, reds };
     },
+
+    // A LIVE, steppable match the manager can intervene in (make subs). The user's
+    // side is driven minute-by-minute so substitutions genuinely change what happens
+    // next; the AI side auto-subs on the hour. Tracks per-player minutes for the
+    // user's club so fitness drain can be proportional to time on the pitch.
+    liveMatch(home, away, userClubId) {
+      const eng = this;
+      const H = this.sideRatings(home), A = this.sideRatings(away);
+      const hStart = (H.starters || this.tempStarters(home)).slice();
+      const aStart = (A.starters || this.tempStarters(away)).slice();
+      const userSide = home.id === userClubId ? "home" : away.id === userClubId ? "away" : null;
+      const formFactor = this.form();
+      const st = {
+        home, away, userSide,
+        hOn: hStart.slice(), aOn: aStart.slice(), hStart, aStart,
+        minute: 0, hg: 0, ag: 0, momentum: 50, done: false,
+        homeScorers: [], awayScorers: [], reds: [],
+        hSubsUsed: 0, aSubsUsed: 0, userSubsUsed: 0, USER_SUB_MAX: 5,
+        stoppage1: 1 + Math.floor(Math.random() * 4),
+        stoppage2: 1 + Math.floor(Math.random() * 6),
+        minutes: {}, seq: 0,
+      };
+      st.totalMinutes = 45 + st.stoppage1 + 45 + st.stoppage2;
+      (userSide === "home" ? hStart : userSide === "away" ? aStart : []).forEach(p => { st.minutes[p.id] = 0; });
+
+      const attackers = list => { const l = list.filter(p => p.pos === "FW" || p.pos === "MF"); return l.length ? l : list; };
+      function recalc() {
+        st.hAtt = eng.attackRating(st.hOn) * 1.04; st.hDef = eng.defenseRating(st.hOn);
+        st.aAtt = eng.attackRating(st.aOn); st.aDef = eng.defenseRating(st.aOn);
+        st.pHomeGoal = clamp(0.0130 * eng.goalRatio(st.hAtt, st.aDef) * formFactor, 0.004, 0.062);
+        st.pAwayGoal = clamp(0.0110 * eng.goalRatio(st.aAtt, st.hDef) * formFactor, 0.004, 0.058);
+      }
+      recalc();
+      const label = () => (st.minute <= 45 + st.stoppage1 ? Math.min(st.minute, 45) : Math.min(st.minute - st.stoppage1, 90));
+      const mk = (min, type, text, extra) => ({ minute: min, type, text, side: null, hg: st.hg, ag: st.ag, mom: Math.round(st.momentum), seq: st.seq++, ...extra });
+
+      return {
+        state: st,
+        subsLeft() { return st.USER_SUB_MAX - st.userSubsUsed; },
+        onPitchUser() { return (st.userSide === "home" ? st.hOn : st.userSide === "away" ? st.aOn : []).slice(); },
+
+        stepMinute() {
+          if (st.done) return [];
+          const events = [];
+          st.minute++;
+          const m = st.minute;
+          (st.userSide === "home" ? st.hOn : st.userSide === "away" ? st.aOn : []).forEach(p => { if (st.minutes[p.id] != null) st.minutes[p.id]++; });
+
+          if (m === 46 + st.stoppage1) events.push(mk(45, "half", fmt(pick(Commentary.half), { stadium: st.home.stadium })));
+
+          const driftTarget = 50 + (st.hAtt - st.aAtt + (st.aDef - st.hDef)) * 1.4;
+          st.momentum = clamp(st.momentum + (driftTarget - st.momentum) * 0.04 + (Math.random() - 0.5) * 6, 5, 95);
+          const isStoppage = (m > 45 && m <= 45 + st.stoppage1) || (m > 45 + st.stoppage1 + 45);
+          const lab = label();
+          const roll = Math.random();
+
+          if (roll < st.pHomeGoal) {
+            st.hg++; const s = eng.weightedScorer(attackers(st.hOn)); st.homeScorers.push(s.id);
+            events.push(mk(lab, "goal", fmt(pick(Commentary.goal), { player: s.name, team: st.home.name }), { side: "home", stoppage: isStoppage }));
+          } else if (roll < st.pHomeGoal + st.pAwayGoal) {
+            st.ag++; const s = eng.weightedScorer(attackers(st.aOn)); st.awayScorers.push(s.id);
+            events.push(mk(lab, "goal", fmt(pick(Commentary.goal), { player: s.name, team: st.away.name }), { side: "away", stoppage: isStoppage }));
+          } else if (roll < st.pHomeGoal + st.pAwayGoal + 0.05) {
+            const homeChance = Math.random() * 100 < st.momentum;
+            const team = homeChance ? st.home : st.away;
+            const p = eng.weightedScorer(attackers(homeChance ? st.hOn : st.aOn));
+            const flavor = Math.random();
+            const pool = flavor < 0.45 ? Commentary.chanceMiss : flavor < 0.85 ? Commentary.shotSaved : Commentary.woodwork;
+            events.push(mk(lab, "chance", fmt(pick(pool), { player: p.name, team: team.name }), { stoppage: isStoppage }));
+          } else if (roll < st.pHomeGoal + st.pAwayGoal + 0.06) {
+            const homeChance = Math.random() < 0.5;
+            const team = homeChance ? st.home : st.away;
+            const p = pick(homeChance ? st.hOn : st.aOn);
+            const isRed = Math.random() < 0.05;
+            if (isRed && p) st.reds.push({ side: homeChance ? "home" : "away", playerId: p.id, name: p.name });
+            events.push(mk(lab, isRed ? "red" : "yellow", fmt(pick(isRed ? Commentary.red : Commentary.yellow), { player: p.name, team: team.name }), { side: homeChance ? "home" : "away", playerId: p && p.id, stoppage: isStoppage }));
+          } else {
+            // AI auto-subs on the hour, but only for a side the user isn't managing.
+            const aiSub = (club, onArr, used, at) => {
+              if (m !== at || used() >= 1 || !club.lineup) return null;
+              const bench = club.lineup.bench.map(id => club.squad.find(pp => pp.id === id)).filter(Boolean);
+              if (!bench.length) return null;
+              const off = pick(onArr); const on = pick(bench);
+              const i = onArr.indexOf(off); if (i >= 0) onArr[i] = on;
+              return mk(lab, "sub", fmt(pick(Commentary.sub), { team: club.name, playerOff: off.name, playerOn: on.name }), { stoppage: isStoppage });
+            };
+            if (st.userSide !== "home") { const e = aiSub(st.home, st.hOn, () => st.hSubsUsed, 60 + (m > 45 ? st.stoppage1 : 0)); if (e) { st.hSubsUsed++; recalc(); events.push(e); } }
+            if (st.userSide !== "away") { const e = aiSub(st.away, st.aOn, () => st.aSubsUsed, 67 + (m > 45 ? st.stoppage1 : 0)); if (e) { st.aSubsUsed++; recalc(); events.push(e); } }
+          }
+
+          if (m >= st.totalMinutes) { st.done = true; events.push(mk(90, "full", fmt(pick(Commentary.full), {}), { stoppage: st.stoppage2 > 0 })); }
+          return events;
+        },
+
+        // Bring a bench player on for a starter (user's side only). Returns the
+        // commentary event, or null if it can't be done.
+        substitute(offId, onId) {
+          if (st.done || !st.userSide || st.userSubsUsed >= st.USER_SUB_MAX) return null;
+          const onArr = st.userSide === "home" ? st.hOn : st.aOn;
+          const club = st.userSide === "home" ? st.home : st.away;
+          const offP = onArr.find(p => p.id === offId);
+          const onP = (club.squad || []).find(p => p.id === onId);
+          if (!offP || !onP || onArr.some(p => p.id === onId)) return null;
+          onArr[onArr.indexOf(offP)] = onP;
+          st.userSubsUsed++;
+          if (st.minutes[onId] == null) st.minutes[onId] = 0; // starts accruing from now
+          recalc();
+          return mk(label(), "sub", fmt(pick(Commentary.sub), { team: club.name, playerOff: offP.name, playerOn: onP.name }), { stoppage: (st.minute > 45 && st.minute <= 45 + st.stoppage1) || (st.minute > 45 + st.stoppage1 + 45) });
+        },
+
+        result() {
+          return { hg: st.hg, ag: st.ag, hStarters: st.hStart, aStarters: st.aStart, homeScorers: st.homeScorers, awayScorers: st.awayScorers, reds: st.reds, timeline: [] };
+        },
+        minutesMap() { return st.minutes; },
+      };
+    },
   };
   
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }

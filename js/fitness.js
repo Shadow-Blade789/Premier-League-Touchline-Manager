@@ -52,17 +52,23 @@ const Fitness = {
 
   available(p) { return !p || !p.injuryWeeks; },   // selectable this week?
 
-  // Called from recordItem for every match the user's club plays. Drains the
-  // starters who featured; stacks across a congested week (cup + league + Euro).
-  recordMatch(club, starterIds) {
-    if (!club || club.strengthOnly || !club.squad) return;
+  // Position drain weight: goalkeepers barely tire (they play nearly every
+  // minute of every game in real life), outfield players tire in full.
+  posDrain(pos) { return pos === "GK" ? 0.4 : 1.0; },
+
+  // Called from recordItem for every match the user's club plays, with a map of
+  // {playerId: minutes}. Drain is proportional to minutes on the pitch (a 20-min
+  // cameo barely dents fitness), lighter for keepers, and lighter for young/fit
+  // legs (÷ stamina). Stacks across a congested week (cup + league + Euro).
+  recordMatch(club, minutesMap) {
+    if (!club || club.strengthOnly || !club.squad || !minutesMap) return;
     const [lo, spread] = this.MATCH_DRAIN;
-    const ids = new Set(starterIds);
     club.squad.forEach(p => {
-      if (!ids.has(p.id)) return;
+      const mins = minutesMap[p.id];
+      if (mins == null || mins <= 0) return;
       p._played = true;
-      // Veterans lose more per match, young/fit legs less (drain ÷ stamina).
-      p.fitness = clamp((p.fitness ?? 100) - (lo + Math.random() * spread) / this.staminaFactor(p), 5, 100);
+      const drain = (lo + Math.random() * spread) * clamp(mins / 90, 0, 1.1) * this.posDrain(p.pos) / this.staminaFactor(p);
+      p.fitness = clamp((p.fitness ?? 100) - drain, 5, 100);
     });
   },
 

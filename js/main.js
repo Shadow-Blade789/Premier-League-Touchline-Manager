@@ -570,9 +570,38 @@
       document.getElementById("screen-match").classList.remove("hidden");
     },
 
+    // Knockout ties the user is in that finished level go to an interactive
+    // shootout instead of an auto pen result.
+    SHOOTOUT_TYPES: ["cup", "shield", "supercopa-semi", "supercopa-final", "supercup", "qual"],
+    needsShootout(item) {
+      return !!item && !item.recorded && item.full && item.full.hg === item.full.ag
+        && this.SHOOTOUT_TYPES.includes(item.type);
+    },
+
     // Called by MatchPlayer the instant a live match reaches full time.
     onLiveMatchEnded() {
-      this.recordItem(this.currentItem);
+      const item = this.currentItem;
+      if (this.needsShootout(item)) {
+        Shootout.start(item.home, item.away, Game.state.clubId, winnerId => this.afterShootout(item, winnerId));
+        return; // defer recording until the shootout decides the winner
+      }
+      this.recordItem(item);
+    },
+
+    showShootoutScreen() {
+      ["hub", "squad", "market", "coaches", "academy", "lineup", "table"].forEach(t => document.getElementById("screen-" + t).classList.add("hidden"));
+      document.getElementById("screen-match").classList.add("hidden");
+      document.getElementById("screen-seasonend").classList.add("hidden");
+      document.getElementById("screen-shootout").classList.remove("hidden");
+      document.getElementById("tabs").classList.add("hidden"); // no navigating away mid-shootout
+    },
+
+    afterShootout(item, winnerId) {
+      Cup._pendingPenWinner = winnerId; // consumed by the pen resolution in recordItem
+      document.getElementById("screen-shootout").classList.add("hidden");
+      document.getElementById("tabs").classList.remove("hidden");
+      this.recordItem(item);
+      this.playNextInQueue();
     },
 
     // Apply a match's precomputed outcome to game state (idempotent).
@@ -585,7 +614,11 @@
       if (item.full && item.home && item.away && (item.home.id === state.clubId || item.away.id === state.clubId)) {
         const me = Game.myClub();
         if (me) {
-          if (me.lineup) Fitness.recordMatch(me, Lineup.starterIds(me.lineup));
+          // Minutes played come from the live match if it was played out; otherwise
+          // assume the starting XI did the full 90.
+          let minutes = item.userMinutes;
+          if (!minutes && me.lineup) { minutes = {}; Lineup.starterIds(me.lineup).forEach(id => { minutes[id] = 90; }); }
+          if (minutes) Fitness.recordMatch(me, minutes);
           // Any outstanding ban is served by sitting out this match; then new
           // red cards from this match start a one-match ban.
           (me.squad || []).forEach(p => { if (p.suspendedMatches > 0) p.suspendedMatches--; });
@@ -690,6 +723,14 @@
       document.getElementById("btnMatchStart").addEventListener("click", () => MatchPlayer.start());
       document.getElementById("btnMatchPause").addEventListener("click", () => MatchPlayer.pause());
       document.getElementById("btnMatchSkip").addEventListener("click", () => MatchPlayer.skip());
+      document.getElementById("btnMatchSubs").addEventListener("click", () => MatchPlayer.openSubs());
+      document.getElementById("btnSubsClose").addEventListener("click", () => { MatchPlayer.closeSubs(); MatchPlayer.start(); });
+      document.getElementById("subsPanel").addEventListener("click", e => {
+        const off = e.target.closest("button[data-suboff]");
+        if (off) { MatchPlayer.selectOff(off.dataset.suboff); return; }
+        const on = e.target.closest("button[data-subon]");
+        if (on && !on.disabled) MatchPlayer.doSub(on.dataset.subon);
+      });
       document.querySelectorAll(".speed-btn").forEach(btn => {
         btn.addEventListener("click", () => {
           document.querySelectorAll(".speed-btn").forEach(b => b.classList.remove("active"));
@@ -698,11 +739,17 @@
         });
       });
       document.getElementById("btnMatchContinue").addEventListener("click", () => this.finishMatch());
+      document.getElementById("goalWrap").addEventListener("click", e => {
+        const spot = e.target.closest("[data-spot]");
+        if (spot) Shootout.pick(Number(spot.dataset.spot));
+      });
+      document.getElementById("btnShootoutContinue").addEventListener("click", () => Shootout.onContinue());
     },
   
     // "Continue" after a live match — record it (if not already) and move on
     // to the next queued match, or finalise the week.
     finishMatch() {
+      if (this.needsShootout(this.currentItem)) return; // a shootout is deciding this tie
       this.recordItem(this.currentItem);
       this.playNextInQueue();
     },
@@ -733,7 +780,7 @@
     // from its precomputed result, advance the week. Returns true if it routed
     // to the season-end screen.
     wrapUpWeek() {
-      MatchPlayer.stop();
+      MatchPlayer.finishSilently(); // resolve the in-progress live match's result + minutes
       this.recordItem(this.currentItem);
       while (this.weekQueue.length) this.recordItem(this.weekQueue.shift());
       this.weekInProgress = false;
@@ -867,12 +914,13 @@
   // Pure visualiser — reveals a precomputed timeline. Recording the outcome
   // and advancing the week is App's job (App.onLiveMatchEnded / finalizeWeek).
   const MatchPlayer = {
-    home: null, away: null, timeline: [], idx: 0, speed: 1, timer: null, running: false,
+    home: null, away: null, lm: null, speed: 1, timer: null, running: false, interactive: false, selectedOff: null,
 
     load(home, away, full, meta) {
       this.home = home; this.away = away;
-      this.timeline = full.timeline; this.idx = 0;
-      this.speed = 1; this.running = false;
+      this.lm = MatchEngine.liveMatch(home, away, Game.state.clubId);
+      this.interactive = !!this.lm.state.userSide;
+      this.speed = 1; this.running = false; this.selectedOff = null;
       clearInterval(this.timer);
 
       const comp = document.getElementById("matchCompetition");
@@ -892,29 +940,37 @@
       document.getElementById("btnMatchStart").disabled = false;
       document.getElementById("btnMatchPause").disabled = true;
       document.getElementById("btnMatchContinue").classList.add("hidden");
+      document.getElementById("subsPanel").classList.add("hidden");
+      document.getElementById("btnMatchSubs").classList.toggle("hidden", !this.interactive);
+      this.updateSubsBtn();
       document.querySelectorAll(".speed-btn").forEach(b => b.classList.toggle("active", b.dataset.speed === "1"));
     },
-  
+
+    updateSubsBtn() {
+      const btn = document.getElementById("btnMatchSubs");
+      if (!this.interactive) { btn.classList.add("hidden"); return; }
+      const left = this.lm.subsLeft();
+      btn.disabled = left <= 0 || this.lm.state.done;
+      btn.textContent = "🔁 Subs (" + left + ")";
+    },
+
     start() {
-      if (this.idx >= this.timeline.length) return;
+      if (!this.lm || this.lm.state.done) return;
       this.running = true;
       document.getElementById("btnMatchStart").disabled = true;
       document.getElementById("btnMatchPause").disabled = false;
       document.getElementById("matchStatus").textContent = "Live";
       this.scheduleTick();
     },
-  
+
     scheduleTick() {
       clearInterval(this.timer);
-      const baseDelay = 650;
+      const baseDelay = 300; // one game-minute per tick
       this.timer = setInterval(() => this.tick(), baseDelay / this.speed);
     },
-  
-    setSpeed(n) {
-      this.speed = n;
-      if (this.running) this.scheduleTick();
-    },
-  
+
+    setSpeed(n) { this.speed = n; if (this.running) this.scheduleTick(); },
+
     pause() {
       this.running = false;
       clearInterval(this.timer);
@@ -922,50 +978,106 @@
       document.getElementById("btnMatchPause").disabled = true;
       document.getElementById("matchStatus").textContent = "Paused";
     },
-  
+
     tick() {
-      if (this.idx >= this.timeline.length) { this.endMatch(); return; }
-      const evt = this.timeline[this.idx++];
-      this.reveal(evt);
-      if (this.idx >= this.timeline.length) this.endMatch();
+      if (this.lm.state.done) { this.endMatch(); return; }
+      this.lm.stepMinute().forEach(e => this.reveal(e));
+      this.updateClock();
+      if (this.lm.state.done) this.endMatch();
     },
-  
+
+    clockLabel() {
+      const st = this.lm.state, m = st.minute;
+      const lab = m <= 45 + st.stoppage1 ? Math.min(m, 45) : Math.min(m - st.stoppage1, 90);
+      const stopp = (m > 45 && m <= 45 + st.stoppage1) || (m > 45 + st.stoppage1 + 45);
+      return lab + (stopp ? "+" : "") + "'";
+    },
+    updateClock() {
+      const st = this.lm.state;
+      document.getElementById("matchScore").textContent = `${st.hg} – ${st.ag}`;
+      document.getElementById("matchClock").textContent = this.clockLabel();
+      document.getElementById("momHome").style.width = Math.round(st.momentum) + "%";
+      document.getElementById("momAway").style.width = (100 - Math.round(st.momentum)) + "%";
+    },
+
     reveal(evt) {
-      document.getElementById("matchScore").textContent = `${evt.hg} – ${evt.ag}`;
-      document.getElementById("matchClock").textContent = evt.minute + (evt.stoppage ? "+" : "") + "'";
-      if (typeof evt.mom === "number") {
-        document.getElementById("momHome").style.width = evt.mom + "%";
-        document.getElementById("momAway").style.width = (100 - evt.mom) + "%";
-      }
       const feed = document.getElementById("commentaryFeed");
       const item = document.createElement("div");
       item.className = "feed-item " + evt.type;
       item.innerHTML = `<div class="min mono">${evt.minute}${evt.stoppage ? "+" : ""}'</div><div>${evt.text}</div>`;
       feed.appendChild(item);
     },
-  
+
     skip() {
-      clearInterval(this.timer);
-      this.running = false;
-      while (this.idx < this.timeline.length) {
-        this.reveal(this.timeline[this.idx++]);
-      }
+      clearInterval(this.timer); this.running = false;
+      document.getElementById("subsPanel").classList.add("hidden");
+      while (!this.lm.state.done) this.lm.stepMinute().forEach(e => this.reveal(e));
+      this.updateClock();
       this.endMatch();
     },
-  
-    stop() {
-      clearInterval(this.timer);
-      this.running = false;
+
+    stop() { clearInterval(this.timer); this.running = false; },
+
+    // Finish the sim to full-time with no UI (used when bailing out of a week).
+    finishSilently() {
+      clearInterval(this.timer); this.running = false;
+      while (this.lm && !this.lm.state.done) this.lm.stepMinute();
+      this.writeResult();
     },
 
-    // Called the moment the last event is revealed. Hands off to App to record
-    // the result; App decides whether another match or the week-end follows.
+    // Push the live result + minutes onto the current item so recordItem uses them.
+    writeResult() {
+      if (!this.lm || !App.currentItem) return;
+      App.currentItem.full = { ...App.currentItem.full, ...this.lm.result() };
+      App.currentItem.userMinutes = this.lm.minutesMap();
+    },
+
+    // ---- Substitutions ----
+    openSubs() {
+      if (!this.interactive || this.lm.subsLeft() <= 0 || this.lm.state.done) return;
+      this.pause();
+      this.selectedOff = null;
+      document.getElementById("subsPanel").classList.remove("hidden");
+      this.renderSubs();
+    },
+    closeSubs() { document.getElementById("subsPanel").classList.add("hidden"); this.selectedOff = null; },
+    renderSubs() {
+      const st = this.lm.state;
+      const club = st.userSide === "home" ? this.home : this.away;
+      document.getElementById("subsLeft").textContent = this.lm.subsLeft();
+      const onList = this.lm.onPitchUser();
+      const onIds = new Set(onList.map(p => p.id));
+      const tag = p => `<span class="fit-tag ${Fitness.level(p)}">${Fitness.label(p)}</span>`;
+      const surname = p => p.name.split(" ").slice(-1)[0];
+      document.getElementById("subsOn").innerHTML = onList
+        .slice().sort((a, b) => (a.fitness ?? 100) - (b.fitness ?? 100))
+        .map(p => `<button class="sub-chip ${this.selectedOff === p.id ? "sel" : ""}" data-suboff="${p.id}"><span class="pos-chip ${p.pos}">${p.pos}</span> ${surname(p)} ${tag(p)}</button>`).join("");
+      const bench = ((club.lineup && club.lineup.bench) || []).map(id => club.squad.find(p => p.id === id))
+        .filter(p => p && !onIds.has(p.id) && !p.injuryWeeks && !p.suspendedMatches);
+      document.getElementById("subsBench").innerHTML = bench.length
+        ? bench.map(p => `<button class="sub-chip" data-subon="${p.id}" ${this.selectedOff ? "" : "disabled"}><span class="pos-chip ${p.pos}">${p.pos}</span> ${surname(p)} ${tag(p)}</button>`).join("")
+        : `<p class="muted" style="font-size:0.78rem;">No bench players available.</p>`;
+      document.getElementById("subsHint").textContent = this.selectedOff ? "Now tap a bench player to bring on." : "Tap a player on the pitch to take off.";
+    },
+    selectOff(id) { this.selectedOff = this.selectedOff === id ? null : id; this.renderSubs(); },
+    doSub(onId) {
+      if (!this.selectedOff) return;
+      const evt = this.lm.substitute(this.selectedOff, onId);
+      if (evt) this.reveal(evt);
+      this.selectedOff = null;
+      this.updateSubsBtn();
+      if (this.lm.subsLeft() <= 0) this.closeSubs(); else this.renderSubs();
+    },
+
     endMatch() {
       clearInterval(this.timer);
       this.running = false;
+      this.writeResult();
+      document.getElementById("subsPanel").classList.add("hidden");
       document.getElementById("matchStatus").textContent = "Full Time";
       document.getElementById("btnMatchStart").disabled = true;
       document.getElementById("btnMatchPause").disabled = true;
+      document.getElementById("btnMatchSubs").classList.add("hidden");
       document.getElementById("btnMatchContinue").classList.remove("hidden");
       App.onLiveMatchEnded();
     },

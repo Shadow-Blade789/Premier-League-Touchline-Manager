@@ -171,7 +171,9 @@ const Cup = {
     fc.drawnRound = fc.roundIndex;
   },
 
+  _pendingPenWinner: null, // set by an interactive shootout; consumed once here
   penaltyWinner(home, away) {
+    if (this._pendingPenWinner) { const w = this._pendingPenWinner; this._pendingPenWinner = null; return w; }
     const rh = MatchEngine.overallRating(Lineup.starters(home));
     const ra = MatchEngine.overallRating(Lineup.starters(away));
     return Math.random() < rh / (rh + ra) ? home.id : away.id;
