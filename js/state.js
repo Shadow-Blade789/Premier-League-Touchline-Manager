@@ -110,6 +110,8 @@
        fixtures: { PL: [], CH: [] }, // generated per league by Season.buildFixtures
        results: [],           // completed match results this season
        market: [],            // current transfer market listings (shared by both leagues)
+       freeAgents: [],        // always-open pool of clubless players (Market.seedFreeAgents)
+       objective: null,       // the board's season target (Board.setObjective)
        history: [],           // past season summaries {season, league, position, ...}
        titles: 0,             // Premier League titles won
        honours: [],           // trophy cabinet: [{type, season}]
@@ -271,10 +273,12 @@
        Vertu.initSeason(this.state);
        Euro.initSeason(this.state);
        Market.weeklyUpdate(this.state);
+       Market.seedFreeAgents(this.state);
        Coaching.weeklyMarket(this.state);
        Academy.ensure(this.state);
        Scouting.ensure(this.state);
        Fitness.ensure(this.state);
+       Board.setObjective(this.state);
        this.save();
      },
      myClub() {
@@ -425,6 +429,8 @@
      Academy.ensure(state); // youth academy is newer than some saves
      Scouting.ensure(state); // recruitment scouting is newer than some saves
      Fitness.ensure(state);  // stamina/injuries + physio are newer than some saves
+     Market.ensureFreeAgents(state); // free-agent market is newer than some saves
+     Board.ensure(state);    // board objectives are newer than some saves
 
      ensureCareers(state);
    }

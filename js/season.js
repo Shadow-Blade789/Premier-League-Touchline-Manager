@@ -201,6 +201,7 @@
       state.week++;
       this.ensureAllSplits(state); // extend split leagues' schedules the moment their regular season ends
       const transition = Market.weeklyUpdate(state);
+      Market.freeAgentWeekly(state); // free agents churn every week, window or not
       Coaching.weeklyMarket(state); // fresh staff shortlist every matchweek
       Academy.weekly(state);        // scout intake, youth development, graduations
       Scouting.weekly(state);       // talent scouts return from assignments
@@ -435,6 +436,12 @@
       const toLeague = userPromoted ? this.leagueAbove(userLeague)
         : userRelegated ? this.leagueBelow(userLeague) : userLeague;
 
+      // Grade the season against the board's objective (may reward the budget).
+      const objectiveVerdict = Board.evaluate(state, {
+        finalPos: myFinalPos, userLeague, promoted: userPromoted,
+        relegated: userRelegated, champion: isChampion, sacked: userSacked,
+      });
+
       state.history.push({
         season: state.season, league: userLeague, position: myFinalPos,
         champion: isChampion, promoted: userPromoted, relegated: userRelegated || userSacked,
@@ -457,6 +464,7 @@
         userLeague, toLeague, myFinalPos, champion, isChampion,
         userPromoted, userRelegated, userSacked, userPlayoff,
         awards, tables, faCup, eflCup, vertu, copa, natCup, euro,
+        objectiveVerdict,
       };
 
       if (userSacked) {
@@ -544,7 +552,9 @@
       Euro.initSeason(state); // fresh Champions/Europa/Conference League
       state.windowWasOpen = false; // force the season-opening "window just opened" transition
       Market.weeklyUpdate(state);
+      Market.seedFreeAgents(state); // fresh free-agent pool for the new season
       Coaching.weeklyMarket(state);
+      Board.setObjective(state); // the board's target for the coming season
 
       return { ...resultBase, ageingNews, bonusesGranted };
     },

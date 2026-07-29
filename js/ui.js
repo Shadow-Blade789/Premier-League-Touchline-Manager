@@ -128,6 +128,21 @@
           return `${h.season}/${String(h.season + 1).slice(2)} — ${lg}— ${outcome}`;
         }).join("<br>");
       }
+      const objEl = document.getElementById("hubObjectiveBody");
+      if (objEl) {
+        const obj = state.objective;
+        if (obj) {
+          const onTrack = row.pos <= obj.targetPos;
+          objEl.innerHTML = `<div class="objective-head">
+              <strong style="font-size:1.05rem;">${obj.headline}</strong>
+              <span class="obj-status ${onTrack ? "good" : "bad"}">${onTrack ? "On track" : "Below target"}</span>
+            </div>
+            <div style="font-size:0.84rem; margin-top:0.35rem;">${obj.blurb}</div>
+            <div class="muted" style="font-size:0.76rem; margin-top:0.3rem;">Currently ${ordinal(row.pos)} of ${table.length} · target ${ordinal(obj.targetPos)} or better</div>`;
+        } else {
+          objEl.textContent = "The board haven't set a target yet.";
+        }
+      }
       this.renderHubStats(state, App.hubStatScope, club.league);
       const setTitle = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
       const cupPanel = document.getElementById("hubCupPanel");
@@ -445,6 +460,7 @@
       const club = Game.myClub();
       document.getElementById("marketWindowBanner").innerHTML = this.windowBanner(state);
       document.getElementById("marketBudgetLabel").textContent = "Budget: " + this.money(club.budget);
+      this.renderFreeAgents(state); // always available, window or not
       const open = TransferWindow.isOpen(state.week);
       document.getElementById("btnReroll").disabled = !open;
       const list = document.getElementById("marketList");
@@ -462,6 +478,25 @@
         priceLabel: this.money(l.price),
         potentialLabel: this.potentialRange(l.player.potential), // scouted: 5-wide range
         action: `<button class="small primary" data-buy="${l.listingId}" ${club.budget < l.price ? "disabled" : ""}>Sign</button>`,
+      })).join("");
+    },
+
+    // The free-agent pool — separate from the transfer market and signable at any
+    // point in the season (window open or not).
+    renderFreeAgents(state) {
+      const club = Game.myClub();
+      const list = document.getElementById("freeAgentList");
+      if (!list) return;
+      const fas = (state.freeAgents || []).slice().sort((a, b) => b.player.rating - a.player.rating);
+      if (!fas.length) {
+        list.innerHTML = `<p class="muted">No free agents on the market right now — check back next matchweek.</p>`;
+        return;
+      }
+      list.innerHTML = fas.map(l => this.renderPlayerRow(l.player, {
+        subLabel: `${Stats.signingLine(l.player)} · Free agent`,
+        priceLabel: this.money(l.price),
+        potentialLabel: this.potentialRange(l.player.potential),
+        action: `<button class="small primary" data-signfree="${l.listingId}" ${club.budget < l.price ? "disabled" : ""}>Sign</button>`,
       })).join("");
     },
   

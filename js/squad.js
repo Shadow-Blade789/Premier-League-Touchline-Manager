@@ -270,6 +270,67 @@ const Market = {
     });
   },
 
+  // ---- free agents -----------------------------------------------------------
+  // A separate, always-open pool of clubless players. They carry only a small
+  // signing fee (a fraction of a comparable transfer), can be signed at ANY
+  // point in the season — window open or not — and skew weak: genuinely good
+  // free agents are rare, and the best of them are ageing veterans.
+  FREE_AGENT_CAP: 7,
+
+  buildFreeAgent() {
+    const pos = POSITIONS[Math.floor(Math.random() * POSITIONS.length)];
+    const { name, nat } = randomProspect();
+    const roll = Math.random();
+    let rating, age;
+    if (roll < 0.015)      { rating = 85 + Math.floor(Math.random() * 4); age = 29 + Math.floor(Math.random() * 5); } // ~1.5% ageing star
+    else if (roll < 0.07)  { rating = 77 + Math.floor(Math.random() * 5); age = 26 + Math.floor(Math.random() * 5); } // rare veteran quality
+    else if (roll < 0.22)  { rating = 70 + Math.floor(Math.random() * 7); age = 24 + Math.floor(Math.random() * 10); }
+    else if (roll < 0.55)  { rating = 62 + Math.floor(Math.random() * 8); age = 20 + Math.floor(Math.random() * 14); }
+    else                   { rating = 50 + Math.floor(Math.random() * 8); age = 18 + Math.floor(Math.random() * 16); }
+    const player = P(name, pos, age, rating, { nat });
+    player.club = null;
+    // Only a signing fee — no fee owed to a selling club — so ~12–28% of value.
+    const fee = Math.max(0.1, Math.round(player.value * (0.12 + Math.random() * 0.16) * 10) / 10);
+    return { listingId: "fa" + player.id, player, origin: null, originName: "Free agent", price: fee, freeAgent: true };
+  },
+
+  seedFreeAgents(state) {
+    state.freeAgents = [];
+    for (let i = 0; i < this.FREE_AGENT_CAP; i++) state.freeAgents.push(this.buildFreeAgent());
+  },
+
+  ensureFreeAgents(state) {
+    if (!Array.isArray(state.freeAgents)) this.seedFreeAgents(state);
+  },
+
+  // Every matchweek (regardless of the transfer window): a few free agents sign
+  // elsewhere or drift off the list, and fresh ones appear, keeping the pool
+  // roughly at cap so there's always something available.
+  freeAgentWeekly(state) {
+    if (!Array.isArray(state.freeAgents)) state.freeAgents = [];
+    state.freeAgents = state.freeAgents.filter(() => Math.random() > 0.18);
+    const room = this.FREE_AGENT_CAP - state.freeAgents.length;
+    const add = Math.min(room, Math.random() < 0.5 ? 2 : 1);
+    for (let i = 0; i < add && state.freeAgents.length < this.FREE_AGENT_CAP; i++) state.freeAgents.push(this.buildFreeAgent());
+  },
+
+  // Sign a free agent — no transfer-window gate, just budget + squad room.
+  signFreeAgent(state, listingId) {
+    const club = Game.myClub();
+    const idx = (state.freeAgents || []).findIndex(l => l.listingId === listingId);
+    if (idx === -1) return { ok: false, reason: "That free agent has already moved on." };
+    const listing = state.freeAgents[idx];
+    if (club.budget < listing.price) return { ok: false, reason: "Not enough budget for the signing fee." };
+    if (club.squad.length >= 32) return { ok: false, reason: "Your squad is full (32 players max)." };
+    club.budget = Math.round((club.budget - listing.price) * 10) / 10;
+    state.freeAgents.splice(idx, 1);
+    Stats.ensure(listing.player);
+    const player = { ...listing.player, club: club.id, transferListed: false, offers: [], stats: { ...listing.player.stats }, bonus: { ...listing.player.bonus }, career: { ...listing.player.career } };
+    club.squad.push(player);
+    club.lineup = null;
+    return { ok: true, name: listing.player.name };
+  },
+
   // ---- buy / sell ------------------------------------------------------------
   buy(state, listingId) {
     if (!TransferWindow.isOpen(state.week)) return { ok: false, reason: "The transfer window is closed." };

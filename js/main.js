@@ -290,6 +290,16 @@
         UI.renderMarket(Game.state);
         this.refreshChrome();
       });
+      document.getElementById("freeAgentList").addEventListener("click", e => {
+        const btn = e.target.closest("button[data-signfree]");
+        if (!btn) return;
+        const res = Market.signFreeAgent(Game.state, btn.dataset.signfree);
+        if (!res.ok) { UI.toast(res.reason); return; }
+        UI.toast(`Signed ${res.name} on a free transfer`);
+        Game.save();
+        UI.renderMarket(Game.state);
+        this.refreshChrome();
+      });
     },
   
     // ---------------- Lineup ----------------
@@ -859,6 +869,14 @@
         ? `<p class="${cup.userWon ? "promo-line" : "muted"}">${cup.name}: ${cup.userWon ? "🏆 " + club.name + " — Winners!" : cup.winner + " · your run: " + cup.userResult}</p>`
         : "";
 
+      const verdict = result.objectiveVerdict;
+      const objectiveHTML = verdict
+        ? `<div class="objective-verdict ${verdict.status}">
+             <span class="obj-badge">${verdict.status === "exceeded" ? "⭐ Objective exceeded" : verdict.status === "met" ? "✅ Objective met" : "✖ Objective missed"}</span>
+             <div style="margin-top:0.35rem;">Board target: <strong>${verdict.headline}</strong>. ${verdict.detail}${verdict.reward ? ` A <strong>${UI.money(verdict.reward)}</strong> boost has been added to your budget.` : ""}</div>
+           </div>`
+        : "";
+
       const size = (result.tables && result.tables[result.userLeague]) ? result.tables[result.userLeague].length : 20;
       const zone = Season.zoneFor(result.myFinalPos, result.userLeague, size);
       const news = result.ageingNews;
@@ -887,6 +905,7 @@
           <p class="eyebrow">${fromLeagueName} · Season ${state.season - 1}/${String(state.season).slice(2)} complete</p>
           <div class="big ${headClass}">${headline}</div>
           <p>${club.name} finished <strong>${ordinal(result.myFinalPos)}</strong> in the ${fromLeagueName}${zone ? " — " + zoneLabel(zone) : ""}.</p>
+          ${objectiveHTML}
           ${movementLine}
           ${playoffLine}
           ${cupLine(result.faCup)}

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PLFC Touchline Manager</title>
 <meta name="description" content="A Premier League club-management sim — pick your club, run the transfer market, set your lineup, and live the season.">
-<link rel="stylesheet" href="css/styles.css?v=51">
+<link rel="stylesheet" href="css/styles.css?v=52">
 </head>
 <body>
 
@@ -89,6 +89,10 @@
         <button class="primary" id="btnGoToLineup">Set Lineup &amp; Play</button>
       </div>
     </div>
+    <div class="panel" id="hubObjectivePanel">
+      <p class="eyebrow">Board Objective</p>
+      <div id="hubObjectiveBody" class="muted">—</div>
+    </div>
     <div class="grid-3">
       <div class="panel" id="hubFormSummary">
         <h3>Club Snapshot</h3>
@@ -156,6 +160,14 @@
       <div id="marketWindowBanner"></div>
       <div class="list-head"><div></div><div>Player</div><div>Age</div><div>Rating</div><div>Pot</div><div>Price</div><div></div></div>
       <div id="marketList"></div>
+    </div>
+    <div class="panel">
+      <div class="market-toolbar">
+        <h2 style="margin:0;">Free Agents</h2>
+        <span class="muted" style="font-size:0.78rem;">Clubless players — sign any time, even outside the window. Cheap, but the good ones are rare.</span>
+      </div>
+      <div class="list-head"><div></div><div>Player</div><div>Age</div><div>Rating</div><div>Pot</div><div>Fee</div><div></div></div>
+      <div id="freeAgentList"></div>
     </div>
   </section>
 
@@ -334,23 +346,24 @@
 
 </div>
 
-<script src="js/data.js?v=51"></script>
-<script src="js/state.js?v=51"></script>
-<script src="js/lineup.js?v=51"></script>
-<script src="js/match.js?v=51"></script>
-<script src="js/stats.js?v=51"></script>
-<script src="js/cup.js?v=51"></script>
-<script src="js/vertu.js?v=51"></script>
-<script src="js/europe.js?v=51"></script>
-<script src="js/season.js?v=51"></script>
-<script src="js/squad.js?v=51"></script>
-<script src="js/coaches.js?v=51"></script>
-<script src="js/academy.js?v=51"></script>
-<script src="js/scouting.js?v=51"></script>
-<script src="js/fitness.js?v=51"></script>
-<script src="js/shootout.js?v=51"></script>
-<script src="js/dynamics.js?v=51"></script>
-<script src="js/ui.js?v=51"></script>
-<script src="js/main.js?v=51"></script>
+<script src="js/data.js?v=52"></script>
+<script src="js/state.js?v=52"></script>
+<script src="js/lineup.js?v=52"></script>
+<script src="js/match.js?v=52"></script>
+<script src="js/stats.js?v=52"></script>
+<script src="js/cup.js?v=52"></script>
+<script src="js/vertu.js?v=52"></script>
+<script src="js/europe.js?v=52"></script>
+<script src="js/season.js?v=52"></script>
+<script src="js/board.js?v=52"></script>
+<script src="js/squad.js?v=52"></script>
+<script src="js/coaches.js?v=52"></script>
+<script src="js/academy.js?v=52"></script>
+<script src="js/scouting.js?v=52"></script>
+<script src="js/fitness.js?v=52"></script>
+<script src="js/shootout.js?v=52"></script>
+<script src="js/dynamics.js?v=52"></script>
+<script src="js/ui.js?v=52"></script>
+<script src="js/main.js?v=52"></script>
 </body>
 </html>
