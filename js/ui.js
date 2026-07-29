@@ -10,6 +10,12 @@
     wage(w) {
       return "£" + w + "k/wk";
     },
+    // Compact wage figure (used for totals like the wage budget): rolls up to
+    // £m once it passes a thousand £k/week.
+    wageFull(k) {
+      k = Math.round(k || 0);
+      return k >= 1000 || k <= -1000 ? "£" + (k / 1000).toFixed(1).replace(/\.0$/, "") + "m" : "£" + k + "k";
+    },
     // Scouting reveals only a 5-wide band around a player's true potential.
     potentialRange(pot) {
       const lo = Math.floor(pot / 5) * 5;
@@ -85,6 +91,11 @@
       document.getElementById("topbarSeason").textContent = state.season + "/" + String(state.season + 1).slice(2);
       document.getElementById("topbarWeek").textContent = Math.min(state.week + 1, total) + " / " + total;
       document.getElementById("topbarBudget").textContent = this.money(club.budget);
+      const wageEl = document.getElementById("topbarWage");
+      if (wageEl && typeof club.wageBudget === "number") {
+        wageEl.textContent = this.wageFull(Contracts.wageRoom(club)) + " free";
+        wageEl.title = `Wage bill ${this.wageFull(Contracts.wageBill(club))}/wk of ${this.wageFull(club.wageBudget)}/wk budget`;
+      }
     },
   
     renderHub(state) {
@@ -431,13 +442,17 @@
           ? `<button class="offers-badge" data-offers="${p.id}" type="button">💰 ${offers.length} offer${offers.length > 1 ? "s" : ""} ▾</button>`
           : "";
         const listBtn = `<button class="small ${p.transferListed ? "" : "ghost"}" data-list="${p.id}">${p.transferListed ? "Listed ✓" : "List"}</button>`;
+        const renewBtn = `<button class="small ghost" data-renew="${p.id}">Renew</button>`;
+        const yrs = p.contractLeft == null ? null : p.contractLeft;
+        const expiring = yrs != null && yrs <= 1;
+        const contractLabel = yrs == null ? "" : ` · ${yrs}yr${yrs === 1 ? "" : "s"} left${expiring ? " ⚠" : ""}`;
         const row = this.renderPlayerRow(p, {
-          subLabel: this.wage(p.wage),
+          subLabel: this.wage(p.wage) + contractLabel,
           careerLabel: Stats.careerSquadLine(p),
           potentialLabel: String(p.potential),
           badge: this.fitnessBadge(p) + badge,
-          rowClass: (p.transferListed ? "listed" : "") + (p.injuryWeeks ? " injured-row" : ""),
-          action: listBtn,
+          rowClass: (p.transferListed ? "listed" : "") + (p.injuryWeeks ? " injured-row" : "") + (expiring ? " expiring-row" : ""),
+          action: renewBtn + listBtn,
         });
         const panel = offers.length ? `<div class="offers-panel hidden" id="offers-${p.id}">${this.offersHTML(p, open)}</div>` : "";
         return `<div class="squad-entry">${row}${panel}</div>`;
@@ -459,7 +474,8 @@
     renderMarket(state) {
       const club = Game.myClub();
       document.getElementById("marketWindowBanner").innerHTML = this.windowBanner(state);
-      document.getElementById("marketBudgetLabel").textContent = "Budget: " + this.money(club.budget);
+      document.getElementById("marketBudgetLabel").textContent =
+        "Budget: " + this.money(club.budget) + " · Wage room: " + this.wageFull(Contracts.wageRoom(club)) + "/wk";
       this.renderFreeAgents(state); // always available, window or not
       const open = TransferWindow.isOpen(state.week);
       document.getElementById("btnReroll").disabled = !open;
@@ -499,7 +515,78 @@
         action: `<button class="small primary" data-signfree="${l.listingId}" ${club.budget < l.price ? "disabled" : ""}>Sign</button>`,
       })).join("");
     },
-  
+
+    // ---- contract negotiation modal ------------------------------------------
+    renderContractModal(state) {
+      const ctx = App.contractCtx;
+      if (!ctx) return;
+      const p = ctx.player, club = Game.myClub();
+      const isRenew = ctx.kind === "renew";
+      const wr = Contracts.wageRange(p);
+      const ideal = Contracts.idealLength(p.age);
+      const off = App.contractOffer;
+      const header = `<div class="contract-player">
+          <div class="pos-chip ${p.pos}">${p.pos}</div>
+          <div><div class="name">${p.name} <span class="nat-tag">${p.nat || "ENG"}</span></div>
+            <div class="sub">${p.age} yrs · asks around <strong>${this.wage(wr.demand)}</strong> on a <strong>~${ideal}-yr</strong> deal</div></div>
+          <div class="rating-pill">${p.rating}</div>
+        </div>`;
+      document.getElementById("contractTitle").textContent = isRenew ? "Contract Renewal" : "Contract Offer";
+      const body = document.getElementById("contractBody");
+
+      if (Contracts.isLocked(state, p.id)) {
+        body.innerHTML = header +
+          `<p class="contract-locked">You've had ${Contracts.MAX_ATTEMPTS} offers turned down — ${p.name} won't reopen talks until the next transfer window.</p>
+           <div class="contract-actions"><span></span><button class="ghost" id="btnContractCloseInline" onclick="App.closeContract()">Close</button></div>`;
+        return;
+      }
+
+      const roomBase = Contracts.wageRoom(club) + (isRenew ? (p.wage || 0) : 0);
+      const feeLine = isRenew
+        ? `Renewal — no transfer fee`
+        : `Transfer fee <strong>${this.money(ctx.fee)}</strong> · budget ${this.money(club.budget)}`;
+      const left = Contracts.attemptsLeft(state, p.id);
+      const wageMax = Math.max(wr.max, Math.round(wr.demand * 2));
+      body.innerHTML = header +
+        `<p class="muted contract-fee">${feeLine} · Wage room <strong>${this.wageFull(roomBase)}/wk</strong></p>
+         <div class="contract-slider">
+           <label>Contract length <span id="cLenVal" class="slider-val">${off.years} year${off.years === 1 ? "" : "s"}</span></label>
+           <input type="range" id="cLen" min="1" max="10" step="1" value="${off.years}">
+           <div class="slider-scale"><span>1 yr</span><span>10 yr</span></div>
+         </div>
+         <div class="contract-slider">
+           <label>Weekly wage <span id="cWageVal" class="slider-val">${this.wage(off.wage)}</span></label>
+           <input type="range" id="cWage" min="${wr.min}" max="${wageMax}" step="1" value="${off.wage}">
+           <div class="slider-scale"><span>${this.wage(wr.min)}</span><span>${this.wage(wageMax)}</span></div>
+         </div>
+         <p class="muted" id="cRoomLeft"></p>
+         ${App.contractFeedback ? `<p class="contract-feedback">${App.contractFeedback}</p>` : ""}
+         <div class="contract-actions">
+           <span class="muted">${left} attempt${left === 1 ? "" : "s"} left</span>
+           <button class="primary" id="btnContractOffer">${isRenew ? "Offer Renewal" : "Make Offer"}</button>
+         </div>`;
+      this.updateContractComputed(state);
+    },
+
+    // Live recompute of "room after this deal" + whether the offer is affordable.
+    updateContractComputed(state) {
+      const ctx = App.contractCtx;
+      if (!ctx) return;
+      const p = ctx.player, club = Game.myClub(), off = App.contractOffer;
+      const isRenew = ctx.kind === "renew";
+      const roomBase = Contracts.wageRoom(club) + (isRenew ? (p.wage || 0) : 0);
+      const roomLeft = roomBase - off.wage;
+      const el = document.getElementById("cRoomLeft");
+      if (el) el.innerHTML = `Wage room after this deal: <strong class="${roomLeft < 0 ? "neg" : "pos"}">${this.wageFull(roomLeft)}/wk</strong>`;
+      const btn = document.getElementById("btnContractOffer");
+      if (btn) {
+        let bad = off.wage > roomBase;
+        if (!isRenew && club.budget < ctx.fee) bad = true;
+        if (!isRenew && club.squad.length >= 32) bad = true;
+        btn.disabled = bad;
+      }
+    },
+
     renderCoaches(state) {
       const club = Game.myClub();
       const posLabels = { GK: "Goalkeeping", DF: "Defence", MF: "Midfield", FW: "Attack" };

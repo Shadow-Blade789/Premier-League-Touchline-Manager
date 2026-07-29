@@ -569,6 +569,25 @@
    .match-controls .speedgroup button:last-child { border-right: none; }
    .match-controls .speedgroup button.active { background: var(--amber); color: var(--amber-ink); }
 
+   /* ---------- Contract negotiation ---------- */
+   .contract-player { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.7rem; }
+   .contract-player .name { font-family: var(--font-display); font-size: 1.05rem; }
+   .contract-player .sub { font-size: 0.82rem; color: var(--muted); }
+   .contract-player .rating-pill { margin-left: auto; }
+   .contract-fee { font-size: 0.82rem; margin: 0.2rem 0 0.9rem; }
+   .contract-slider { margin: 0.9rem 0; }
+   .contract-slider label { display: flex; justify-content: space-between; align-items: baseline; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; }
+   .contract-slider .slider-val { font-family: var(--font-mono); color: var(--amber); font-weight: 700; }
+   .contract-slider input[type="range"] { width: 100%; accent-color: var(--amber); height: 22px; cursor: pointer; }
+   .slider-scale { display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--muted); margin-top: 0.15rem; }
+   #cRoomLeft { font-size: 0.82rem; margin: 0.5rem 0; }
+   #cRoomLeft .neg { color: var(--alert-red); }
+   #cRoomLeft .pos { color: var(--green); }
+   .contract-feedback { background: rgba(255,200,87,0.12); border: 1px solid rgba(255,200,87,0.35); border-radius: var(--radius); padding: 0.5rem 0.7rem; font-size: 0.85rem; margin: 0.6rem 0; }
+   .contract-locked { background: rgba(242,73,92,0.10); border: 1px solid rgba(242,73,92,0.35); border-radius: var(--radius); padding: 0.7rem 0.9rem; font-size: 0.86rem; margin: 0.8rem 0; }
+   .contract-actions { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; margin-top: 1rem; }
+   .squad-entry .player-row.expiring-row { box-shadow: inset 3px 0 0 var(--alert-red); }
+
    /* ---------- Board objective ---------- */
    #hubObjectivePanel { border-left: 3px solid var(--amber); }
    .objective-head { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; flex-wrap: wrap; }

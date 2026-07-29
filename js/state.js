@@ -112,6 +112,7 @@
        market: [],            // current transfer market listings (shared by both leagues)
        freeAgents: [],        // always-open pool of clubless players (Market.seedFreeAgents)
        objective: null,       // the board's season target (Board.setObjective)
+       negotiations: {},      // per-player contract-negotiation attempts/locks (Contracts)
        history: [],           // past season summaries {season, league, position, ...}
        titles: 0,             // Premier League titles won
        honours: [],           // trophy cabinet: [{type, season}]
@@ -278,6 +279,7 @@
        Academy.ensure(this.state);
        Scouting.ensure(this.state);
        Fitness.ensure(this.state);
+       Contracts.ensure(this.state);
        Board.setObjective(this.state);
        this.save();
      },
@@ -431,6 +433,7 @@
      Fitness.ensure(state);  // stamina/injuries + physio are newer than some saves
      Market.ensureFreeAgents(state); // free-agent market is newer than some saves
      Board.ensure(state);    // board objectives are newer than some saves
+     Contracts.ensure(state); // contracts + wage budget are newer than some saves
 
      ensureCareers(state);
    }

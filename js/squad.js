@@ -126,6 +126,7 @@ const Market = {
       this.reroll(state);
       this.aiTransfers(state, 8 + Math.floor(Math.random() * 8)); // opening flurry
       this.generateOffers(state);
+      Contracts.clearLocks(state); // failed negotiations reset — targets are approachable again
       return { transition: "opened", name: TransferWindow.current(state.week).name };
     }
     if (!openNow && openBefore) {
@@ -359,6 +360,52 @@ const Market = {
     club.squad.push(player);
     club.lineup = null;
     return { ok: true, name: listing.player.name, origin: listing.originName };
+  },
+
+  // ---- contract-negotiated signing ------------------------------------------
+  // Executes a signing on agreed terms (called after the player accepts the
+  // offer). Handles both open-market listings and free agents, paying the fee
+  // from the transfer budget and booking the wage against the wage budget.
+  completeSigning(state, ctx, wage, years) {
+    const club = Game.myClub();
+    if (club.squad.length >= 32) return { ok: false, reason: "Your squad is full (32 players max)." };
+    if (Contracts.wageRoom(club) < wage) return { ok: false, reason: "Not enough room in your wage budget." };
+
+    const fromFree = ctx.kind === "free";
+    const pool = fromFree ? (state.freeAgents || []) : (state.market || []);
+    if (!fromFree && !TransferWindow.isOpen(state.week)) return { ok: false, reason: "The transfer window is closed." };
+    const idx = pool.findIndex(l => l.listingId === ctx.listingId);
+    if (idx === -1) return { ok: false, reason: fromFree ? "That free agent has already moved on." : "That player is no longer available." };
+    const listing = pool[idx];
+    if (club.budget < listing.price) return { ok: false, reason: "Not enough transfer budget for this deal." };
+
+    club.budget = Math.round((club.budget - listing.price) * 10) / 10;
+    pool.splice(idx, 1);
+
+    if (!fromFree && listing.origin) {
+      const originClub = state.clubs.find(c => c.id === listing.origin);
+      if (originClub) { originClub.squad = originClub.squad.filter(p => p.id !== listing.player.id); this.guardMinimum(originClub); originClub.lineup = null; }
+      state.market = state.market.filter(l => l.player.id !== listing.player.id);
+    }
+    Stats.ensure(listing.player);
+    const player = { ...listing.player, club: club.id, transferListed: false, offers: [], stats: { ...listing.player.stats }, bonus: { ...listing.player.bonus }, career: { ...listing.player.career } };
+    Contracts.applyContract(player, wage, years);
+    club.squad.push(player);
+    club.lineup = null;
+    Contracts.clearNeg(state, listing.player.id);
+    return { ok: true, name: listing.player.name, origin: listing.originName, fee: listing.price, freeAgent: fromFree };
+  },
+
+  // Re-sign an existing squad player on new terms (no fee; only the wage delta
+  // moves against the wage budget).
+  renewContract(state, playerId, wage, years) {
+    const club = Game.myClub();
+    const p = club.squad.find(pl => pl.id === playerId);
+    if (!p) return { ok: false, reason: "That player is no longer at the club." };
+    if (wage > Contracts.wageRoom(club) + (p.wage || 0)) return { ok: false, reason: "Not enough room in your wage budget." };
+    Contracts.applyContract(p, wage, years);
+    Contracts.clearNeg(state, playerId);
+    return { ok: true, name: p.name };
   },
 };
 

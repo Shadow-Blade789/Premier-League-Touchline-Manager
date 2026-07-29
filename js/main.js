@@ -27,6 +27,7 @@
       this.wireTable();
       this.wireTrophies();
       this.wireCoaches();
+      this.wireContracts();
 
       if (Game.hasSave() && Game.load()) {
         const club = Game.myClub();
@@ -150,6 +151,8 @@
         if (prom) {
           const res = Academy.promote(Game.state, prom.dataset.promote);
           if (!res.ok) { UI.toast(res.reason); return; }
+          const promoted = Game.myClub().squad.find(p => p.name === res.name);
+          if (promoted) Contracts.ensurePlayer(promoted); // give the graduate a starting deal
           UI.toast(`${res.name} promoted to the senior squad`);
           Game.save(); UI.renderAcademy(Game.state); this.refreshChrome();
           return;
@@ -245,6 +248,13 @@
           if (panel) panel.classList.toggle("hidden");
           return;
         }
+        // Renew a player's contract (opens the negotiation modal).
+        const renew = e.target.closest("button[data-renew]");
+        if (renew) {
+          const p = Game.myClub().squad.find(pl => pl.id === renew.dataset.renew);
+          if (p) this.openContract({ kind: "renew", playerId: p.id, player: p, fee: 0 });
+          return;
+        }
         // Transfer-list / unlist.
         const listBtn = e.target.closest("button[data-list]");
         if (listBtn) {
@@ -283,23 +293,95 @@
       document.getElementById("marketList").addEventListener("click", e => {
         const btn = e.target.closest("button[data-buy]");
         if (!btn) return;
-        const res = Market.buy(Game.state, btn.dataset.buy);
-        if (!res.ok) { UI.toast(res.reason); return; }
-        UI.toast(`Signed ${res.name} (from ${res.origin})`);
-        Game.save();
-        UI.renderMarket(Game.state);
-        this.refreshChrome();
+        const listing = (Game.state.market || []).find(l => l.listingId === btn.dataset.buy);
+        if (!listing) { UI.toast("That player is no longer available."); UI.renderMarket(Game.state); return; }
+        this.openContract({ kind: "market", listingId: listing.listingId, player: listing.player, fee: listing.price });
       });
       document.getElementById("freeAgentList").addEventListener("click", e => {
         const btn = e.target.closest("button[data-signfree]");
         if (!btn) return;
-        const res = Market.signFreeAgent(Game.state, btn.dataset.signfree);
-        if (!res.ok) { UI.toast(res.reason); return; }
-        UI.toast(`Signed ${res.name} on a free transfer`);
-        Game.save();
-        UI.renderMarket(Game.state);
-        this.refreshChrome();
+        const listing = (Game.state.freeAgents || []).find(l => l.listingId === btn.dataset.signfree);
+        if (!listing) { UI.toast("That free agent has already moved on."); UI.renderMarket(Game.state); return; }
+        this.openContract({ kind: "free", listingId: listing.listingId, player: listing.player, fee: listing.price });
       });
+    },
+
+    // ---------------- Contract negotiation ----------------
+    wireContracts() {
+      document.getElementById("btnContractClose").addEventListener("click", () => this.closeContract());
+      document.getElementById("contractModal").addEventListener("click", e => {
+        if (e.target.id === "contractModal") this.closeContract(); // click backdrop to dismiss
+      });
+      const body = document.getElementById("contractBody");
+      body.addEventListener("input", e => {
+        if (e.target.id === "cLen" || e.target.id === "cWage") this.updateContractSliders();
+      });
+      body.addEventListener("click", e => {
+        if (e.target.closest("#btnContractOffer")) this.makeOffer();
+      });
+    },
+
+    openContract(ctx) {
+      const p = ctx.player;
+      const ideal = Contracts.idealLength(p.age);
+      const wr = Contracts.wageRange(p);
+      this.contractCtx = ctx;
+      this.contractOffer = { years: Math.min(10, Math.max(1, ideal)), wage: wr.demand };
+      this.contractFeedback = "";
+      document.getElementById("contractModal").classList.remove("hidden");
+      UI.renderContractModal(Game.state);
+    },
+
+    closeContract() {
+      this.contractCtx = null;
+      document.getElementById("contractModal").classList.add("hidden");
+    },
+
+    updateContractSliders() {
+      const len = +document.getElementById("cLen").value;
+      const wage = +document.getElementById("cWage").value;
+      this.contractOffer = { years: len, wage };
+      document.getElementById("cLenVal").textContent = len + (len === 1 ? " year" : " years");
+      document.getElementById("cWageVal").textContent = UI.wage(wage);
+      UI.updateContractComputed(Game.state);
+    },
+
+    makeOffer() {
+      const state = Game.state, ctx = this.contractCtx;
+      if (!ctx) return;
+      const p = ctx.player, club = Game.myClub();
+      if (Contracts.isLocked(state, p.id)) return;
+      const { years, wage } = this.contractOffer;
+      const roomBase = Contracts.wageRoom(club) + (ctx.kind === "renew" ? (p.wage || 0) : 0);
+      if (wage > roomBase) { this.contractFeedback = "That wage won't fit your budget — free up wage room first."; UI.renderContractModal(state); return; }
+      if (ctx.kind !== "renew" && club.budget < ctx.fee) { this.contractFeedback = "Not enough transfer budget for the fee."; UI.renderContractModal(state); return; }
+
+      const verdict = Contracts.evaluate(p, wage, years);
+      if (verdict.accepted) {
+        const res = ctx.kind === "renew"
+          ? Market.renewContract(state, p.id, wage, years)
+          : Market.completeSigning(state, ctx, wage, years);
+        if (!res.ok) { this.contractFeedback = res.reason; UI.renderContractModal(state); return; }
+        UI.toast(ctx.kind === "renew" ? `✍️ ${res.name} renews — ${years}yr deal` : `✍️ Signed ${res.name} — ${years}yr deal`);
+        Game.save();
+        this.closeContract();
+        UI.renderMarket(state); UI.renderSquad(state); this.refreshChrome();
+        return;
+      }
+      // Rejected — burn an attempt and give feedback.
+      Contracts.recordReject(state, p.id);
+      this.contractFeedback = this.rejectMsg(verdict, p);
+      Game.save();
+      UI.renderContractModal(state);
+    },
+
+    rejectMsg(v, p) {
+      if (v.reason === "tooLong") return `${p.name} won't commit to a deal that long — offer fewer years.`;
+      if (v.reason === "tooShort") return `${p.name} wants more security — offer a longer deal.`;
+      const gap = v.reqWage - this.contractOffer.wage;
+      return gap > v.reqWage * 0.15
+        ? `${p.name} wants significantly more money to sign.`
+        : `${p.name} is holding out for a little more.`;
     },
   
     // ---------------- Lineup ----------------
@@ -890,6 +972,12 @@
           newsHTML += `<p>Breakout development: ${news.breakouts.map(b => `${b.name} ${b.from}→${b.to}`).join(", ")}</p>`;
         }
         newsHTML += `<p class="muted" style="font-size:0.78rem;">${news.totalRetired} players retired across both leagues this off-season.</p></div>`;
+      }
+      const departed = result.contractDepartures || [];
+      if (departed.length) {
+        newsHTML += `<div class="panel" style="text-align:left; margin-top:1.2rem;"><h3>Contracts expired — ${club.name}</h3>
+          <p class="muted">Left on a free (out of contract): ${departed.map(d => `${d.name} (${d.rating})`).join(", ")}</p>
+          <p class="muted" style="font-size:0.78rem;">Renew key players before their deal runs out to keep them.</p></div>`;
       }
       const awardsHTML = result.awards
         ? `<div class="panel" style="text-align:left; margin-top:1.2rem;">

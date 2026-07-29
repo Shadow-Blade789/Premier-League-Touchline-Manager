@@ -481,6 +481,7 @@
       Academy.seasonRollover(state);
       Scouting.seasonRollover(state); // scrap old scouting reports, recall scouts
       Fitness.seasonRollover(state);  // everyone fit & healthy for pre-season
+      const contractDepartures = Contracts.seasonRollover(state); // expiring deals walk for free
 
       // Apply the swaps: relegated clubs drop a division, promoted clubs rise.
       // Clubs keep their squads and reputation tier; only their league changes.
@@ -488,6 +489,9 @@
         (relegateIds[lg] || []).forEach(id => { const c = state.clubs.find(c => c.id === id); if (c) c.league = this.leagueBelow(lg); });
         (promoteIds[lg] || []).forEach(id => { const c = state.clubs.find(c => c.id === id); if (c) c.league = this.leagueAbove(lg); });
       });
+
+      // The board resizes the wage budget when the club changes division.
+      Contracts.adjustBudgetForMovement(state, userPromoted, userRelegated);
 
       // Next season's form bonuses — top five of every category in every
       // league — then wipe season tallies (career totals persist).
@@ -555,8 +559,9 @@
       Market.seedFreeAgents(state); // fresh free-agent pool for the new season
       Coaching.weeklyMarket(state);
       Board.setObjective(state); // the board's target for the coming season
+      Contracts.ensure(state); // backfill contracts on any newly-added squad players
 
-      return { ...resultBase, ageingNews, bonusesGranted };
+      return { ...resultBase, ageingNews, bonusesGranted, contractDepartures };
     },
   };
   
