@@ -7,6 +7,21 @@
    ========================================================================= */
 
    let _pid = 1;
+
+   // Realistic "par" weekly wage in £k, calibrated to real 2025/26 top-flight
+   // pay: an 84-rated 33-year-old (≈ Emiliano Martínez) lands on ~£150k/wk, a
+   // 91 on ~£370k, a 70 on ~£34k, a 60 on ~£5k. This is the ENGLISH TOP-FLIGHT
+   // reference; Contracts.wageFactor scales it down by league/country economy so
+   // minor leagues pay far less. Only depends on rating + age so it stays
+   // current as players develop.
+   function parWage(rating, age) {
+     const rf = Math.max(1, rating - 50);
+     let w = 0.0083 * Math.pow(rf, 2.78);
+     if (rating >= 86) w *= 1 + (rating - 86) * 0.09; // superstar premium at the very top
+     const am = age < 20 ? 0.5 : age < 23 ? 0.72 : age < 34 ? 1.0 : age < 37 ? 0.9 : 0.78;
+     return Math.max(1, Math.round(w * am));
+   }
+
    function growthRoom(age) {
      if (age <= 20) return 10 + Math.round(Math.random() * 8);   // +10..18
      if (age <= 23) return 5 + Math.round(Math.random() * 5);    // +5..10
@@ -46,7 +61,7 @@
        age < 32 ? 0.7 :
        age < 35 ? 0.45 : 0.25;
      const value = Math.max(0.3, Math.round(Math.pow(rf, 1.7) * ageMult * 0.16 * 10) / 10);
-     const wage = Math.max(3, Math.round(Math.pow(rf, 1.45) * 2.6 + 4));
+     const wage = parWage(rating, age); // top-flight par; scaled by league in Contracts.effWage
    
      let potential = Math.min(96, rating + growthRoom(age));
      let wonderkid = false;

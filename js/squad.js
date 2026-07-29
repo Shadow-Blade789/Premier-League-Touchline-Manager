@@ -402,7 +402,7 @@ const Market = {
     const club = Game.myClub();
     const p = club.squad.find(pl => pl.id === playerId);
     if (!p) return { ok: false, reason: "That player is no longer at the club." };
-    if (wage > Contracts.wageRoom(club) + (p.wage || 0)) return { ok: false, reason: "Not enough room in your wage budget." };
+    if (wage > Contracts.wageRoom(club) + Contracts.effWage(p)) return { ok: false, reason: "Not enough room in your wage budget." };
     Contracts.applyContract(p, wage, years);
     Contracts.clearNeg(state, playerId);
     return { ok: true, name: p.name };

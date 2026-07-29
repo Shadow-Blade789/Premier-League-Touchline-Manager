@@ -212,7 +212,7 @@
            const rf = Math.max(0, p.rating - 55);
            const ageMult = p.age < 21 ? 1.35 : p.age < 24 ? 1.2 : p.age < 29 ? 1.0 : p.age < 32 ? 0.7 : p.age < 35 ? 0.45 : 0.25;
            p.value = Math.max(0.3, Math.round(Math.pow(rf, 1.7) * ageMult * 0.16 * 10) / 10);
-           p.wage = Math.max(3, Math.round(Math.pow(rf, 1.45) * 2.6 + 4));
+           p.wage = parWage(p.rating, p.age); // top-flight par; league scaling lives in Contracts.effWage
          });
          club.lineup = null; // force a fresh auto-pick against the new squad
        });

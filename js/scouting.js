@@ -188,7 +188,7 @@ const Scouting = {
     const cand = rep.candidates[ci];
     if (club.squad.length >= 32) return { ok: false, reason: "Your squad is full (32 players max)." };
     if (club.budget < cand.price) return { ok: false, reason: "Not enough budget for this deal." };
-    if (Contracts.wageRoom(club) < (cand.player.wage || 0)) return { ok: false, reason: "Not enough room in your wage budget." };
+    if (Contracts.wageRoom(club) < Contracts.effWage(cand.player)) return { ok: false, reason: "Not enough room in your wage budget." };
 
     // A real target may have moved on since the report landed.
     if (cand.origin) {
@@ -209,7 +209,7 @@ const Scouting = {
     club.budget = Math.round((club.budget - cand.price) * 10) / 10;
     Stats.ensure(cand.player);
     const player = { ...cand.player, club: club.id, transferListed: false, offers: [], stats: { ...cand.player.stats }, bonus: { ...cand.player.bonus }, career: { ...cand.player.career } };
-    Contracts.applyContract(player, cand.player.wage || Contracts.wageDemand(cand.player), Contracts.idealLength(cand.player.age));
+    Contracts.applyContract(player, Contracts.effWage(cand.player), Contracts.idealLength(cand.player.age));
     club.squad.push(player);
     club.lineup = null;
 

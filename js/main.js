@@ -295,7 +295,7 @@
         if (!btn) return;
         const listing = (Game.state.market || []).find(l => l.listingId === btn.dataset.buy);
         if (!listing) { UI.toast("That player is no longer available."); UI.renderMarket(Game.state); return; }
-        this.openContract({ kind: "market", listingId: listing.listingId, player: listing.player, fee: listing.price });
+        this.openContract({ kind: "market", listingId: listing.listingId, player: listing.player, fee: listing.price, origin: listing.origin });
       });
       document.getElementById("freeAgentList").addEventListener("click", e => {
         const btn = e.target.closest("button[data-signfree]");
@@ -352,11 +352,16 @@
       const p = ctx.player, club = Game.myClub();
       if (Contracts.isLocked(state, p.id)) return;
       const { years, wage } = this.contractOffer;
-      const roomBase = Contracts.wageRoom(club) + (ctx.kind === "renew" ? (p.wage || 0) : 0);
+      const roomBase = Contracts.wageRoom(club) + (ctx.kind === "renew" ? Contracts.effWage(p) : 0);
       if (wage > roomBase) { this.contractFeedback = "That wage won't fit your budget — free up wage room first."; UI.renderContractModal(state); return; }
       if (ctx.kind !== "renew" && club.budget < ctx.fee) { this.contractFeedback = "Not enough transfer budget for the fee."; UI.renderContractModal(state); return; }
 
-      const verdict = Contracts.evaluate(p, wage, years);
+      const evalCtx = {
+        kind: ctx.kind,
+        targetClub: club,
+        originClub: ctx.origin ? state.clubs.find(c => c.id === ctx.origin) : null,
+      };
+      const verdict = Contracts.evaluate(p, wage, years, evalCtx);
       if (verdict.accepted) {
         const res = ctx.kind === "renew"
           ? Market.renewContract(state, p.id, wage, years)
@@ -378,10 +383,12 @@
     rejectMsg(v, p) {
       if (v.reason === "tooLong") return `${p.name} won't commit to a deal that long — offer fewer years.`;
       if (v.reason === "tooShort") return `${p.name} wants more security — offer a longer deal.`;
+      if (v.reason === "bigcut") return `${p.name} won't take a pay cut that steep — move closer to their wage.`;
+      // Probabilistic knock-back on a below-ask offer: another try might land it.
       const gap = v.reqWage - this.contractOffer.wage;
       return gap > v.reqWage * 0.15
-        ? `${p.name} wants significantly more money to sign.`
-        : `${p.name} is holding out for a little more.`;
+        ? `${p.name} turned down the pay cut — offer more, or try again.`
+        : `${p.name} isn't quite convinced — nudge the wage up, or try again.`;
     },
   
     // ---------------- Lineup ----------------

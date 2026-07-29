@@ -447,7 +447,7 @@
         const expiring = yrs != null && yrs <= 1;
         const contractLabel = yrs == null ? "" : ` · ${yrs}yr${yrs === 1 ? "" : "s"} left${expiring ? " ⚠" : ""}`;
         const row = this.renderPlayerRow(p, {
-          subLabel: this.wage(p.wage) + contractLabel,
+          subLabel: this.wage(Contracts.effWage(p)) + contractLabel,
           careerLabel: Stats.careerSquadLine(p),
           potentialLabel: String(p.potential),
           badge: this.fitnessBadge(p) + badge,
@@ -541,7 +541,7 @@
         return;
       }
 
-      const roomBase = Contracts.wageRoom(club) + (isRenew ? (p.wage || 0) : 0);
+      const roomBase = Contracts.wageRoom(club) + (isRenew ? Contracts.effWage(p) : 0);
       const feeLine = isRenew
         ? `Renewal — no transfer fee`
         : `Transfer fee <strong>${this.money(ctx.fee)}</strong> · budget ${this.money(club.budget)}`;
@@ -574,7 +574,7 @@
       if (!ctx) return;
       const p = ctx.player, club = Game.myClub(), off = App.contractOffer;
       const isRenew = ctx.kind === "renew";
-      const roomBase = Contracts.wageRoom(club) + (isRenew ? (p.wage || 0) : 0);
+      const roomBase = Contracts.wageRoom(club) + (isRenew ? Contracts.effWage(p) : 0);
       const roomLeft = roomBase - off.wage;
       const el = document.getElementById("cRoomLeft");
       if (el) el.innerHTML = `Wage room after this deal: <strong class="${roomLeft < 0 ? "neg" : "pos"}">${this.wageFull(roomLeft)}/wk</strong>`;
