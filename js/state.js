@@ -113,6 +113,8 @@
        freeAgents: [],        // always-open pool of clubless players (Market.seedFreeAgents)
        objective: null,       // the board's season target (Board.setObjective)
        negotiations: {},      // per-player contract-negotiation attempts/locks (Contracts)
+       pendingSignings: [],   // pre-agreed deals waiting for the window to open (Market)
+       watchlist: [],         // saved scout targets to sign later (Scouting)
        history: [],           // past season summaries {season, league, position, ...}
        titles: 0,             // Premier League titles won
        honours: [],           // trophy cabinet: [{type, season}]
@@ -209,9 +211,7 @@
          ensureSquadDepth(club);
          // Ratings/values/wages drift, so keep them consistent with the new numbers.
          club.squad.forEach(p => {
-           const rf = Math.max(0, p.rating - 55);
-           const ageMult = p.age < 21 ? 1.35 : p.age < 24 ? 1.2 : p.age < 29 ? 1.0 : p.age < 32 ? 0.7 : p.age < 35 ? 0.45 : 0.25;
-           p.value = Math.max(0.3, Math.round(Math.pow(rf, 1.7) * ageMult * 0.16 * 10) / 10);
+           p.value = parValue(p.rating, p.age);
            p.wage = parWage(p.rating, p.age); // top-flight par; league scaling lives in Contracts.effWage
          });
          club.lineup = null; // force a fresh auto-pick against the new squad
@@ -432,6 +432,8 @@
      Scouting.ensure(state); // recruitment scouting is newer than some saves
      Fitness.ensure(state);  // stamina/injuries + physio are newer than some saves
      Market.ensureFreeAgents(state); // free-agent market is newer than some saves
+     if (!Array.isArray(state.pendingSignings)) state.pendingSignings = []; // pre-agreed deals are newer than some saves
+     state.clubs.forEach(c => { if (!c.strengthOnly && c.squad) c.squad.forEach(p => { p.value = parValue(p.rating, p.age); }); }); // refresh values to the current age curve
      Board.ensure(state);    // board objectives are newer than some saves
      Contracts.ensure(state); // contracts + wage budget are newer than some saves
 

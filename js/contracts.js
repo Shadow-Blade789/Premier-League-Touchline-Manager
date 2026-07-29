@@ -54,7 +54,9 @@ const Contracts = {
 
   // ---- wage budget ----------------------------------------------------------
   wageBill(club) { return club.squad.reduce((s, p) => s + this.effWage(p), 0); },
-  wageRoom(club) { return (club.wageBudget || 0) - this.wageBill(club); },
+  // Wages already committed to pre-agreed signings that haven't joined yet.
+  pendingWage(state) { return ((state && state.pendingSignings) || []).reduce((s, pd) => s + (pd.wage || 0), 0); },
+  wageRoom(club) { return (club.wageBudget || 0) - this.wageBill(club) - this.pendingWage(Game.state); },
 
   // ---- negotiation bookkeeping ----------------------------------------------
   neg(state, id) {

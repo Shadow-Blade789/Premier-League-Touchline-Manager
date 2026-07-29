@@ -32,6 +32,8 @@ const TransferWindow = {
   },
 };
 
+let _pndId = 1; // id source for pre-agreed (pending) signings
+
 const Market = {
   // ---- listing construction -------------------------------------------------
   listingFromExisting(player, originClub) {
@@ -106,39 +108,41 @@ const Market = {
     return listings;
   },
 
-  // Full reroll â€” only meaningful while a window is open. Used by the
-  // manual "Reroll Market" button and when a window first opens.
+  // Full reroll of the listings. The market is now browsable YEAR-ROUND so deals
+  // can be negotiated any time — only the actual squad entry waits for a window.
   reroll(state) {
-    if (!TransferWindow.isOpen(state.week)) { state.market = []; return; }
     const count = 10 + Math.floor(Math.random() * 6);
     state.market = this.buildListings(state, count);
   },
 
-  // Called every matchweek. Opens/closes the market as windows start and
-  // end, and lightly churns listings while a window stays open (some
-  // players get snapped up by other clubs, new ones appear).
+  // Called every matchweek. The listing pool churns year-round; rival bids for
+  // your players and AI-to-AI trades still only happen while a window is open.
+  // When a window opens, any pre-agreed signings complete and land in your squad.
   weeklyUpdate(state) {
     const openNow = TransferWindow.isOpen(state.week);
     const openBefore = state.windowWasOpen;
     state.windowWasOpen = openNow;
 
-    if (openNow && !openBefore) {
-      this.reroll(state);
-      this.aiTransfers(state, 8 + Math.floor(Math.random() * 8)); // opening flurry
-      this.generateOffers(state);
-      Contracts.clearLocks(state); // failed negotiations reset — targets are approachable again
-      return { transition: "opened", name: TransferWindow.current(state.week).name };
-    }
-    if (!openNow && openBefore) {
-      state.market = [];
-      this.clearOffers(state); // outstanding bids lapse when the window shuts
-      return { transition: "closed" };
-    }
-    if (openNow) {
-      // Partial churn: ~30% of listings get poached elsewhere, replaced fresh.
+    // Keep the market populated + gently churning whatever the calendar says.
+    if (!state.market || !state.market.length) this.reroll(state);
+    else {
       const keep = state.market.filter(() => Math.random() > 0.3);
       const need = Math.max(10, state.market.length) - keep.length;
       state.market = keep.concat(this.buildListings(state, need));
+    }
+
+    if (openNow && !openBefore) {
+      const arrivals = this.completePending(state); // pre-agreed deals land now
+      this.aiTransfers(state, 8 + Math.floor(Math.random() * 8)); // opening flurry
+      this.generateOffers(state);
+      Contracts.clearLocks(state); // failed negotiations reset — targets are approachable again
+      return { transition: "opened", name: TransferWindow.current(state.week).name, arrivals };
+    }
+    if (!openNow && openBefore) {
+      this.clearOffers(state); // outstanding bids for your players lapse when the window shuts
+      return { transition: "closed" };
+    }
+    if (openNow) {
       this.aiTransfers(state, 3 + Math.floor(Math.random() * 4)); // ongoing rival business
       this.generateOffers(state); // rivals bid for your players
     }
@@ -362,38 +366,98 @@ const Market = {
     return { ok: true, name: listing.player.name, origin: listing.originName };
   },
 
-  // ---- contract-negotiated signing ------------------------------------------
-  // Executes a signing on agreed terms (called after the player accepts the
-  // offer). Handles both open-market listings and free agents, paying the fee
-  // from the transfer budget and booking the wage against the wage budget.
-  completeSigning(state, ctx, wage, years) {
-    const club = Game.myClub();
-    if (club.squad.length >= 32) return { ok: false, reason: "Your squad is full (32 players max)." };
-    if (Contracts.wageRoom(club) < wage) return { ok: false, reason: "Not enough room in your wage budget." };
+  // ---- signing engine -------------------------------------------------------
+  // How many players are spoken for but not yet in the squad.
+  pendingCount(state) { return (state.pendingSignings || []).length; },
 
-    const fromFree = ctx.kind === "free";
+  // Core signing on agreed terms. Free agents (and any deal struck while a
+  // window is open) join immediately; a fee-based deal agreed OUTSIDE the window
+  // becomes a PRE-AGREED signing — the fee is paid now to reserve it and the
+  // player joins the moment the next window opens. `deal` = { player, fee, wage,
+  // years, originId, originName, freeAgent }.
+  executeSigning(state, deal) {
+    const club = Game.myClub();
+    const pending = state.pendingSignings || (state.pendingSignings = []);
+    if (club.squad.length + pending.length >= 32) return { ok: false, reason: "Your squad (incl. pending signings) is full — 32 max." };
+    if (Contracts.wageRoom(club) < deal.wage) return { ok: false, reason: "Not enough room in your wage budget." };
+    if (club.budget < deal.fee) return { ok: false, reason: "Not enough transfer budget for this deal." };
+
+    const immediate = deal.freeAgent || TransferWindow.isOpen(state.week);
+
+    // A real target is pulled out of their club — they're committed to you now.
+    if (deal.originId) {
+      const origin = state.clubs.find(c => c.id === deal.originId);
+      if (origin) { origin.squad = origin.squad.filter(p => p.id !== deal.player.id); this.guardMinimum(origin); origin.lineup = null; }
+      state.market = (state.market || []).filter(l => l.player.id !== deal.player.id);
+    }
+
+    club.budget = Math.round((club.budget - deal.fee) * 10) / 10;
+    Stats.ensure(deal.player);
+    const signed = { ...deal.player, transferListed: false, offers: [], stats: { ...deal.player.stats }, bonus: { ...deal.player.bonus }, career: { ...deal.player.career } };
+    Contracts.applyContract(signed, deal.wage, deal.years);
+    Contracts.clearNeg(state, deal.player.id);
+
+    if (immediate) {
+      signed.club = club.id;
+      club.squad.push(signed);
+      club.lineup = null;
+      return { ok: true, immediate: true, name: signed.name };
+    }
+    signed.club = null; // joins when the window opens
+    pending.push({ id: "pnd" + (_pndId++), player: signed, fee: deal.fee, originId: deal.originId || null, originName: deal.originName || "", wage: deal.wage, agreedWeek: state.week });
+    return { ok: true, immediate: false, name: signed.name };
+  },
+
+  // Modal-driven signing from a market listing or the free-agent pool.
+  completeSigning(state, ctx, wage, years) {
+    const fromFree = ctx.source === "free" || ctx.kind === "free";
     const pool = fromFree ? (state.freeAgents || []) : (state.market || []);
-    if (!fromFree && !TransferWindow.isOpen(state.week)) return { ok: false, reason: "The transfer window is closed." };
     const idx = pool.findIndex(l => l.listingId === ctx.listingId);
     if (idx === -1) return { ok: false, reason: fromFree ? "That free agent has already moved on." : "That player is no longer available." };
     const listing = pool[idx];
-    if (club.budget < listing.price) return { ok: false, reason: "Not enough transfer budget for this deal." };
+    const res = this.executeSigning(state, {
+      player: listing.player, fee: listing.price, wage, years,
+      originId: fromFree ? null : listing.origin, originName: listing.originName, freeAgent: fromFree,
+    });
+    if (!res.ok) return res;
+    const j = pool.findIndex(l => l.listingId === ctx.listingId); // may already be gone (real player stripped)
+    if (j !== -1) pool.splice(j, 1);
+    return { ...res, origin: listing.originName, fee: listing.price, freeAgent: fromFree };
+  },
 
-    club.budget = Math.round((club.budget - listing.price) * 10) / 10;
-    pool.splice(idx, 1);
-
-    if (!fromFree && listing.origin) {
-      const originClub = state.clubs.find(c => c.id === listing.origin);
-      if (originClub) { originClub.squad = originClub.squad.filter(p => p.id !== listing.player.id); this.guardMinimum(originClub); originClub.lineup = null; }
-      state.market = state.market.filter(l => l.player.id !== listing.player.id);
-    }
-    Stats.ensure(listing.player);
-    const player = { ...listing.player, club: club.id, transferListed: false, offers: [], stats: { ...listing.player.stats }, bonus: { ...listing.player.bonus }, career: { ...listing.player.career } };
-    Contracts.applyContract(player, wage, years);
-    club.squad.push(player);
+  // Pre-agreed signings land as the window opens (called from weeklyUpdate).
+  completePending(state) {
+    const club = Game.myClub();
+    const pend = state.pendingSignings || [];
+    if (!pend.length) return [];
+    const arrivals = [];
+    pend.forEach(pd => {
+      if (club.squad.length >= 32) { club.budget = Math.round((club.budget + pd.fee) * 10) / 10; arrivals.push({ name: pd.player.name, refunded: true }); return; }
+      const p = { ...pd.player, club: club.id };
+      Stats.ensure(p);
+      club.squad.push(p);
+      arrivals.push({ name: p.name });
+    });
+    state.pendingSignings = [];
     club.lineup = null;
-    Contracts.clearNeg(state, listing.player.id);
-    return { ok: true, name: listing.player.name, origin: listing.originName, fee: listing.price, freeAgent: fromFree };
+    return arrivals;
+  },
+
+  // Call off a pre-agreed deal: refund the reserved fee and hand the player back
+  // to their old club if it's still around.
+  cancelPending(state, id) {
+    const pend = state.pendingSignings || [];
+    const i = pend.findIndex(p => p.id === id);
+    if (i === -1) return { ok: false };
+    const pd = pend[i];
+    const club = Game.myClub();
+    club.budget = Math.round((club.budget + pd.fee) * 10) / 10;
+    pend.splice(i, 1);
+    if (pd.originId) {
+      const origin = state.clubs.find(c => c.id === pd.originId);
+      if (origin && !origin.strengthOnly) { const r = { ...pd.player, club: origin.id }; delete r.wageAgreed; origin.squad.push(r); origin.lineup = null; }
+    }
+    return { ok: true, name: pd.player.name, refund: pd.fee };
   },
 
   // Re-sign an existing squad player on new terms (no fee; only the wage delta

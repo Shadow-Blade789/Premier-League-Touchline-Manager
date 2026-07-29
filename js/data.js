@@ -22,6 +22,28 @@
      return Math.max(1, Math.round(w * am));
    }
 
+   // Market value (£m) from rating + age. Value peaks in a player's early-mid
+   // 20s and falls away sharply through their 30s — a 33-year-old is worth a
+   // fraction of the same player at peak, a 36+ veteran very little. Shared by
+   // P(), seasonal ageing and the scout watchlist.
+   function ageValueMult(age) {
+     return age <= 21 ? 1.35 :   // teens / high-potential youth
+            age <= 24 ? 1.2  :   // rising into prime
+            age <= 27 ? 1.0  :   // peak years
+            age <= 29 ? 0.8  :
+            age <= 30 ? 0.65 :
+            age <= 31 ? 0.5  :
+            age <= 32 ? 0.4  :
+            age <= 33 ? 0.3  :
+            age <= 34 ? 0.22 :
+            age <= 35 ? 0.16 :
+            age <= 36 ? 0.11 : 0.07; // 37+ — nominal resale value
+   }
+   function parValue(rating, age) {
+     const rf = Math.max(0, rating - 55);
+     return Math.max(0.3, Math.round(Math.pow(rf, 1.7) * ageValueMult(age) * 0.16 * 10) / 10);
+   }
+
    function growthRoom(age) {
      if (age <= 20) return 10 + Math.round(Math.random() * 8);   // +10..18
      if (age <= 23) return 5 + Math.round(Math.random() * 5);    // +5..10
@@ -60,7 +82,7 @@
        age < 29 ? 1.0 :
        age < 32 ? 0.7 :
        age < 35 ? 0.45 : 0.25;
-     const value = Math.max(0.3, Math.round(Math.pow(rf, 1.7) * ageMult * 0.16 * 10) / 10);
+     const value = parValue(rating, age);
      const wage = parWage(rating, age); // top-flight par; scaled by league in Contracts.effWage
    
      let potential = Math.min(96, rating + growthRoom(age));

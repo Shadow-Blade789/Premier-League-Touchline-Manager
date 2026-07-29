@@ -477,23 +477,42 @@
       document.getElementById("marketBudgetLabel").textContent =
         "Budget: " + this.money(club.budget) + " · Wage room: " + this.wageFull(Contracts.wageRoom(club)) + "/wk";
       this.renderFreeAgents(state); // always available, window or not
+      this.renderPendingSignings(state);
       const open = TransferWindow.isOpen(state.week);
-      document.getElementById("btnReroll").disabled = !open;
+      document.getElementById("btnReroll").disabled = false; // browsable/negotiable year-round
       const list = document.getElementById("marketList");
-      if (!open) {
-        list.innerHTML = `<p class="muted">The market is closed until the next transfer window opens.</p>`;
-        return;
-      }
       if (!state.market.length) {
         list.innerHTML = `<p class="muted">No players available — try rerolling the market.</p>`;
         return;
       }
+      // Outside the window a deal is PRE-AGREED — struck now, completed on open.
+      const label = open ? "Sign" : "Pre-agree";
       list.innerHTML = state.market.map(l => this.renderPlayerRow(l.player, {
         // Career record (apps + the position's headline stat) plus who's selling.
         subLabel: `${Stats.signingLine(l.player)} · ${l.origin ? "from " + l.originName : l.originName}`,
         priceLabel: this.money(l.price),
         potentialLabel: this.potentialRange(l.player.potential), // scouted: 5-wide range
-        action: `<button class="small primary" data-buy="${l.listingId}" ${club.budget < l.price ? "disabled" : ""}>Sign</button>`,
+        action: `<button class="small primary" data-buy="${l.listingId}" ${club.budget < l.price ? "disabled" : ""}>${label}</button>`,
+      })).join("");
+    },
+
+    // Pre-agreed signings waiting for the window to open.
+    renderPendingSignings(state) {
+      const wrap = document.getElementById("pendingPanel");
+      const list = document.getElementById("pendingList");
+      if (!wrap || !list) return;
+      const pend = state.pendingSignings || [];
+      if (!pend.length) { wrap.classList.add("hidden"); return; }
+      wrap.classList.remove("hidden");
+      const opensIn = TransferWindow.status(state);
+      const whenTxt = opensIn.open ? "completes now the window's open" :
+        opensIn.opensIn != null ? `joins in ${opensIn.opensIn} matchweek${opensIn.opensIn === 1 ? "" : "s"}` : "joins next window";
+      document.getElementById("pendingHint").textContent = `Fees are reserved; each player joins your squad when the window opens (${whenTxt}).`;
+      list.innerHTML = pend.map(pd => this.renderPlayerRow(pd.player, {
+        subLabel: `Agreed ${this.money(pd.fee)} · ${this.wage(pd.wage)} · ${pd.originName || "free agent"}`,
+        priceLabel: this.money(pd.fee),
+        potentialLabel: this.potentialRange(pd.player.potential),
+        action: `<button class="small ghost danger" data-cancelpending="${pd.id}">Cancel</button>`,
       })).join("");
     },
 
@@ -706,15 +725,15 @@
           const rows = r.candidates.map(c => {
             const off = c.fullPrice && c.fullPrice > c.price ? ` <span class="strike mono">${this.money(c.fullPrice)}</span>` : "";
             const priceLabel = `${this.money(c.price)}${off}`;
-            const affordable = club.budget >= c.price && club.squad.length < 32;
-            const btn = windowOpen
-              ? `<button class="small primary" data-scoutsign="${r.id}|${c.listingId}" ${affordable ? "" : "disabled"}>Sign</button>`
-              : `<button class="small" disabled title="Opens in the transfer window">Sign</button>`;
+            const affordable = club.budget >= c.price && club.squad.length + Market.pendingCount(state) < 32;
+            const label = windowOpen ? "Sign" : "Pre-agree";
+            const saveBtn = `<button class="small ghost" data-scoutsave="${r.id}|${c.listingId}" title="Save to shortlist">★ Save</button>`;
+            const signBtn = `<button class="small primary" data-scoutsign="${r.id}|${c.listingId}" ${affordable ? "" : "disabled"}>${label}</button>`;
             return this.renderPlayerRow(c.player, {
               subLabel: `${Stats.signingLine(c.player)} · ${c.origin ? "from " + c.originName : c.originName}`,
               priceLabel,
               potentialLabel: this.potentialRange(c.player.potential),
-              action: btn,
+              action: saveBtn + signBtn,
             });
           }).join("");
           return `<div class="scout-report">
@@ -725,7 +744,43 @@
             ${rows}
           </div>`;
         }).join("")
-        : `<p class="muted" style="font-size:0.82rem;">No reports yet — send a scout out and check back in a few matchweeks.${windowOpen ? "" : " You can scout any time; sign when the window opens."}</p>`;
+        : `<p class="muted" style="font-size:0.82rem;">No reports yet — send a scout out and check back in a few matchweeks. Save finds to your shortlist to sign later.</p>`;
+      this.renderWatchlist(state);
+    },
+
+    // The shortlist / watchlist — saved scout targets with LIVE data (real
+    // players resolve to their current club/rating/wage; prospects age on).
+    renderWatchlist(state) {
+      const el = document.getElementById("watchlistBody");
+      if (!el) return;
+      const club = Game.myClub();
+      const wl = state.watchlist || [];
+      if (!wl.length) {
+        el.innerHTML = `<p class="muted" style="font-size:0.82rem;">Your shortlist is empty — hit ★ Save on a scouted target to track it here and sign whenever you're ready.</p>`;
+        return;
+      }
+      const windowOpen = TransferWindow.isOpen(state.week);
+      const label = windowOpen ? "Sign" : "Pre-agree";
+      el.innerHTML = wl.map(e => {
+        const r = Scouting.watchlistResolve(state, e);
+        if (!r.available) {
+          return `<div class="player-row"><div class="pos-chip ${e.pos}">${e.pos}</div>
+            <div><div class="name muted">Target unavailable</div><div class="sub">Left the game</div></div>
+            <div></div><div></div><div></div><div></div>
+            <button class="small ghost" data-wlremove="${e.id}">Remove</button></div>`;
+        }
+        const p = r.player;
+        const fee = Scouting.watchlistFee(e, r);
+        const movedTag = e.kind === "real" && r.moved ? ` <span class="nat-tag">moved → ${r.club.short}</span>` : "";
+        const affordable = club.budget >= fee && club.squad.length + Market.pendingCount(state) < 32;
+        return this.renderPlayerRow(p, {
+          subLabel: `${Stats.signingLine(p)} · ${e.kind === "real" ? "at " + (r.club ? r.club.short : "?") : "prospect"} · asks ${this.wage(Contracts.effWage(p))}`,
+          badge: movedTag,
+          priceLabel: this.money(fee),
+          potentialLabel: this.potentialRange(p.potential),
+          action: `<button class="small ghost" data-wlremove="${e.id}">✕</button><button class="small primary" data-wlsign="${e.id}" ${affordable ? "" : "disabled"}>${label}</button>`,
+        });
+      }).join("");
     },
 
     // The Medical & Fitness panel: the physio and the current treatment room.

@@ -10,7 +10,7 @@
    ========================================================================= */
 
 const SCOUT_CAP = 3;
-let _scoutId = 1, _repId = 1, _scListId = 1;
+let _scoutId = 1, _repId = 1, _scListId = 1, _wlId = 1;
 
 function makeScout(rating) {
   const { name } = randomProspect();
@@ -64,6 +64,7 @@ const Scouting = {
     if (!club.scouting) this.init(club);
     club.scouting.scouts = club.scouting.scouts || [];
     club.scouting.reports = club.scouting.reports || [];
+    if (!Array.isArray(state.watchlist)) state.watchlist = [];
   },
 
   // ---- assignments ----------------------------------------------------------
@@ -178,44 +179,126 @@ const Scouting = {
   },
 
   // ---- signing a scouted target ---------------------------------------------
+  // Routes through Market.executeSigning, so a deal struck outside the window
+  // becomes a pre-agreed signing that lands when the window opens.
   sign(state, reportId, listingId) {
-    if (!TransferWindow.isOpen(state.week)) return { ok: false, reason: "The transfer window is closed — the target will keep." };
     const club = Game.myClub();
     const rep = (club.scouting.reports || []).find(r => r.id === reportId);
     if (!rep) return { ok: false, reason: "That report has expired." };
     const ci = rep.candidates.findIndex(c => c.listingId === listingId);
     if (ci === -1) return { ok: false, reason: "That target is no longer listed." };
     const cand = rep.candidates[ci];
-    if (club.squad.length >= 32) return { ok: false, reason: "Your squad is full (32 players max)." };
-    if (club.budget < cand.price) return { ok: false, reason: "Not enough budget for this deal." };
-    if (Contracts.wageRoom(club) < Contracts.effWage(cand.player)) return { ok: false, reason: "Not enough room in your wage budget." };
 
-    // A real target may have moved on since the report landed.
-    if (cand.origin) {
-      const originClub = state.clubs.find(c => c.id === cand.origin);
-      const stillThere = originClub && originClub.squad.find(p => p.id === cand.player.id);
-      if (!stillThere) {
+    let player = cand.player, originId = cand.origin || null;
+    if (originId) {
+      const originClub = state.clubs.find(c => c.id === originId);
+      const live = originClub && originClub.squad.find(p => p.id === cand.player.id);
+      if (!live) {
         rep.candidates.splice(ci, 1);
         if (!rep.candidates.length) this.dropReport(club, reportId);
         return { ok: false, reason: `${cand.player.name} has already moved on.` };
       }
-      originClub.squad = originClub.squad.filter(p => p.id !== cand.player.id);
-      Market.guardMinimum(originClub);
-      originClub.lineup = null;
-      // Remove them from the open market too, if listed there.
-      state.market = (state.market || []).filter(l => l.player.id !== cand.player.id);
+      player = live; // sign on their CURRENT terms
     }
-
-    club.budget = Math.round((club.budget - cand.price) * 10) / 10;
-    Stats.ensure(cand.player);
-    const player = { ...cand.player, club: club.id, transferListed: false, offers: [], stats: { ...cand.player.stats }, bonus: { ...cand.player.bonus }, career: { ...cand.player.career } };
-    Contracts.applyContract(player, Contracts.effWage(cand.player), Contracts.idealLength(cand.player.age));
-    club.squad.push(player);
-    club.lineup = null;
-
+    const res = Market.executeSigning(state, {
+      player, fee: cand.price, wage: Contracts.effWage(player), years: Contracts.idealLength(player.age),
+      originId, originName: cand.originName, freeAgent: false,
+    });
+    if (!res.ok) return res;
     rep.candidates.splice(ci, 1);
     if (!rep.candidates.length) this.dropReport(club, reportId);
-    return { ok: true, name: cand.player.name, price: cand.price, origin: cand.originName };
+    return { ok: true, immediate: res.immediate, name: res.name, price: cand.price, origin: cand.originName };
+  },
+
+  // ---- watchlist / shortlist ------------------------------------------------
+  // Save a scouted target to sign later. Reports clear every season but the
+  // watchlist persists, so a scout can be re-used without losing the finds. The
+  // saved player's data stays LIVE — real targets resolve to their current
+  // club/rating/wage; generated prospects age on with you.
+  saveToWatchlist(state, reportId, listingId) {
+    const club = Game.myClub();
+    const rep = (club.scouting.reports || []).find(r => r.id === reportId);
+    if (!rep) return { ok: false, reason: "That report has expired." };
+    const cand = rep.candidates.find(c => c.listingId === listingId);
+    if (!cand) return { ok: false, reason: "That target is no longer listed." };
+    state.watchlist = state.watchlist || [];
+    const pid = cand.player.id;
+    if (state.watchlist.some(e => e.playerId === pid || (e.player && e.player.id === pid))) {
+      return { ok: false, reason: `${cand.player.name} is already on your shortlist.` };
+    }
+    const base = { id: "wl" + (_wlId++), pos: rep.pos, profile: rep.profile, discount: rep.discount, scoutName: rep.scoutName, addedWeek: state.week };
+    if (cand.origin) state.watchlist.push({ ...base, kind: "real", playerId: pid, originId: cand.origin });
+    else state.watchlist.push({ ...base, kind: "prospect", player: { ...cand.player } });
+    return { ok: true, name: cand.player.name };
+  },
+
+  removeWatchlist(state, entryId) {
+    const wl = state.watchlist || [];
+    const i = wl.findIndex(e => e.id === entryId);
+    if (i === -1) return { ok: false };
+    const name = wl[i].kind === "real" ? this.nameOf(state, wl[i].playerId) : (wl[i].player && wl[i].player.name);
+    wl.splice(i, 1);
+    return { ok: true, name };
+  },
+  nameOf(state, pid) {
+    for (const c of state.clubs) { if (c.strengthOnly || !c.squad) continue; const p = c.squad.find(x => x.id === pid); if (p) return p.name; }
+    return "The target";
+  },
+
+  // Resolve a watchlist entry to its CURRENT data (real players move/develop;
+  // prospects carry their own aged snapshot).
+  watchlistResolve(state, entry) {
+    if (entry.kind === "real") {
+      for (const club of state.clubs) {
+        if (club.strengthOnly || !club.squad) continue;
+        const p = club.squad.find(x => x.id === entry.playerId);
+        if (p) return { available: true, player: p, club, moved: club.id !== entry.originId };
+      }
+      return { available: false };
+    }
+    return { available: true, player: entry.player, club: null, moved: false };
+  },
+
+  // Current fee for a watchlist target (recomputed from live value, scout
+  // discount preserved).
+  watchlistFee(entry, resolved) {
+    const p = resolved.player;
+    return Math.max(0.2, Math.round(Math.max(0.3, p.value * 1.05) * (1 - (entry.discount || 0)) * 10) / 10);
+  },
+
+  signFromWatchlist(state, entryId) {
+    const wl = state.watchlist || [];
+    const i = wl.findIndex(e => e.id === entryId);
+    if (i === -1) return { ok: false, reason: "That target is no longer on your shortlist." };
+    const entry = wl[i];
+    const r = this.watchlistResolve(state, entry);
+    if (!r.available) { wl.splice(i, 1); return { ok: false, reason: "That target has left the game." }; }
+    const fee = this.watchlistFee(entry, r);
+    const res = Market.executeSigning(state, {
+      player: r.player, fee, wage: Contracts.effWage(r.player), years: Contracts.idealLength(r.player.age),
+      originId: entry.kind === "real" ? r.club.id : null,
+      originName: entry.kind === "real" ? r.club.short : "Free agent", freeAgent: false,
+    });
+    if (!res.ok) return res;
+    wl.splice(i, 1);
+    return { ok: true, immediate: res.immediate, name: res.name, price: fee };
+  },
+
+  // Season tick for the watchlist: age generated prospects (rating can climb →
+  // higher wage demands), and drop real targets who've left the game.
+  watchlistSeasonRollover(state) {
+    const wl = state.watchlist || [];
+    state.watchlist = wl.filter(e => {
+      if (e.kind === "prospect" && e.player) {
+        const p = e.player;
+        p.age += 1;
+        if (p.age < 24 && p.rating < p.potential) p.rating = Math.min(p.potential, p.rating + Aging.growthStep(p.age));
+        p.value = parValue(p.rating, p.age);
+        p.wage = parWage(p.rating, p.age);
+        return true;
+      }
+      return this.watchlistResolve(state, e).available; // prune vanished real targets
+    });
   },
 
   dismiss(state, reportId) {
@@ -237,5 +320,6 @@ const Scouting = {
     if (!club || !club.scouting) return;
     club.scouting.reports = [];
     (club.scouting.scouts || []).forEach(sc => { sc.busyUntil = null; sc.assignment = null; });
+    this.watchlistSeasonRollover(state); // watchlist PERSISTS — just age prospects & prune
   },
 };

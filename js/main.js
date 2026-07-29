@@ -187,8 +187,30 @@
           const [repId, listingId] = sign.dataset.scoutsign.split("|");
           const res = Scouting.sign(Game.state, repId, listingId);
           if (!res.ok) { UI.toast(res.reason); UI.renderScouting(Game.state); return; }
-          UI.toast(`Signed ${res.name} for ${UI.money(res.price)} (scouted)`);
+          UI.toast(res.immediate ? `Signed ${res.name} for ${UI.money(res.price)} (scouted)` : `🤝 Pre-agreed ${res.name} — joins when the window opens`);
           Game.save(); UI.renderScouting(Game.state); this.refreshChrome();
+          return;
+        }
+        const save = e.target.closest("button[data-scoutsave]");
+        if (save) {
+          const [repId, listingId] = save.dataset.scoutsave.split("|");
+          const res = Scouting.saveToWatchlist(Game.state, repId, listingId);
+          UI.toast(res.ok ? `★ ${res.name} added to your shortlist` : res.reason);
+          Game.save(); UI.renderScouting(Game.state);
+          return;
+        }
+        const wlSign = e.target.closest("button[data-wlsign]");
+        if (wlSign) {
+          const res = Scouting.signFromWatchlist(Game.state, wlSign.dataset.wlsign);
+          if (!res.ok) { UI.toast(res.reason); UI.renderScouting(Game.state); return; }
+          UI.toast(res.immediate ? `Signed ${res.name} for ${UI.money(res.price)}` : `🤝 Pre-agreed ${res.name} — joins when the window opens`);
+          Game.save(); UI.renderScouting(Game.state); this.refreshChrome();
+          return;
+        }
+        const wlRem = e.target.closest("button[data-wlremove]");
+        if (wlRem) {
+          Scouting.removeWatchlist(Game.state, wlRem.dataset.wlremove);
+          Game.save(); UI.renderScouting(Game.state);
           return;
         }
         const dis = e.target.closest("button[data-scoutdismiss]");
@@ -304,6 +326,15 @@
         if (!listing) { UI.toast("That free agent has already moved on."); UI.renderMarket(Game.state); return; }
         this.openContract({ kind: "free", listingId: listing.listingId, player: listing.player, fee: listing.price });
       });
+      document.getElementById("pendingList").addEventListener("click", e => {
+        const btn = e.target.closest("button[data-cancelpending]");
+        if (!btn) return;
+        const res = Market.cancelPending(Game.state, btn.dataset.cancelpending);
+        if (res.ok) UI.toast(`Cancelled — ${res.name}, ${UI.money(res.refund)} refunded`);
+        Game.save();
+        UI.renderMarket(Game.state);
+        this.refreshChrome();
+      });
     },
 
     // ---------------- Contract negotiation ----------------
@@ -367,7 +398,10 @@
           ? Market.renewContract(state, p.id, wage, years)
           : Market.completeSigning(state, ctx, wage, years);
         if (!res.ok) { this.contractFeedback = res.reason; UI.renderContractModal(state); return; }
-        UI.toast(ctx.kind === "renew" ? `✍️ ${res.name} renews — ${years}yr deal` : `✍️ Signed ${res.name} — ${years}yr deal`);
+        const msg = ctx.kind === "renew" ? `✍️ ${res.name} renews — ${years}yr deal`
+          : res.immediate === false ? `🤝 Pre-agreed ${res.name} — joins when the window opens`
+          : `✍️ Signed ${res.name} — ${years}yr deal`;
+        UI.toast(msg);
         Game.save();
         this.closeContract();
         UI.renderMarket(state); UI.renderSquad(state); this.refreshChrome();
@@ -867,8 +901,11 @@
       } else {
         const t = this.windowTransition;
         this.showTab("hub");
-        if (t && t.transition === "opened") UI.toast(`🔁 ${t.name} transfer window is now open!`);
-        else if (t && t.transition === "closed") UI.toast("🔒 Transfer window has closed.");
+        if (t && t.transition === "opened") {
+          UI.toast(`🔁 ${t.name} transfer window is now open!`);
+          (t.arrivals || []).forEach(a => UI.toast(a.refunded ? `⚠️ ${a.name}'s pre-agreed move fell through (squad full) — fee refunded` : `✅ ${a.name} completes his pre-agreed move and joins the squad`));
+        }
+        else if (t && t.transition === "closed") UI.toast("🔒 Transfer window has closed — you can still pre-agree deals for the next window.");
         (state.academyNews || []).forEach(m => UI.toast(m));
         (state.scoutNews || []).forEach(m => UI.toast(m));
         (state.medicalNews || []).forEach(m => UI.toast(m));
