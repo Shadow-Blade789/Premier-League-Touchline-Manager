@@ -95,10 +95,39 @@ const Market = {
     return pool;
   },
 
+  // A plausible foreign target generated on demand from a strength-only club
+  // abroad (the game is UEFA-wide, but only the managed country stores real
+  // squads — so foreign players are conjured from their club's strength +
+  // nationality). Rating tracks the club's strength, so bigger clubs surface
+  // bigger names. `posOverride` forces a position (used by scouting briefs).
+  buildForeignListing(state, posOverride) {
+    const foreign = state.clubs.filter(c => c.strengthOnly && typeof c.strength === "number");
+    if (!foreign.length) return null;
+    const weights = foreign.map(c => Math.pow(Math.max(40, c.strength), 2.4)); // favour stronger clubs
+    const club = weightedPick(foreign, weights);
+    if (!club) return null;
+    const country = LEAGUE_COUNTRY[club.league] || "ENG";
+    const { name, nat } = homeProspect(country);
+    const pos = posOverride || POSITIONS[Math.floor(Math.random() * POSITIONS.length)];
+    const rating = clamp(Math.round(club.strength + (Math.random() * 14 - 8)), 47, 92);
+    const age = 21 + Math.floor(Math.random() * 12); // 21–32 (skew away from teen value inflation)
+    const p = P(name, pos, age, rating, { nat });
+    p.club = club.id; // so effWage reads the foreign league's pay scale
+    // Fees scale with the selling league's wealth — a Maltese player costs a
+    // fraction of a Bundesliga one of the same rating.
+    const feeFactor = clamp(0.3 + 0.7 * (LEAGUE_ECON[club.league] != null ? LEAGUE_ECON[club.league] : 0.4), 0.25, 1);
+    const markup = 1.0 + Math.random() * 0.6;
+    const price = Math.max(0.4, Math.round(p.value * feeFactor * markup * 10) / 10);
+    return { listingId: "fx" + p.id, player: p, origin: club.id, originName: `${club.short} · ${COUNTRY_NAMES[country] || country}`, price, foreign: true };
+  },
+
   buildListings(state, count) {
     const listings = [];
+    // ~30% foreign targets from across UEFA, ~40% real domestic, rest generated.
+    const foreignCount = Math.round(count * 0.3);
+    for (let i = 0; i < foreignCount; i++) { const f = this.buildForeignListing(state); if (f) listings.push(f); }
     const realPool = this.sellablePoolAcrossLeague(state);
-    const realCount = Math.round(count * 0.6);
+    const realCount = Math.round(count * 0.4);
     for (let i = 0; i < realCount && realPool.length; i++) {
       const idx = Math.floor(Math.random() * realPool.length);
       const { player, club } = realPool.splice(idx, 1)[0];
@@ -385,9 +414,10 @@ const Market = {
     const immediate = deal.freeAgent || TransferWindow.isOpen(state.week);
 
     // A real target is pulled out of their club — they're committed to you now.
+    // (Foreign, strength-only clubs have no player-level squad to remove from.)
     if (deal.originId) {
       const origin = state.clubs.find(c => c.id === deal.originId);
-      if (origin) { origin.squad = origin.squad.filter(p => p.id !== deal.player.id); this.guardMinimum(origin); origin.lineup = null; }
+      if (origin && origin.squad) { origin.squad = origin.squad.filter(p => p.id !== deal.player.id); this.guardMinimum(origin); origin.lineup = null; }
       state.market = (state.market || []).filter(l => l.player.id !== deal.player.id);
     }
 

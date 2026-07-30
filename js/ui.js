@@ -489,7 +489,7 @@
       const label = open ? "Sign" : "Pre-agree";
       list.innerHTML = state.market.map(l => this.renderPlayerRow(l.player, {
         // Career record (apps + the position's headline stat) plus who's selling.
-        subLabel: `${Stats.signingLine(l.player)} · ${l.origin ? "from " + l.originName : l.originName}`,
+        subLabel: `${Stats.signingLine(l.player)} · ${l.origin ? "from " + l.originName : l.originName} · wants ${this.wage(Contracts.effWage(l.player))}`,
         priceLabel: this.money(l.price),
         potentialLabel: this.potentialRange(l.player.potential), // scouted: 5-wide range
         action: `<button class="small primary" data-buy="${l.listingId}" ${club.budget < l.price ? "disabled" : ""}>${label}</button>`,
@@ -528,7 +528,7 @@
         return;
       }
       list.innerHTML = fas.map(l => this.renderPlayerRow(l.player, {
-        subLabel: `${Stats.signingLine(l.player)} · Free agent`,
+        subLabel: `${Stats.signingLine(l.player)} · Free agent · wants ${this.wage(Contracts.effWage(l.player))}`,
         priceLabel: this.money(l.price),
         potentialLabel: this.potentialRange(l.player.potential),
         action: `<button class="small primary" data-signfree="${l.listingId}" ${club.budget < l.price ? "disabled" : ""}>Sign</button>`,
@@ -604,6 +604,50 @@
         if (!isRenew && club.squad.length >= 32) bad = true;
         btn.disabled = bad;
       }
+    },
+
+    // ---- rebalance budgets modal ---------------------------------------------
+    renderFinanceModal(state) {
+      const club = Game.myClub();
+      const rate = Contracts.WAGE_PER_M;
+      const bill = Contracts.wageBill(club) + Contracts.pendingWage(state);
+      const maxToWage = Math.floor(club.budget * rate);                    // all transfer → wage
+      const maxToTransfer = Math.max(0, Math.floor((club.wageBudget || 0) - bill)); // free wage room → transfer
+      const delta = App.financeDelta || 0;
+      const body = document.getElementById("financeBody");
+      body.innerHTML =
+        `<p class="muted contract-fee">Shift money between your transfer kitty and your weekly wage budget. Rate: <strong>£1m ≈ ${this.wageFull(rate)}/wk</strong>.</p>
+         <div class="finance-cols">
+           <div><span class="eyebrow">Transfer budget</span><div class="finance-val" id="finTransfer">—</div></div>
+           <div><span class="eyebrow">Wage budget</span><div class="finance-val" id="finWage">—</div></div>
+         </div>
+         <div class="contract-slider">
+           <label><span>← to Transfer</span><span id="finDeltaLabel" class="slider-val"></span><span>to Wages →</span></label>
+           <input type="range" id="finSlider" min="${-maxToTransfer}" max="${maxToWage}" step="5" value="${delta}">
+         </div>
+         <p class="muted" id="finRoom" style="font-size:0.8rem;"></p>
+         <div class="contract-actions">
+           <button class="ghost" id="btnFinanceReset">Reset</button>
+           <button class="primary" id="btnFinanceApply">Apply</button>
+         </div>`;
+      this.updateFinancePreview(state);
+    },
+
+    updateFinancePreview(state) {
+      const club = Game.myClub();
+      const rate = Contracts.WAGE_PER_M;
+      const bill = Contracts.wageBill(club) + Contracts.pendingWage(state);
+      const delta = App.financeDelta || 0;
+      const newWage = (club.wageBudget || 0) + delta;
+      const newTransfer = Math.round((club.budget - delta / rate) * 10) / 10;
+      const room = newWage - bill;
+      const set = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+      set("finTransfer", this.money(newTransfer));
+      set("finWage", this.wageFull(newWage) + "/wk");
+      set("finDeltaLabel", delta === 0 ? "no change" : (delta > 0 ? "+" + this.wageFull(delta) : "−" + this.wageFull(-delta)) + "/wk");
+      set("finRoom", `Wage room after: <strong class="${room < 0 ? "neg" : "pos"}">${this.wageFull(room)}/wk</strong>`);
+      const apply = document.getElementById("btnFinanceApply");
+      if (apply) apply.disabled = delta === 0 || newTransfer < 0 || room < 0;
     },
 
     renderCoaches(state) {
@@ -730,7 +774,7 @@
             const saveBtn = `<button class="small ghost" data-scoutsave="${r.id}|${c.listingId}" title="Save to shortlist">★ Save</button>`;
             const signBtn = `<button class="small primary" data-scoutsign="${r.id}|${c.listingId}" ${affordable ? "" : "disabled"}>${label}</button>`;
             return this.renderPlayerRow(c.player, {
-              subLabel: `${Stats.signingLine(c.player)} · ${c.origin ? "from " + c.originName : c.originName}`,
+              subLabel: `${Stats.signingLine(c.player)} · ${c.origin ? "from " + c.originName : c.originName} · wants ${this.wage(Contracts.effWage(c.player))}`,
               priceLabel,
               potentialLabel: this.potentialRange(c.player.potential),
               action: saveBtn + signBtn,

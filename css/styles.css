@@ -569,6 +569,13 @@
    .match-controls .speedgroup button:last-child { border-right: none; }
    .match-controls .speedgroup button.active { background: var(--amber); color: var(--amber-ink); }
 
+   /* ---------- Rebalance budgets ---------- */
+   .finance-cols { display: flex; gap: 0.8rem; margin: 0.6rem 0 0.4rem; }
+   .finance-cols > div { flex: 1; background: var(--panel-2); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 0.6rem 0.7rem; text-align: center; }
+   .finance-val { font-family: var(--font-mono); font-size: 1.2rem; font-weight: 700; color: var(--amber); margin-top: 0.2rem; }
+   #finRoom .neg { color: var(--alert-red); }
+   #finRoom .pos { color: var(--green); }
+
    /* ---------- Contract negotiation ---------- */
    .contract-player { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.7rem; }
    .contract-player .name { font-family: var(--font-display); font-size: 1.05rem; }

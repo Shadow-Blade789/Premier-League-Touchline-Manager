@@ -150,12 +150,18 @@ const Scouting = {
     });
     real.sort((a, b) => (fit(b.player) + noise()) - (fit(a.player) + noise()));
 
-    const wantReal = Math.min(real.length, Math.max(1, Math.round(n * 0.6)));
+    const wantReal = Math.min(real.length, Math.max(1, Math.round(n * 0.45)));
     const out = [];
     for (let i = 0; i < wantReal; i++) {
       const { player, club } = real[i];
       const base = Market.listingFromExisting(player, club);
       out.push(this.decorate(base, disc));
+    }
+    // Scouts range across UEFA — pull in some foreign targets at this position.
+    const wantForeign = Math.round(n * 0.35);
+    for (let i = 0; i < wantForeign && out.length < n; i++) {
+      const f = Market.buildForeignListing(state, pos);
+      if (f) out.push(this.decorate(f, disc));
     }
     // Fill the rest with generated finds (ceiling scaled by the scout).
     while (out.length < n) {
@@ -181,33 +187,46 @@ const Scouting = {
   // ---- signing a scouted target ---------------------------------------------
   // Routes through Market.executeSigning, so a deal struck outside the window
   // becomes a pre-agreed signing that lands when the window opens.
-  sign(state, reportId, listingId) {
+  // Resolve a scouted candidate to its current player + origin (used by the
+  // negotiation modal to show live demands).
+  resolveCandidate(state, reportId, listingId) {
     const club = Game.myClub();
     const rep = (club.scouting.reports || []).find(r => r.id === reportId);
-    if (!rep) return { ok: false, reason: "That report has expired." };
-    const ci = rep.candidates.findIndex(c => c.listingId === listingId);
-    if (ci === -1) return { ok: false, reason: "That target is no longer listed." };
-    const cand = rep.candidates[ci];
-
-    let player = cand.player, originId = cand.origin || null;
+    if (!rep) return null;
+    const cand = rep.candidates.find(c => c.listingId === listingId);
+    if (!cand) return null;
+    let player = cand.player, originId = cand.origin || null, gone = false;
     if (originId) {
       const originClub = state.clubs.find(c => c.id === originId);
       const live = originClub && originClub.squad.find(p => p.id === cand.player.id);
-      if (!live) {
-        rep.candidates.splice(ci, 1);
-        if (!rep.candidates.length) this.dropReport(club, reportId);
-        return { ok: false, reason: `${cand.player.name} has already moved on.` };
-      }
-      player = live; // sign on their CURRENT terms
+      if (!live) gone = true; else player = live;
+    }
+    return { rep, cand, player, originId, gone };
+  },
+
+  // wage/years optional — supplied when signed through the negotiation modal,
+  // otherwise auto-agreed at the player's demand on an age-appropriate length.
+  sign(state, reportId, listingId, wage, years) {
+    const club = Game.myClub();
+    const r = this.resolveCandidate(state, reportId, listingId);
+    if (!r) return { ok: false, reason: "That target is no longer listed." };
+    if (r.gone) {
+      const ci = r.rep.candidates.indexOf(r.cand);
+      if (ci >= 0) r.rep.candidates.splice(ci, 1);
+      if (!r.rep.candidates.length) this.dropReport(club, reportId);
+      return { ok: false, reason: `${r.cand.player.name} has already moved on.` };
     }
     const res = Market.executeSigning(state, {
-      player, fee: cand.price, wage: Contracts.effWage(player), years: Contracts.idealLength(player.age),
-      originId, originName: cand.originName, freeAgent: false,
+      player: r.player, fee: r.cand.price,
+      wage: wage != null ? wage : Contracts.effWage(r.player),
+      years: years != null ? years : Contracts.idealLength(r.player.age),
+      originId: r.originId, originName: r.cand.originName, freeAgent: false,
     });
     if (!res.ok) return res;
-    rep.candidates.splice(ci, 1);
-    if (!rep.candidates.length) this.dropReport(club, reportId);
-    return { ok: true, immediate: res.immediate, name: res.name, price: cand.price, origin: cand.originName };
+    const ci = r.rep.candidates.indexOf(r.cand);
+    if (ci >= 0) r.rep.candidates.splice(ci, 1);
+    if (!r.rep.candidates.length) this.dropReport(club, reportId);
+    return { ok: true, immediate: res.immediate, name: res.name, price: r.cand.price, origin: r.cand.originName };
   },
 
   // ---- watchlist / shortlist ------------------------------------------------
@@ -227,7 +246,9 @@ const Scouting = {
       return { ok: false, reason: `${cand.player.name} is already on your shortlist.` };
     }
     const base = { id: "wl" + (_wlId++), pos: rep.pos, profile: rep.profile, discount: rep.discount, scoutName: rep.scoutName, addedWeek: state.week };
-    if (cand.origin) state.watchlist.push({ ...base, kind: "real", playerId: pid, originId: cand.origin });
+    // A real DOMESTIC player (in a squad) is tracked live by id; generated finds
+    // and FOREIGN targets (no stored squad) keep their own snapshot.
+    if (cand.origin && !cand.foreign) state.watchlist.push({ ...base, kind: "real", playerId: pid, originId: cand.origin });
     else state.watchlist.push({ ...base, kind: "prospect", player: { ...cand.player } });
     return { ok: true, name: cand.player.name };
   },
@@ -266,7 +287,7 @@ const Scouting = {
     return Math.max(0.2, Math.round(Math.max(0.3, p.value * 1.05) * (1 - (entry.discount || 0)) * 10) / 10);
   },
 
-  signFromWatchlist(state, entryId) {
+  signFromWatchlist(state, entryId, wage, years) {
     const wl = state.watchlist || [];
     const i = wl.findIndex(e => e.id === entryId);
     if (i === -1) return { ok: false, reason: "That target is no longer on your shortlist." };
@@ -275,7 +296,9 @@ const Scouting = {
     if (!r.available) { wl.splice(i, 1); return { ok: false, reason: "That target has left the game." }; }
     const fee = this.watchlistFee(entry, r);
     const res = Market.executeSigning(state, {
-      player: r.player, fee, wage: Contracts.effWage(r.player), years: Contracts.idealLength(r.player.age),
+      player: r.player, fee,
+      wage: wage != null ? wage : Contracts.effWage(r.player),
+      years: years != null ? years : Contracts.idealLength(r.player.age),
       originId: entry.kind === "real" ? r.club.id : null,
       originName: entry.kind === "real" ? r.club.short : "Free agent", freeAgent: false,
     });

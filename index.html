@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PLFC Touchline Manager</title>
 <meta name="description" content="A Premier League club-management sim — pick your club, run the transfer market, set your lineup, and live the season.">
-<link rel="stylesheet" href="css/styles.css?v=56">
+<link rel="stylesheet" href="css/styles.css?v=58">
 </head>
 <body>
 
@@ -34,6 +34,17 @@
         <button class="ghost small" id="btnCloseTrophies" type="button">Close</button>
       </div>
       <div id="trophyCabinetBody"></div>
+    </div>
+  </div>
+
+  <!-- ============ REBALANCE BUDGETS (modal) ============ -->
+  <div class="modal-overlay hidden" id="financeModal">
+    <div class="modal">
+      <div class="modal-head">
+        <h3 style="margin:0;">Rebalance Budgets</h3>
+        <button class="ghost small" id="btnFinanceClose" type="button">Close</button>
+      </div>
+      <div id="financeBody"></div>
     </div>
   </div>
 
@@ -166,6 +177,7 @@
         <h2 style="margin:0;">Transfer Market</h2>
         <div>
           <span class="muted mono" id="marketBudgetLabel" style="margin-right:0.8rem;"></span>
+          <button id="btnFinance">⇄ Budgets</button>
           <button id="btnReroll">⟳ Reroll Market</button>
         </div>
       </div>
@@ -369,25 +381,25 @@
 
 </div>
 
-<script src="js/data.js?v=56"></script>
-<script src="js/state.js?v=56"></script>
-<script src="js/lineup.js?v=56"></script>
-<script src="js/match.js?v=56"></script>
-<script src="js/stats.js?v=56"></script>
-<script src="js/cup.js?v=56"></script>
-<script src="js/vertu.js?v=56"></script>
-<script src="js/europe.js?v=56"></script>
-<script src="js/season.js?v=56"></script>
-<script src="js/board.js?v=56"></script>
-<script src="js/squad.js?v=56"></script>
-<script src="js/contracts.js?v=56"></script>
-<script src="js/coaches.js?v=56"></script>
-<script src="js/academy.js?v=56"></script>
-<script src="js/scouting.js?v=56"></script>
-<script src="js/fitness.js?v=56"></script>
-<script src="js/shootout.js?v=56"></script>
-<script src="js/dynamics.js?v=56"></script>
-<script src="js/ui.js?v=56"></script>
-<script src="js/main.js?v=56"></script>
+<script src="js/data.js?v=58"></script>
+<script src="js/state.js?v=58"></script>
+<script src="js/lineup.js?v=58"></script>
+<script src="js/match.js?v=58"></script>
+<script src="js/stats.js?v=58"></script>
+<script src="js/cup.js?v=58"></script>
+<script src="js/vertu.js?v=58"></script>
+<script src="js/europe.js?v=58"></script>
+<script src="js/season.js?v=58"></script>
+<script src="js/board.js?v=58"></script>
+<script src="js/squad.js?v=58"></script>
+<script src="js/contracts.js?v=58"></script>
+<script src="js/coaches.js?v=58"></script>
+<script src="js/academy.js?v=58"></script>
+<script src="js/scouting.js?v=58"></script>
+<script src="js/fitness.js?v=58"></script>
+<script src="js/shootout.js?v=58"></script>
+<script src="js/dynamics.js?v=58"></script>
+<script src="js/ui.js?v=58"></script>
+<script src="js/main.js?v=58"></script>
 </body>
 </html>

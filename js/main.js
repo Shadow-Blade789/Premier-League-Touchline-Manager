@@ -28,6 +28,7 @@
       this.wireTrophies();
       this.wireCoaches();
       this.wireContracts();
+      this.wireFinance();
 
       if (Game.hasSave() && Game.load()) {
         const club = Game.myClub();
@@ -185,10 +186,9 @@
         const sign = e.target.closest("button[data-scoutsign]");
         if (sign) {
           const [repId, listingId] = sign.dataset.scoutsign.split("|");
-          const res = Scouting.sign(Game.state, repId, listingId);
-          if (!res.ok) { UI.toast(res.reason); UI.renderScouting(Game.state); return; }
-          UI.toast(res.immediate ? `Signed ${res.name} for ${UI.money(res.price)} (scouted)` : `🤝 Pre-agreed ${res.name} — joins when the window opens`);
-          Game.save(); UI.renderScouting(Game.state); this.refreshChrome();
+          const r = Scouting.resolveCandidate(Game.state, repId, listingId);
+          if (!r || r.gone) { UI.toast(r ? `${r.cand.player.name} has already moved on.` : "That target is no longer listed."); Scouting.sign(Game.state, repId, listingId); Game.save(); UI.renderScouting(Game.state); return; }
+          this.openContract({ kind: "scout", reportId: repId, listingId, player: r.player, fee: r.cand.price, origin: r.originId });
           return;
         }
         const save = e.target.closest("button[data-scoutsave]");
@@ -201,10 +201,11 @@
         }
         const wlSign = e.target.closest("button[data-wlsign]");
         if (wlSign) {
-          const res = Scouting.signFromWatchlist(Game.state, wlSign.dataset.wlsign);
-          if (!res.ok) { UI.toast(res.reason); UI.renderScouting(Game.state); return; }
-          UI.toast(res.immediate ? `Signed ${res.name} for ${UI.money(res.price)}` : `🤝 Pre-agreed ${res.name} — joins when the window opens`);
-          Game.save(); UI.renderScouting(Game.state); this.refreshChrome();
+          const entry = (Game.state.watchlist || []).find(x => x.id === wlSign.dataset.wlsign);
+          if (!entry) { UI.toast("That target is no longer on your shortlist."); UI.renderScouting(Game.state); return; }
+          const r = Scouting.watchlistResolve(Game.state, entry);
+          if (!r.available) { UI.toast("That target has left the game."); Scouting.removeWatchlist(Game.state, entry.id); Game.save(); UI.renderScouting(Game.state); return; }
+          this.openContract({ kind: "watchlist", entryId: entry.id, player: r.player, fee: Scouting.watchlistFee(entry, r), origin: entry.kind === "real" ? r.club.id : null });
           return;
         }
         const wlRem = e.target.closest("button[data-wlremove]");
@@ -337,6 +338,34 @@
       });
     },
 
+    // ---------------- Rebalance budgets ----------------
+    wireFinance() {
+      document.getElementById("btnFinance").addEventListener("click", () => this.openFinance());
+      document.getElementById("btnFinanceClose").addEventListener("click", () => this.closeFinance());
+      document.getElementById("financeModal").addEventListener("click", e => { if (e.target.id === "financeModal") this.closeFinance(); });
+      const fb = document.getElementById("financeBody");
+      fb.addEventListener("input", e => { if (e.target.id === "finSlider") { this.financeDelta = +e.target.value; UI.updateFinancePreview(Game.state); } });
+      fb.addEventListener("click", e => {
+        if (e.target.closest("#btnFinanceApply")) this.applyFinance();
+        else if (e.target.closest("#btnFinanceReset")) { this.financeDelta = 0; const sl = document.getElementById("finSlider"); if (sl) sl.value = 0; UI.updateFinancePreview(Game.state); }
+      });
+    },
+    openFinance() {
+      this.financeDelta = 0;
+      document.getElementById("financeModal").classList.remove("hidden");
+      UI.renderFinanceModal(Game.state);
+    },
+    closeFinance() { document.getElementById("financeModal").classList.add("hidden"); },
+    applyFinance() {
+      const res = Contracts.rebalance(Game.state, this.financeDelta || 0);
+      if (!res.ok) { UI.toast(res.reason); return; }
+      UI.toast("💷 Budgets rebalanced");
+      Game.save();
+      this.closeFinance();
+      UI.renderMarket(Game.state);
+      this.refreshChrome();
+    },
+
     // ---------------- Contract negotiation ----------------
     wireContracts() {
       document.getElementById("btnContractClose").addEventListener("click", () => this.closeContract());
@@ -394,9 +423,11 @@
       };
       const verdict = Contracts.evaluate(p, wage, years, evalCtx);
       if (verdict.accepted) {
-        const res = ctx.kind === "renew"
-          ? Market.renewContract(state, p.id, wage, years)
-          : Market.completeSigning(state, ctx, wage, years);
+        let res;
+        if (ctx.kind === "renew") res = Market.renewContract(state, p.id, wage, years);
+        else if (ctx.kind === "scout") res = Scouting.sign(state, ctx.reportId, ctx.listingId, wage, years);
+        else if (ctx.kind === "watchlist") res = Scouting.signFromWatchlist(state, ctx.entryId, wage, years);
+        else res = Market.completeSigning(state, ctx, wage, years);
         if (!res.ok) { this.contractFeedback = res.reason; UI.renderContractModal(state); return; }
         const msg = ctx.kind === "renew" ? `✍️ ${res.name} renews — ${years}yr deal`
           : res.immediate === false ? `🤝 Pre-agreed ${res.name} — joins when the window opens`
@@ -404,7 +435,7 @@
         UI.toast(msg);
         Game.save();
         this.closeContract();
-        UI.renderMarket(state); UI.renderSquad(state); this.refreshChrome();
+        UI.renderMarket(state); UI.renderSquad(state); UI.renderScouting(state); this.refreshChrome();
         return;
       }
       // Rejected — burn an attempt and give feedback.

@@ -58,6 +58,23 @@ const Contracts = {
   pendingWage(state) { return ((state && state.pendingSignings) || []).reduce((s, pd) => s + (pd.wage || 0), 0); },
   wageRoom(club) { return (club.wageBudget || 0) - this.wageBill(club) - this.pendingWage(Game.state); },
 
+  // Convert between the two budgets. £1m of transfer kitty ≈ one season of
+  // £WAGE_PER_M k/wk of wage-budget capacity. Positive wageKDelta moves transfer
+  // money INTO the wage budget; negative frees wage budget back into transfers.
+  WAGE_PER_M: 20,
+  rebalance(state, wageKDelta) {
+    const club = Game.myClub();
+    wageKDelta = Math.round(wageKDelta);
+    const mDelta = wageKDelta / this.WAGE_PER_M;
+    const newWage = (club.wageBudget || 0) + wageKDelta;
+    const newTransfer = Math.round((club.budget - mDelta) * 10) / 10;
+    if (newTransfer < 0) return { ok: false, reason: "Not enough transfer budget to move across." };
+    if (newWage < this.wageBill(club) + this.pendingWage(state)) return { ok: false, reason: "That would cut the wage budget below your current bill." };
+    club.wageBudget = Math.round(newWage);
+    club.budget = newTransfer;
+    return { ok: true };
+  },
+
   // ---- negotiation bookkeeping ----------------------------------------------
   neg(state, id) {
     if (!state.negotiations) state.negotiations = {};
@@ -98,31 +115,31 @@ const Contracts = {
     return { accepted, reason: accepted ? null : "wage", reqWage, demand, prob, cutFrac };
   },
 
-  // The largest pay cut (fraction of their ask) a player will ever entertain.
+  // The largest pay cut (fraction of their ask) a player will entertain. Real
+  // players will take 20–30% fairly readily for a move, occasionally up to ~50%
+  // for a genuine step up; renewals stomach a smaller trim out of loyalty.
   maxCut(p, ctx) {
     if (ctx.kind === "renew") {
-      // Loyalty — small cuts only, and the bigger the name the less they'll give.
-      return clamp(0.12 - (p.rating - 75) * 0.004, 0.03, 0.15);
+      // Up to ~20% to stay put; the bigger the name, the less they'll give.
+      return clamp(0.20 - (p.rating - 78) * 0.005, 0.06, 0.22);
     }
-    // A signing. Free agents (no club) are keen to land somewhere.
-    let m = ctx.kind === "free" ? 0.30 : 0.14;
-    // A step UP to a bigger club is worth a real cut; a step down, none.
+    // A signing — even a lateral "change of scenery" is worth a decent cut.
+    let m = ctx.kind === "free" ? 0.42 : 0.35;
     const tgt = ctx.targetClub, org = ctx.originClub;
     if (tgt && typeof Stats !== "undefined") {
       const ts = Stats.clubStrength(tgt);
-      const os = org ? Stats.clubStrength(org) : ts - 5; // free agent: treat as a modest step up
-      m += clamp((ts - os) / 40, -0.08, 0.42); // up to +42% cut for a big move up
+      const os = org ? Stats.clubStrength(org) : ts - 4; // free agent: treat as a slight step up
+      m += clamp((ts - os) / 35, -0.25, 0.20); // big step up → up to ~55% cut; a step down → little
     }
-    // Ambitious lower-rated players push harder for the move; stars need convincing.
-    m += clamp((72 - p.rating) / 200, -0.05, 0.06);
-    return clamp(m, 0.03, 0.6);
+    m += clamp((74 - p.rating) / 220, -0.04, 0.05); // ambitious lower-rated push harder
+    return clamp(m, 0.05, 0.55);
   },
 
-  // Chance of accepting a given cut: ~0.9 for a tiny trim, tapering toward the
-  // player's ceiling.
+  // Chance of accepting a given cut: ~0.9 for a tiny trim, easing toward the
+  // player's ceiling (a cut near their max still lands ~1 in 3).
   acceptProb(cutFrac, maxCut) {
     const t = maxCut > 0 ? cutFrac / maxCut : 1;
-    return clamp(0.9 - 0.8 * t, 0.08, 0.95);
+    return clamp(0.9 - 0.6 * t, 0.06, 0.95);
   },
 
   // ---- contract lifecycle ---------------------------------------------------
