@@ -307,12 +307,15 @@
 
    /* ---------- Squad & market lists ---------- */
    .player-row {
-     display: grid; grid-template-columns: 2.6em 1fr auto auto auto auto auto;
+     display: grid; grid-template-columns: 2.6em 1fr 2.8em 3.6em 4.6em 5.6em auto;
      align-items: center; gap: 0.7rem;
      padding: 0.6rem 0.55rem; border-radius: var(--radius-xs);
      border-bottom: 1px solid var(--hairline);
      font-size: 0.88rem; transition: background 0.12s;
    }
+   /* Age / Rating / Pot / Price columns — centred so they line up under the headers. */
+   .player-row > .col-num, .player-row > .rating-pill { justify-self: center; text-align: center; }
+   .row-actions { display: flex; gap: 0.4rem; align-items: center; justify-content: flex-end; }
    .player-row:hover { background: rgba(255,255,255,0.03); }
    .pot-cell { color: var(--muted); font-size: 0.8rem; }
    .player-row:last-child { border-bottom: none; }
@@ -362,9 +365,28 @@
      padding: 0.2em 0.55em; border: 1px solid var(--glass-border); text-align: center; min-width: 2.3em;
      border-radius: var(--radius-xs); background: rgba(255,255,255,0.03);
    }
-   .list-head { display:grid; grid-template-columns: 2.6em 1fr auto auto auto auto auto; gap:0.7rem; padding: 0 0.55rem 0.5rem; font-size: 0.64rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; border-bottom: 1px solid var(--hairline); }
+   .list-head { display:grid; grid-template-columns: 2.6em 1fr 2.8em 3.6em 4.6em 5.6em auto; gap:0.7rem; padding: 0 0.55rem 0.55rem; font-size: 0.78rem; font-weight: 600; color: var(--chalk); text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--hairline); }
+   /* Centre the numeric column headers over their values. */
+   .list-head > div:nth-child(3), .list-head > div:nth-child(4), .list-head > div:nth-child(5), .list-head > div:nth-child(6) { text-align: center; }
 
    .market-toolbar { display:flex; justify-content: space-between; align-items: center; margin-bottom: 0.9rem; flex-wrap: wrap; gap: 0.6rem; }
+
+   /* ---------- List sort / filter bar ---------- */
+   .listctl { display: flex; justify-content: space-between; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+   .listctl-chips { display: flex; gap: 0.3rem; flex-wrap: wrap; }
+   .pill-chip {
+     font-family: var(--font-display); font-size: 0.72rem; letter-spacing: 0.03em;
+     padding: 0.3em 0.7em; border-radius: 999px; cursor: pointer;
+     border: 1px solid var(--glass-border); background: transparent; color: var(--muted);
+   }
+   .pill-chip:hover { color: var(--chalk); border-color: var(--muted); }
+   .pill-chip.active { background: var(--amber); color: var(--amber-ink); border-color: var(--amber); font-weight: 700; }
+   .listctl-sort { font-size: 0.74rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 0.4rem; }
+   .listctl-sort select {
+     font-family: inherit; font-size: 0.82rem; text-transform: none; letter-spacing: 0;
+     padding: 0.35em 0.6em; border-radius: var(--radius-xs);
+     background: var(--panel-2); color: var(--chalk); border: 1px solid var(--glass-border); cursor: pointer;
+   }
 
    /* ---------- Coaches / staff ---------- */
    .coach-row {

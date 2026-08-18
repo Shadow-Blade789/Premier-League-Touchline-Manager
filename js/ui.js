@@ -403,6 +403,47 @@
       body.innerHTML = head + `<ol class="cup-rounds">${rowsHtml}</ol>`;
     },
   
+    // ---- reusable sort / filter bar -----------------------------------------
+    SORT_OPTS: [
+      { v: "rating-desc", t: "Rating (high→low)" },
+      { v: "rating-asc", t: "Rating (low→high)" },
+      { v: "pot-desc", t: "Potential (high→low)" },
+      { v: "age-asc", t: "Age (young→old)" },
+      { v: "age-desc", t: "Age (old→young)" },
+      { v: "price-desc", t: "Price (high→low)" },
+      { v: "price-asc", t: "Price (low→high)" },
+      { v: "wage-desc", t: "Wage (high→low)" },
+      { v: "pos", t: "Position" },
+    ],
+    filterSortBar(scope, pos, sort, priceWord) {
+      const chip = pkey => `<button class="pill-chip ${pos === pkey ? "active" : ""}" data-filterpos="${pkey}" type="button">${pkey === "ALL" ? "All" : pkey}</button>`;
+      const opts = this.SORT_OPTS.map(o => `<option value="${o.v}" ${sort === o.v ? "selected" : ""}>${o.t.replace("Price", priceWord || "Price")}</option>`).join("");
+      return `<div class="listctl" data-scope="${scope}">
+        <div class="listctl-chips">${["ALL", "GK", "DF", "MF", "FW"].map(chip).join("")}</div>
+        <label class="listctl-sort">Sort <select data-sortsel>${opts}</select></label>
+      </div>`;
+    },
+    // items: array; getP(item) → the player; returns a filtered+sorted copy.
+    applyControls(items, getP, pos, sortKey) {
+      let out = (pos && pos !== "ALL") ? items.filter(it => getP(it).pos === pos) : items.slice();
+      const [key, dir] = (sortKey || "rating-desc").split("-");
+      if (key === "pos") {
+        out.sort((a, b) => POSITIONS.indexOf(getP(a).pos) - POSITIONS.indexOf(getP(b).pos) || getP(b).rating - getP(a).rating);
+        return out;
+      }
+      const num = it => {
+        const p = getP(it);
+        if (key === "pot") return p.potential || p.rating;
+        if (key === "age") return p.age;
+        if (key === "wage") return Contracts.effWage(p);
+        if (key === "price") return it.price != null ? it.price : (p.value || 0);
+        return p.rating;
+      };
+      out.sort((a, b) => num(a) - num(b));
+      if (dir === "desc") out.reverse();
+      return out;
+    },
+
     renderPlayerRow(p, opts = {}) {
       const actionHTML = opts.action || "";
       return `
@@ -413,11 +454,11 @@
             <div class="sub">${opts.subLabel || (p.club ? clubShortLookup(p.club) : "Free agent")}</div>
             ${opts.careerLabel ? `<div class="career-sub mono">${opts.careerLabel}</div>` : ""}
           </div>
-          <div class="mono">${p.age}</div>
+          <div class="mono col-num">${p.age}</div>
           <div class="rating-pill">${p.rating}</div>
-          <div class="mono pot-cell" title="Potential">${opts.potentialLabel ?? "—"}</div>
-          <div class="mono">${opts.priceLabel ?? this.money(p.value)}</div>
-          ${actionHTML}
+          <div class="mono pot-cell col-num" title="Potential">${opts.potentialLabel ?? "—"}</div>
+          <div class="mono col-num">${opts.priceLabel ?? this.money(p.value)}</div>
+          <div class="row-actions">${actionHTML}</div>
         </div>
       `;
     },
@@ -435,7 +476,10 @@
       const club = Game.myClub();
       const open = TransferWindow.isOpen(state.week);
       document.getElementById("squadWindowBanner").innerHTML = this.windowBanner(state);
-      const sorted = club.squad.slice().sort((a, b) => POSITIONS.indexOf(a.pos) - POSITIONS.indexOf(b.pos) || b.rating - a.rating);
+      const ctl = document.getElementById("squadControls");
+      if (ctl) ctl.innerHTML = this.filterSortBar("squad", App.sqPos, App.sqSort, "Value");
+      const sorted = this.applyControls(club.squad, p => p, App.sqPos, App.sqSort);
+      if (!sorted.length) { document.getElementById("squadList").innerHTML = `<p class="muted">No players match this filter.</p>`; return; }
       document.getElementById("squadList").innerHTML = sorted.map(p => {
         const offers = p.offers || [];
         const badge = offers.length
@@ -480,6 +524,8 @@
       this.renderPendingSignings(state);
       const open = TransferWindow.isOpen(state.week);
       document.getElementById("btnReroll").disabled = false; // browsable/negotiable year-round
+      const ctl = document.getElementById("marketControls");
+      if (ctl) ctl.innerHTML = this.filterSortBar("market", App.mktPos, App.mktSort, "Price");
       const list = document.getElementById("marketList");
       if (!state.market.length) {
         list.innerHTML = `<p class="muted">No players available — try rerolling the market.</p>`;
@@ -487,7 +533,9 @@
       }
       // Outside the window a deal is PRE-AGREED — struck now, completed on open.
       const label = open ? "Sign" : "Pre-agree";
-      list.innerHTML = state.market.map(l => this.renderPlayerRow(l.player, {
+      const rows = this.applyControls(state.market, l => l.player, App.mktPos, App.mktSort);
+      if (!rows.length) { list.innerHTML = `<p class="muted">No players match this filter.</p>`; return; }
+      list.innerHTML = rows.map(l => this.renderPlayerRow(l.player, {
         // Career record (apps + the position's headline stat) plus who's selling.
         subLabel: `${Stats.signingLine(l.player)} · ${l.origin ? "from " + l.originName : l.originName} · wants ${this.wage(Contracts.effWage(l.player))}`,
         priceLabel: this.money(l.price),
@@ -522,11 +570,13 @@
       const club = Game.myClub();
       const list = document.getElementById("freeAgentList");
       if (!list) return;
-      const fas = (state.freeAgents || []).slice().sort((a, b) => b.player.rating - a.player.rating);
-      if (!fas.length) {
+      const raw = state.freeAgents || [];
+      const fas = this.applyControls(raw, l => l.player, App.mktPos, App.mktSort);
+      if (!raw.length) {
         list.innerHTML = `<p class="muted">No free agents on the market right now — check back next matchweek.</p>`;
         return;
       }
+      if (!fas.length) { list.innerHTML = `<p class="muted">No free agents match this filter.</p>`; return; }
       list.innerHTML = fas.map(l => this.renderPlayerRow(l.player, {
         subLabel: `${Stats.signingLine(l.player)} · Free agent · wants ${this.wage(Contracts.effWage(l.player))}`,
         priceLabel: this.money(l.price),

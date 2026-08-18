@@ -8,6 +8,8 @@
     selectedLeague: null,   // which league's clubs the picker is showing
     clubSearch: "",         // current picker search text
     hubStatScope: "league", // "league" | "team" toggle on the hub stats panel
+    mktPos: "ALL", mktSort: "rating-desc", // market/free-agent filter + sort
+    sqPos: "ALL", sqSort: "pos",           // squad filter + sort (default grouped by position)
     tableLeague: null,      // which division the Table tab is showing
     weekQueue: [],          // the user's remaining live matches this week (league, then cup)
     currentItem: null,      // the match currently being played
@@ -263,6 +265,9 @@
   
     // ---------------- Squad ----------------
     wireSquad() {
+      const sc = document.getElementById("squadControls");
+      sc.addEventListener("click", e => { const c = e.target.closest("[data-filterpos]"); if (!c) return; this.sqPos = c.dataset.filterpos; UI.renderSquad(Game.state); });
+      sc.addEventListener("change", e => { if (e.target.matches("[data-sortsel]")) { this.sqSort = e.target.value; UI.renderSquad(Game.state); } });
       document.getElementById("squadList").addEventListener("click", e => {
         // Expand/collapse a player's offers.
         const badge = e.target.closest("button[data-offers]");
@@ -308,6 +313,9 @@
   
     // ---------------- Market ----------------
     wireMarket() {
+      const mc = document.getElementById("marketControls");
+      mc.addEventListener("click", e => { const c = e.target.closest("[data-filterpos]"); if (!c) return; this.mktPos = c.dataset.filterpos; UI.renderMarket(Game.state); });
+      mc.addEventListener("change", e => { if (e.target.matches("[data-sortsel]")) { this.mktSort = e.target.value; UI.renderMarket(Game.state); } });
       document.getElementById("btnReroll").addEventListener("click", () => {
         Market.reroll(Game.state);
         Game.save();
