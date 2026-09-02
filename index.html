@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PLFC Touchline Manager</title>
 <meta name="description" content="A Premier League club-management sim — pick your club, run the transfer market, set your lineup, and live the season.">
-<link rel="stylesheet" href="css/styles.css?v=59">
+<link rel="stylesheet" href="css/styles.css?v=68">
 </head>
 <body>
 
@@ -23,7 +23,19 @@
     <div class="stat"><span class="label">Matchweek</span><span id="topbarWeek">—</span></div>
     <div class="stat"><span class="label">Budget</span><span id="topbarBudget">—</span></div>
     <div class="stat"><span class="label">Wages</span><span id="topbarWage">—</span></div>
+    <button class="topbar-trophy" id="btnManager" title="Manager profile" type="button">👔</button>
     <button class="topbar-trophy" id="btnTrophies" title="Trophy cabinet" type="button">🏆</button>
+  </div>
+
+  <!-- ============ MANAGER PROFILE (modal) ============ -->
+  <div class="modal-overlay hidden" id="managerModal">
+    <div class="modal modal-wide">
+      <div class="modal-head">
+        <h3 style="margin:0;">Manager Profile</h3>
+        <button class="ghost small" id="btnManagerClose" type="button">Close</button>
+      </div>
+      <div id="managerBody"></div>
+    </div>
   </div>
 
   <!-- ============ TROPHY CABINET (modal) ============ -->
@@ -34,6 +46,17 @@
         <button class="ghost small" id="btnCloseTrophies" type="button">Close</button>
       </div>
       <div id="trophyCabinetBody"></div>
+    </div>
+  </div>
+
+  <!-- ============ PLAYER PROFILE (modal) ============ -->
+  <div class="modal-overlay hidden" id="profileModal">
+    <div class="modal modal-wide">
+      <div class="modal-head">
+        <h3 style="margin:0;" id="profileTitle">Player</h3>
+        <button class="ghost small" id="btnProfileClose" type="button">Close</button>
+      </div>
+      <div id="profileBody"></div>
     </div>
   </div>
 
@@ -115,6 +138,10 @@
     <div class="panel" id="hubObjectivePanel">
       <p class="eyebrow">Board Objective</p>
       <div id="hubObjectiveBody" class="muted">—</div>
+    </div>
+    <div class="panel" id="hubNewsPanel">
+      <h3>News Feed</h3>
+      <div id="hubNewsBody" class="muted">—</div>
     </div>
     <div class="grid-3">
       <div class="panel" id="hubFormSummary">
@@ -283,6 +310,13 @@
               <span>Tired</span>
             </div>
           </div>
+          <div class="lineup-controls tactics-row">
+            <span class="eyebrow">Mentality</span>
+            <select id="mentalitySelect" data-tac="mentality"></select>
+            <span class="eyebrow">Pressing</span>
+            <select id="pressingSelect" data-tac="pressing"></select>
+            <span class="muted" id="tacticsHint" style="font-size:0.74rem;"></span>
+          </div>
           <div class="pitch-wrap" id="pitch">
             <div class="halfway"></div><div class="centre-circle"></div>
             <div class="box-top"></div><div class="box-bottom"></div>
@@ -359,6 +393,13 @@
       <button id="btnMatchSkip">Skip to Full Time</button>
     </div>
 
+    <div class="match-tactics hidden" id="matchTactics">
+      <span class="eyebrow">Mentality</span>
+      <select id="mMentality" data-mtac="mentality"></select>
+      <span class="eyebrow">Pressing</span>
+      <select id="mPressing" data-mtac="pressing"></select>
+    </div>
+
     <div class="subs-panel hidden" id="subsPanel">
       <div class="subs-head">
         <span class="eyebrow">Substitutions — <span id="subsLeft">5</span> left</span>
@@ -373,6 +414,8 @@
 
     <div class="commentary-feed" id="commentaryFeed"></div>
 
+    <div id="matchReport" class="match-report hidden"></div>
+
     <div style="text-align:center; margin-top:1rem;">
       <button class="primary hidden" id="btnMatchContinue">Continue</button>
     </div>
@@ -381,27 +424,35 @@
   <!-- ============ SEASON END ============ -->
   <section class="screen hidden" id="screen-seasonend"></section>
 
+  <!-- ============ JOB MARKET ============ -->
+  <section class="screen hidden" id="screen-jobs"></section>
+
 </div>
 
-<script src="js/data.js?v=59"></script>
-<script src="js/state.js?v=59"></script>
-<script src="js/lineup.js?v=59"></script>
-<script src="js/match.js?v=59"></script>
-<script src="js/stats.js?v=59"></script>
-<script src="js/cup.js?v=59"></script>
-<script src="js/vertu.js?v=59"></script>
-<script src="js/europe.js?v=59"></script>
-<script src="js/season.js?v=59"></script>
-<script src="js/board.js?v=59"></script>
-<script src="js/squad.js?v=59"></script>
-<script src="js/contracts.js?v=59"></script>
-<script src="js/coaches.js?v=59"></script>
-<script src="js/academy.js?v=59"></script>
-<script src="js/scouting.js?v=59"></script>
-<script src="js/fitness.js?v=59"></script>
-<script src="js/shootout.js?v=59"></script>
-<script src="js/dynamics.js?v=59"></script>
-<script src="js/ui.js?v=59"></script>
-<script src="js/main.js?v=59"></script>
+<script src="js/data.js?v=68"></script>
+<script src="js/state.js?v=68"></script>
+<script src="js/lineup.js?v=68"></script>
+<script src="js/match.js?v=68"></script>
+<script src="js/stats.js?v=68"></script>
+<script src="js/players.js?v=68"></script>
+<script src="js/cup.js?v=68"></script>
+<script src="js/vertu.js?v=68"></script>
+<script src="js/europe.js?v=68"></script>
+<script src="js/season.js?v=68"></script>
+<script src="js/board.js?v=68"></script>
+<script src="js/career.js?v=68"></script>
+<script src="js/news.js?v=68"></script>
+<script src="js/squad.js?v=68"></script>
+<script src="js/contracts.js?v=68"></script>
+<script src="js/coaches.js?v=68"></script>
+<script src="js/academy.js?v=68"></script>
+<script src="js/scouting.js?v=68"></script>
+<script src="js/fitness.js?v=68"></script>
+<script src="js/morale.js?v=68"></script>
+<script src="js/tactics.js?v=68"></script>
+<script src="js/shootout.js?v=68"></script>
+<script src="js/dynamics.js?v=68"></script>
+<script src="js/ui.js?v=68"></script>
+<script src="js/main.js?v=68"></script>
 </body>
 </html>

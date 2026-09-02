@@ -111,11 +111,16 @@
         nf.innerHTML = `MW${state.week + 1} ${this.crestHTML(club, "sm")} <strong>${club.short}</strong> ${venue} <strong>${opp.short}</strong> ${this.crestHTML(opp, "sm")}`;
       }
       const starters = Lineup.starters(club);
+      const unhappy = club.squad.filter(p => typeof p.morale === "number" && p.morale < 52).length;
+      const wantOut = club.squad.filter(p => p.wantsOut).length;
+      const moraleTxt = wantOut ? `<span class="bad">${unhappy} unhappy · ${wantOut} want out ✈️</span>`
+        : unhappy ? `<span class="ok">${unhappy} unhappy</span>` : `<span class="good">settled</span>`;
       document.getElementById("hubSnapshot").innerHTML = `
         Division: <strong>${LEAGUE_NAMES[club.league]}</strong><br>
         Formation: <strong>${club.formation}</strong><br>
         Squad size: <strong>${club.squad.length}</strong><br>
         XI average rating: <strong>${MatchEngine.overallRating(starters).toFixed(0)}</strong><br>
+        Squad morale: <strong>${moraleTxt}</strong><br>
         Budget: <strong>${this.money(club.budget)}</strong>
       `;
       const league = club.league;
@@ -144,15 +149,32 @@
         const obj = state.objective;
         if (obj) {
           const onTrack = row.pos <= obj.targetPos;
+          const conf = state.boardConfidence, bm = state.boardMessage;
           objEl.innerHTML = `<div class="objective-head">
               <strong style="font-size:1.05rem;">${obj.headline}</strong>
               <span class="obj-status ${onTrack ? "good" : "bad"}">${onTrack ? "On track" : "Below target"}</span>
             </div>
             <div style="font-size:0.84rem; margin-top:0.35rem;">${obj.blurb}</div>
-            <div class="muted" style="font-size:0.76rem; margin-top:0.3rem;">Currently ${ordinal(row.pos)} of ${table.length} · target ${ordinal(obj.targetPos)} or better</div>`;
+            <div class="muted" style="font-size:0.76rem; margin-top:0.3rem;">Currently ${ordinal(row.pos)} of ${table.length} · target ${ordinal(obj.targetPos)} or better</div>
+            ${typeof conf === "number" ? `<div class="board-conf">
+              <span class="eyebrow">Board confidence</span>
+              <div class="conf-bar"><div class="conf-fill ${Career.confidenceClass(conf)}" style="width:${conf}%"></div></div>
+              <span class="conf-num ${Career.confidenceClass(conf)}">${conf}% · ${Career.confidenceLabel(conf)}</span>
+            </div>${bm ? `<div class="board-msg ${bm.tone}" style="margin-top:0.4rem;">${bm.text}</div>` : ""}` : ""}`;
         } else {
           objEl.textContent = "The board haven't set a target yet.";
         }
+      }
+      const newsEl = document.getElementById("hubNewsBody");
+      if (newsEl) {
+        const items = (state.news || []).slice(0, 10);
+        newsEl.innerHTML = items.length
+          ? items.map(n => `<div class="news-item ${n.playerId ? "clickable" : ""}" ${n.playerId ? `data-profile="${n.playerId}"` : ""}>
+              <span class="news-icon">${n.icon || "•"}</span>
+              <span class="news-text">${n.text}</span>
+              <span class="news-ago">${News.ago(state, n)}</span>
+            </div>`).join("")
+          : `<p class="muted" style="font-size:0.82rem;">No news yet — play some matches and work the market.</p>`;
       }
       this.renderHubStats(state, App.hubStatScope, club.league);
       const setTitle = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
@@ -403,6 +425,85 @@
       body.innerHTML = head + `<ol class="cup-rounds">${rowsHtml}</ol>`;
     },
   
+    moraleBadge(p) {
+      if (typeof p.morale !== "number") return "";
+      const t = (p.wantsOut ? "Wants to leave · " : "") + Morale.label(p.morale);
+      return `<span class="morale-tag ${Morale.cls(p.morale)}${p.wantsOut ? " out" : ""}" title="Morale: ${t}">${p.wantsOut ? "✈️" : Morale.emoji(p.morale)}</span>`;
+    },
+
+    // ---- player profile modal ------------------------------------------------
+    attrColor(v) { return v >= 85 ? "var(--green)" : v >= 72 ? "var(--amber)" : v >= 58 ? "#c9a24b" : "var(--muted)"; },
+    attrBar(def, val) {
+      return `<div class="attr-row">
+        <span class="attr-label">${def.label}</span>
+        <span class="attr-track"><span class="attr-fill" style="width:${val}%; background:${this.attrColor(val)}"></span></span>
+        <span class="attr-val mono" style="color:${this.attrColor(val)}">${val}</span>
+      </div>`;
+    },
+    renderProfileModal(p, mine) {
+      const A = Players.attributes(p);
+      const traits = Players.traits(p);
+      document.getElementById("profileTitle").textContent = p.name;
+      const groups = Players.groups().map(g => `
+        <div class="attr-col">
+          <div class="attr-col-head">${g}</div>
+          ${Players.ATTRS.filter(d => d.g === g).map(d => this.attrBar(d, A[d.k])).join("")}
+        </div>`).join("");
+
+      const traitHTML = traits.length
+        ? `<div class="trait-wrap">${traits.map(t => { const m = Players.TRAITS[t] || {}; return `<span class="trait-chip" title="${m.desc || ""} — ${m.effect || ""}">${m.icon || "•"} ${t}</span>`; }).join("")}</div>`
+        : `<p class="muted" style="font-size:0.8rem;">No standout traits.</p>`;
+
+      // Development history (own players accrue OVR history each season).
+      const hist = (p.ratingHistory || []).slice(-8);
+      let devHTML = `<p class="muted" style="font-size:0.8rem;">No development history yet — check back after a season.</p>`;
+      if (hist.length >= 2) {
+        const vals = hist.map(h => h.ovr);
+        const lo = Math.min(...vals) - 1, hi = Math.max(...vals) + 1, span = Math.max(1, hi - lo);
+        const first = vals[0], last = vals[vals.length - 1], diff = last - first;
+        devHTML = `<div class="dev-spark">${hist.map(h => `<span class="dev-bar" style="height:${8 + ((h.ovr - lo) / span) * 46}px" title="${h.season}/${String(h.season + 1).slice(2)}: ${h.ovr}"></span>`).join("")}</div>
+          <p class="muted" style="font-size:0.78rem; margin-top:0.3rem;">OVR ${first} → <strong class="${diff >= 0 ? "pos" : "neg"}">${last}</strong> over ${hist.length} seasons${diff !== 0 ? ` (${diff > 0 ? "+" : ""}${diff})` : ""}.</p>`;
+      }
+
+      const st = p.stats || {}, car = p.career || {};
+      const careerLine = p.pos === "GK"
+        ? `${(car.apps || 0) + (st.apps || 0)} apps · ${(car.cleanSheets || 0) + (st.cleanSheets || 0)} clean sheets · ${(car.saves || 0) + (st.saves || 0)} saves`
+        : `${(car.apps || 0) + (st.apps || 0)} apps · ${(car.goals || 0) + (st.goals || 0)} goals · ${(car.assists || 0) + (st.assists || 0)} assists`;
+
+      const myClub = mine ? Game.myClub() : null;
+      const sqRole = mine && myClub ? Morale.role(myClub, p) : null;
+      const statusHTML = mine ? `
+        ${p.wantsOut ? `<div class="wantsout-banner">✈️ ${p.name} has requested a transfer — he wants to leave the club.</div>` : ""}
+        <div class="profile-status">
+          <div><span class="eyebrow">Morale</span><div class="ps-val ${Morale.cls(p.morale)}">${Morale.emoji(p.morale)} ${Morale.label(p.morale)}</div></div>
+          <div><span class="eyebrow">Squad role</span><div class="ps-val"><select class="role-select" data-setrole="${p.id}">${["auto"].concat(Morale.ROLES).map(r => `<option value="${r}" ${(p.squadRoleSet ? p.squadRole : "auto") === r ? "selected" : ""}>${r === "auto" ? "Auto (" + sqRole + ")" : r}</option>`).join("")}</select></div></div>
+          <div><span class="eyebrow">Fitness</span><div class="ps-val">${p.injuryWeeks > 0 ? `🚑 ${p.injuryWeeks}w` : Math.round(p.fitness ?? 100) + "%"}</div></div>
+          <div><span class="eyebrow">Contract</span><div class="ps-val">${this.wage(Contracts.effWage(p))} · ${p.contractLeft != null ? p.contractLeft + "yr" + (p.contractLeft === 1 ? " ⚠" : "") : "—"}</div></div>
+        </div>` : "";
+
+      document.getElementById("profileBody").innerHTML = `
+        <div class="profile-head">
+          <div class="pos-chip ${p.pos} big">${p.pos}</div>
+          <div class="profile-id">
+            <div class="profile-name">${p.wonderkid ? "⭐ " : ""}${p.name} <span class="nat-tag">${p.nat || "ENG"}</span></div>
+            <div class="muted">${p.age} yrs · ${Players.role(p)}${mine ? "" : (p.club ? " · " + clubShortLookup(p.club) : " · free agent")}</div>
+          </div>
+          <div class="profile-ovr">
+            <div class="po-main">${p.rating}</div>
+            <div class="po-pot mono">pot ${p.potential ?? p.rating}</div>
+          </div>
+        </div>
+        ${statusHTML}
+        <div class="profile-section-title">Traits</div>
+        ${traitHTML}
+        <div class="profile-section-title">Attributes</div>
+        <div class="attr-cols">${groups}</div>
+        <div class="profile-2col">
+          <div><div class="profile-section-title">Development</div>${devHTML}</div>
+          <div><div class="profile-section-title">Career</div><p style="font-size:0.86rem;">${careerLine}</p>${car.previousClubs ? `<p class="muted" style="font-size:0.78rem;">Former: ${car.previousClubs}</p>` : ""}</div>
+        </div>`;
+    },
+
     // ---- reusable sort / filter bar -----------------------------------------
     SORT_OPTS: [
       { v: "rating-desc", t: "Rating (high→low)" },
@@ -450,7 +551,7 @@
         <div class="player-row ${opts.rowClass || ""}">
           <div class="pos-chip ${p.pos}">${p.pos}</div>
           <div>
-            <div class="name">${p.wonderkid ? "⭐ " : ""}${p.name} <span class="nat-tag">${p.nat || "ENG"}</span>${opts.badge || ""}</div>
+            <div class="name">${p.wonderkid ? "⭐ " : ""}<span class="pname" data-profile="${p.id}" role="button" tabindex="0">${p.name}</span> <span class="nat-tag">${p.nat || "ENG"}</span>${opts.badge || ""}</div>
             <div class="sub">${opts.subLabel || (p.club ? clubShortLookup(p.club) : "Free agent")}</div>
             ${opts.careerLabel ? `<div class="career-sub mono">${opts.careerLabel}</div>` : ""}
           </div>
@@ -494,8 +595,8 @@
           subLabel: this.wage(Contracts.effWage(p)) + contractLabel,
           careerLabel: Stats.careerSquadLine(p),
           potentialLabel: String(p.potential),
-          badge: this.fitnessBadge(p) + badge,
-          rowClass: (p.transferListed ? "listed" : "") + (p.injuryWeeks ? " injured-row" : "") + (expiring ? " expiring-row" : ""),
+          badge: this.moraleBadge(p) + this.fitnessBadge(p) + badge,
+          rowClass: (p.transferListed ? "listed" : "") + (p.injuryWeeks ? " injured-row" : "") + (expiring ? " expiring-row" : "") + (p.wantsOut ? " wantsout-row" : ""),
           action: renewBtn + listBtn,
         });
         const panel = offers.length ? `<div class="offers-panel hidden" id="offers-${p.id}">${this.offersHTML(p, open)}</div>` : "";
@@ -698,6 +799,51 @@
       set("finRoom", `Wage room after: <strong class="${room < 0 ? "neg" : "pos"}">${this.wageFull(room)}/wk</strong>`);
       const apply = document.getElementById("btnFinanceApply");
       if (apply) apply.disabled = delta === 0 || newTransfer < 0 || room < 0;
+    },
+
+    // ---- job market + manager profile ----------------------------------------
+    jobMarketHTML(state, title, subtitle) {
+      const offers = state.jobOffers || [];
+      const rep = state.managerRep;
+      const cards = offers.map(o => {
+        const lock = !o.qualified;
+        return `<div class="job-card ${lock ? "locked" : ""}">
+          <div class="job-club">${o.clubName}</div>
+          <div class="job-meta">${LEAGUE_NAMES[o.league]} · squad strength ${o.strength} · expected ~${ordinal(o.expRank)}</div>
+          <div class="job-req">Reputation required: <strong class="${lock ? "neg" : "pos"}">${o.req}</strong>${lock ? ` <span class="muted">(you: ${rep})</span>` : ""}</div>
+          ${lock ? `<button class="small" disabled>Reputation too low</button>` : `<button class="small primary" data-takejob="${o.clubId}">Take the job</button>`}
+        </div>`;
+      }).join("");
+      return `<div class="jobs-screen">
+        <p class="eyebrow">Manager · reputation ${rep} · ${Career.repLabel(rep)}</p>
+        <div class="big">${title}</div>
+        <p style="max-width:560px;margin:0.5rem auto 1.4rem;">${subtitle}</p>
+        <div class="job-grid">${cards}</div>
+        <p class="muted" style="font-size:0.78rem;margin-top:1rem;">Build your reputation with promotions, trophies and by beating objectives to unlock bigger jobs.</p>
+      </div>`;
+    },
+
+    renderManagerModal(state) {
+      const st = state.currentStint, club = Game.myClub();
+      const rep = state.managerRep, conf = state.boardConfidence;
+      const cur = st ? `${st.matches} games · ${st.wins}W ${st.draws}D ${st.losses}L · ${Career.winPct(st)}% win` : "—";
+      const hist = (state.managerHistory || []).slice().reverse();
+      const histHTML = hist.length ? hist.map(h => `<div class="mh-row">
+          <span class="mh-club">${h.clubName}</span>
+          <span class="mh-span mono">${h.startSeason}–${h.endSeason}</span>
+          <span class="mh-rec mono">${h.matches}g ${h.wins}-${h.draws}-${h.losses}</span>
+          <span class="mh-tro">${h.titles ? "🏆" + h.titles + " " : ""}${h.promotions ? "🔼" + h.promotions + " " : ""}${h.trophies ? "🥇" + h.trophies : ""}</span>
+        </div>`).join("") : `<p class="muted" style="font-size:0.82rem;">No former clubs yet — this is your first job.</p>`;
+      document.getElementById("managerBody").innerHTML = `
+        <div class="mgr-top">
+          <div><span class="eyebrow">Reputation</span><div class="mgr-big">${rep}</div><div class="muted">${Career.repLabel(rep)}</div></div>
+          <div><span class="eyebrow">Current club</span><div class="ps-val">${club ? club.name : "—"}</div><div class="muted" style="font-size:0.78rem;">${cur}</div></div>
+          <div><span class="eyebrow">Board confidence</span><div class="ps-val ${Career.confidenceClass(conf)}">${conf}%</div><div class="muted">${Career.confidenceLabel(conf)}</div></div>
+        </div>
+        ${state.boardMessage ? `<p class="board-msg ${state.boardMessage.tone}">${state.boardMessage.text}</p>` : ""}
+        <div class="profile-section-title">Career history</div>
+        ${histHTML}
+        <div style="text-align:right;margin-top:1.1rem;"><button class="ghost danger small" id="btnResign">Resign from your post</button></div>`;
     },
 
     renderCoaches(state) {
@@ -983,10 +1129,55 @@
       // the manager sees the empty slot to fill.
       (club.squad || []).forEach(p => { if (p.injuryWeeks || p.suspendedMatches) Fitness.dropFromLineup(club, p.id); });
       document.getElementById("formationSelect").innerHTML = this.formationOptions(club.formation);
+      Tactics.ensure(club);
+      this.fillTacticsSelect("mentalitySelect", Tactics.MENTALITY, club.tactics.mentality);
+      this.fillTacticsSelect("pressingSelect", Tactics.PRESSING, club.tactics.pressing);
+      const th = document.getElementById("tacticsHint");
+      if (th) th.textContent = Tactics.ment(club).desc;
       this.renderPitch(club);
       this.renderLineupSlots(club);
       this.renderBench(club);
       document.getElementById("lineupError").textContent = "";
+    },
+
+    fillTacticsSelect(id, defs, current) {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = defs.map(d => `<option value="${d.k}" ${d.k === current ? "selected" : ""}>${d.label}</option>`).join("");
+    },
+
+    // ---- match statistics + player ratings report ----------------------------
+    renderMatchReport(item, ratings) {
+      const el = document.getElementById("matchReport");
+      if (!el || !item || !item.full) return;
+      const f = item.full, s = f.stats;
+      const me = Game.myClub();
+      const meHome = f.hStarters && me && f.hStarters.some && item.home === me.id;
+      const homeName = (Game.state.clubs.find(c => c.id === item.home) || {}).short || "Home";
+      const awayName = (Game.state.clubs.find(c => c.id === item.away) || {}).short || "Away";
+      const statRow = (label, h, a, fmt) => `<div class="mr-stat"><span class="mr-h">${fmt ? fmt(h) : h}</span><span class="mr-label">${label}</span><span class="mr-a">${fmt ? fmt(a) : a}</span></div>`;
+      const statsHTML = s ? `
+        <div class="mr-stats">
+          <div class="mr-teams"><span>${homeName}</span><span></span><span>${awayName}</span></div>
+          ${statRow("Possession", s.home.poss, s.away.poss, v => v + "%")}
+          ${statRow("Shots", s.home.shots, s.away.shots)}
+          ${statRow("On target", s.home.sot, s.away.sot)}
+          ${statRow("xG", s.home.xg, s.away.xg, v => v.toFixed(1))}
+          ${statRow("Corners", s.home.corners, s.away.corners)}
+          ${statRow("Fouls", s.home.fouls, s.away.fouls)}
+        </div>` : "";
+      const rat = ratings || item.userRatings || [];
+      const surname = n => n.split(" ").slice(-1)[0];
+      const ratingsHTML = rat.length ? `
+        <div class="mr-ratings">
+          <div class="eyebrow" style="margin-bottom:0.3rem;">Player ratings</div>
+          ${rat.map(r => `<div class="mr-rating ${r.potm ? "potm" : ""}">
+            <span class="pos-chip ${r.pos}">${r.pos}</span>
+            <span class="mr-name">${surname(r.name)}${r.goals ? " ⚽".repeat(Math.min(r.goals, 3)) : ""}${r.potm ? ' <span class="potm-star">★ MOTM</span>' : ""}</span>
+            <span class="mr-min mono">${r.mins}'</span>
+            <span class="mr-num mono ${r.rating >= 7.5 ? "hi" : r.rating < 6 ? "lo" : ""}">${r.rating.toFixed(1)}</span>
+          </div>`).join("")}
+        </div>` : "";
+      el.innerHTML = `<div class="eyebrow" style="text-align:center;margin-bottom:0.5rem;">Match Report</div><div class="mr-body">${statsHTML}${ratingsHTML}</div>`;
     },
   
     renderTable(state, league) {

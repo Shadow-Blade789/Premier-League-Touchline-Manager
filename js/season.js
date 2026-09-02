@@ -206,6 +206,9 @@
       Academy.weekly(state);        // scout intake, youth development, graduations
       Scouting.weekly(state);       // talent scouts return from assignments
       Fitness.weekly(state);        // stamina recovery, injury recovery + fresh injuries
+      Morale.weekly(state);         // squad morale drifts on playing time, form, position…
+      Career.updateConfidence(state); // board confidence tracks results vs the objective
+      News.weekly(state);           // write the week up: results, rumours, rival business
       return transition;
     },
   
@@ -467,10 +470,11 @@
         objectiveVerdict,
       };
 
-      if (userSacked) {
-        // Bottom of League Two — sacked. Career ends here.
-        return { ...resultBase, bonusesGranted: [] };
-      }
+      // Manager reputation + whether the board keep faith. A sacking no longer
+      // ends the career — the world rolls on and a job market opens next season.
+      const careerVerdict = Career.seasonUpdate(state, resultBase);
+      resultBase.sacked = careerVerdict.sacked;
+      resultBase.sackReason = careerVerdict.reason;
 
       // Off-season development for every club in all four divisions.
       const ageingNews = Aging.advanceSeason(state);
@@ -482,6 +486,7 @@
       Scouting.seasonRollover(state); // scrap old scouting reports, recall scouts
       Fitness.seasonRollover(state);  // everyone fit & healthy for pre-season
       const contractDepartures = Contracts.seasonRollover(state); // expiring deals walk for free
+      Morale.seasonRollover(state); // grievances ease into the new campaign
 
       // Apply the swaps: relegated clubs drop a division, promoted clubs rise.
       // Clubs keep their squads and reputation tier; only their league changes.

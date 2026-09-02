@@ -119,9 +119,10 @@ const Contracts = {
   // players will take 20–30% fairly readily for a move, occasionally up to ~50%
   // for a genuine step up; renewals stomach a smaller trim out of loyalty.
   maxCut(p, ctx) {
+    const moraleSwing = typeof Morale !== "undefined" ? Morale.contractSwing(p) : 0; // happy give more, unhappy dig in
     if (ctx.kind === "renew") {
       // Up to ~20% to stay put; the bigger the name, the less they'll give.
-      return clamp(0.20 - (p.rating - 78) * 0.005, 0.06, 0.22);
+      return clamp(0.20 - (p.rating - 78) * 0.005 + moraleSwing, 0.03, 0.24);
     }
     // A signing — even a lateral "change of scenery" is worth a decent cut.
     let m = ctx.kind === "free" ? 0.42 : 0.35;
@@ -132,7 +133,8 @@ const Contracts = {
       m += clamp((ts - os) / 35, -0.25, 0.20); // big step up → up to ~55% cut; a step down → little
     }
     m += clamp((74 - p.rating) / 220, -0.04, 0.05); // ambitious lower-rated push harder
-    return clamp(m, 0.05, 0.55);
+    m += moraleSwing;
+    return clamp(m, 0.03, 0.55);
   },
 
   // Chance of accepting a given cut: ~0.9 for a tiny trim, easing toward the

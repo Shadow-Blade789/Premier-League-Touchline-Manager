@@ -31,6 +31,8 @@
       this.wireCoaches();
       this.wireContracts();
       this.wireFinance();
+      this.wireProfile();
+      this.wireManager();
 
       if (Game.hasSave() && Game.load()) {
         const club = Game.myClub();
@@ -155,7 +157,7 @@
           const res = Academy.promote(Game.state, prom.dataset.promote);
           if (!res.ok) { UI.toast(res.reason); return; }
           const promoted = Game.myClub().squad.find(p => p.name === res.name);
-          if (promoted) Contracts.ensurePlayer(promoted); // give the graduate a starting deal
+          if (promoted) { Contracts.ensurePlayer(promoted); Morale.ensurePlayer(promoted); Morale.onPromote(promoted); } // a starting deal + the buzz of making the step up
           UI.toast(`${res.name} promoted to the senior squad`);
           Game.save(); UI.renderAcademy(Game.state); this.refreshChrome();
           return;
@@ -293,9 +295,11 @@
         // Accept an offer.
         const acc = e.target.closest("button[data-accept]");
         if (acc) {
+          const pName = (Game.myClub().squad.find(pl => pl.id === acc.dataset.accept) || {}).name || "Player";
           const res = Market.acceptOffer(Game.state, acc.dataset.accept, Number(acc.dataset.idx));
           if (!res.ok) { UI.toast(res.reason); return; }
           UI.toast(`Sold to ${res.buyerName} for ${UI.money(res.fee)}`);
+          News.transfer(Game.state, `${Game.myClub().short} sell ${pName} to ${res.buyerName} for ${UI.money(res.fee)}.`);
           Game.save();
           UI.renderSquad(Game.state);
           this.refreshChrome();
@@ -345,6 +349,81 @@
         this.refreshChrome();
       });
     },
+
+    // ---------------- Manager profile + job market ----------------
+    wireManager() {
+      document.getElementById("btnManager").addEventListener("click", () => { UI.renderManagerModal(Game.state); document.getElementById("managerModal").classList.remove("hidden"); });
+      document.getElementById("btnManagerClose").addEventListener("click", () => document.getElementById("managerModal").classList.add("hidden"));
+      document.getElementById("managerModal").addEventListener("click", e => { if (e.target.id === "managerModal") document.getElementById("managerModal").classList.add("hidden"); });
+      document.getElementById("managerBody").addEventListener("click", e => {
+        if (e.target.id !== "btnResign") return;
+        Career.enterJobMarket(Game.state, "resigned");
+        Game.save();
+        document.getElementById("managerModal").classList.add("hidden");
+        this.renderJobMarket("You've resigned", "You've stepped down from your post. A fresh challenge awaits — choose your next club.");
+      });
+    },
+    renderJobMarket(title, subtitle) {
+      const state = Game.state;
+      ["hub", "squad", "market", "coaches", "academy", "lineup", "table"].forEach(t => document.getElementById("screen-" + t).classList.add("hidden"));
+      document.getElementById("screen-match").classList.add("hidden");
+      document.getElementById("screen-seasonend").classList.add("hidden");
+      document.getElementById("tabs").classList.add("hidden");
+      document.getElementById("topbar").classList.add("hidden");
+      const screen = document.getElementById("screen-jobs");
+      screen.classList.remove("hidden");
+      screen.innerHTML = UI.jobMarketHTML(state, title, subtitle);
+      screen.querySelectorAll("[data-takejob]").forEach(b => b.addEventListener("click", () => {
+        const res = Career.takeJob(state, b.dataset.takejob);
+        if (!res.ok) { UI.toast("You don't have the reputation for that job yet."); return; }
+        Game.save();
+        screen.classList.add("hidden");
+        document.getElementById("topbar").classList.remove("hidden");
+        document.getElementById("tabs").classList.remove("hidden");
+        this.refreshChrome();
+        this.showTab("hub");
+        UI.toast(`✍️ Appointed manager of ${res.clubName}!`);
+      }));
+    },
+
+    // ---------------- Player profile ----------------
+    wireProfile() {
+      document.getElementById("btnProfileClose").addEventListener("click", () => this.closeProfile());
+      document.getElementById("profileModal").addEventListener("click", e => { if (e.target.id === "profileModal") this.closeProfile(); });
+      // Manual squad-role assignment from the profile.
+      document.getElementById("profileBody").addEventListener("change", e => {
+        const sel = e.target.closest("[data-setrole]");
+        if (!sel) return;
+        const p = Game.myClub().squad.find(x => x.id === sel.dataset.setrole);
+        if (!p) return;
+        if (sel.value === "auto") { delete p.squadRole; p.squadRoleSet = false; }
+        else { p.squadRole = sel.value; p.squadRoleSet = true; }
+        Game.save();
+        UI.renderProfileModal(p, true);
+      });
+      // Any clickable player name across the app opens their profile.
+      document.addEventListener("click", e => { const t = e.target.closest("[data-profile]"); if (t) this.openProfile(t.dataset.profile); });
+    },
+    findPlayer(state, id) {
+      const mine = Game.myClub();
+      if (mine && mine.squad) { const p = mine.squad.find(x => x.id === id); if (p) return { player: p, mine: true }; }
+      for (const pd of (state.pendingSignings || [])) if (pd.player && pd.player.id === id) return { player: pd.player, mine: true };
+      for (const c of (state.clubs || [])) { if (c.strengthOnly || !c.squad) continue; const p = c.squad.find(x => x.id === id); if (p) return { player: p, mine: c.id === state.clubId }; }
+      for (const l of (state.market || [])) if (l.player && l.player.id === id) return { player: l.player, mine: false };
+      for (const l of (state.freeAgents || [])) if (l.player && l.player.id === id) return { player: l.player, mine: false };
+      const sc = mine && mine.scouting;
+      if (sc) for (const rep of (sc.reports || [])) for (const c of (rep.candidates || [])) if (c.player && c.player.id === id) return { player: c.player, mine: false };
+      for (const e of (state.watchlist || [])) if (e.player && e.player.id === id) return { player: e.player, mine: false };
+      if (mine && mine.academy) for (const arr of [mine.academy.prospects, mine.academy.pending]) for (const g of (arr || [])) if (g && g.id === id) return { player: g, mine: true };
+      return null;
+    },
+    openProfile(id) {
+      const found = this.findPlayer(Game.state, id);
+      if (!found) return;
+      document.getElementById("profileModal").classList.remove("hidden");
+      UI.renderProfileModal(found.player, found.mine);
+    },
+    closeProfile() { document.getElementById("profileModal").classList.add("hidden"); },
 
     // ---------------- Rebalance budgets ----------------
     wireFinance() {
@@ -441,6 +520,10 @@
           : res.immediate === false ? `🤝 Pre-agreed ${res.name} — joins when the window opens`
           : `✍️ Signed ${res.name} — ${years}yr deal`;
         UI.toast(msg);
+        News.push(state, ctx.kind === "renew" ? "player" : "transfer",
+          ctx.kind === "renew" ? `${Game.myClub().short} tie ${res.name} down to a new ${years}-year deal.`
+          : `${Game.myClub().short} sign ${res.name} on a ${years}-year deal${res.immediate === false ? " (joins when the window opens)" : ""}.`,
+          { playerId: p.id });
         Game.save();
         this.closeContract();
         UI.renderMarket(state); UI.renderSquad(state); UI.renderScouting(state); this.refreshChrome();
@@ -472,6 +555,24 @@
         Game.save();
         UI.renderLineup(Game.state);
       });
+      // Pre-match tactics.
+      document.querySelectorAll("[data-tac]").forEach(sel => sel.addEventListener("change", e => {
+        const club = Game.myClub();
+        Tactics.ensure(club);
+        club.tactics[e.target.dataset.tac] = e.target.value;
+        Game.save();
+        const th = document.getElementById("tacticsHint");
+        if (th) th.textContent = Tactics.ment(club).desc;
+      }));
+      // In-match tactics — take effect immediately on the live sim.
+      document.querySelectorAll("[data-mtac]").forEach(sel => sel.addEventListener("change", e => {
+        if (!MatchPlayer.lm) return;
+        const club = MatchPlayer.lm.state.userSide === "home" ? MatchPlayer.home : MatchPlayer.away;
+        const m = e.target.dataset.mtac === "mentality" ? e.target.value : null;
+        const p = e.target.dataset.mtac === "pressing" ? e.target.value : null;
+        MatchPlayer.lm.setTactics(m, p);
+        UI.toast(`Tactics changed — ${Tactics.summary(club)}`);
+      }));
       document.getElementById("btnAutoPick").addEventListener("click", () => {
         const club = Game.myClub();
         Lineup.autoPick(club, club.formation);
@@ -791,10 +892,19 @@
           let minutes = item.userMinutes;
           if (!minutes && me.lineup) { minutes = {}; Lineup.starterIds(me.lineup).forEach(id => { minutes[id] = 90; }); }
           if (minutes) Fitness.recordMatch(me, minutes);
+          // A standout or stinker of a performance nudges morale (feeds the loop).
+          (item.userRatings || []).forEach(r => {
+            const p = me.squad.find(x => x.id === r.id);
+            if (!p) return;
+            const bump = r.potm ? 4 : r.rating >= 7.8 ? 3 : r.rating >= 7 ? 1.5 : r.rating < 5.5 ? -3 : r.rating < 6.2 ? -1.5 : 0;
+            if (bump && typeof Morale !== "undefined") p.morale = clamp((p.morale ?? 70) + bump, 5, 100);
+          });
           // Any outstanding ban is served by sitting out this match; then new
           // red cards from this match start a one-match ban.
           (me.squad || []).forEach(p => { if (p.suspendedMatches > 0) p.suspendedMatches--; });
           const userSide = item.home.id === state.clubId ? "home" : "away";
+          Career.recordMatch(state, userSide === "home" ? item.full.hg : item.full.ag, userSide === "home" ? item.full.ag : item.full.hg);
+          News.userResult(state, item);
           (item.full.reds || []).forEach(r => {
             if (r.side !== userSide) return;
             const p = me.squad.find(x => x.id === r.playerId);
@@ -937,6 +1047,10 @@
         const result = Season.endOfSeason(state);
         Game.save();
         this.renderSeasonEnd(result);
+      } else if (Career.checkMidSeasonSack(state)) {
+        Career.enterJobMarket(state, "sacked mid-season");
+        Game.save();
+        this.renderJobMarket("💥 You've been dismissed", "The board have run out of patience and relieved you of your duties mid-season.");
       } else {
         const t = this.windowTransition;
         this.showTab("hub");
@@ -948,6 +1062,7 @@
         (state.academyNews || []).forEach(m => UI.toast(m));
         (state.scoutNews || []).forEach(m => UI.toast(m));
         (state.medicalNews || []).forEach(m => UI.toast(m));
+        (state.moraleNews || []).forEach(m => UI.toast(m));
       }
     },
 
@@ -984,31 +1099,11 @@
   
       const fromLeagueName = LEAGUE_NAMES[result.userLeague];
 
-      if (result.userSacked) {
-        // Bottom three of League Two — sacked. Career ends here.
-        screen.innerHTML = `
-          <div class="relegation-screen">
-            <p class="eyebrow">Season ${state.season}/${String(state.season + 1).slice(2)} complete</p>
-            <div class="big">Sacked</div>
-            <p>${club.name} finish ${ordinal(result.myFinalPos)} in League Two — bottom of the Football League. The board have dismissed you and your career ends here.</p>
-            <button class="primary" id="btnSeasonNewCareer">Start New Career</button>
-          </div>
-          ${result.awards ? `<div class="panel"><h3>Final ${fromLeagueName} Awards</h3>${UI.awardsGridHTML(result.awards)}${UI.seasonStatBoardsHTML(result.awards)}</div>` : ""}
-        `;
-        document.getElementById("btnSeasonNewCareer").addEventListener("click", () => {
-          Game.clearSave();
-          Game.state = null;
-          this.selectedClubId = null;
-          this.selectedLeague = LEAGUES[0];
-          this.clubSearch = "";
-          document.getElementById("topbar").classList.add("hidden");
-          document.getElementById("continuePanel").classList.add("hidden");
-          document.getElementById("managerNameInput").value = "";
-          const si = document.getElementById("clubSearch"); if (si) si.value = "";
-          UI.renderClubGrid(null, this.selectedLeague, this.clubSearch);
-          screen.classList.add("hidden");
-          document.getElementById("screen-start").classList.remove("hidden");
-        });
+      if (result.sacked) {
+        // No longer career-over: the board dismiss you, but a job market opens.
+        Career.enterJobMarket(state, result.sackReason);
+        Game.save();
+        this.renderJobMarket("You've been sacked", `${club.name} ${result.sackReason}. The board have dismissed you — but your managerial career continues. Choose your next challenge.`);
         return;
       }
 
@@ -1131,7 +1226,17 @@
       document.getElementById("btnMatchPause").disabled = true;
       document.getElementById("btnMatchContinue").classList.add("hidden");
       document.getElementById("subsPanel").classList.add("hidden");
+      document.getElementById("matchReport").classList.add("hidden");
       document.getElementById("btnMatchSubs").classList.toggle("hidden", !this.interactive);
+      // In-match tactics bar (managed side only), seeded from the club's setup.
+      const mt = document.getElementById("matchTactics");
+      mt.classList.toggle("hidden", !this.interactive);
+      if (this.interactive) {
+        const club = this.lm.state.userSide === "home" ? home : away;
+        Tactics.ensure(club);
+        UI.fillTacticsSelect("mMentality", Tactics.MENTALITY, club.tactics.mentality);
+        UI.fillTacticsSelect("mPressing", Tactics.PRESSING, club.tactics.pressing);
+      }
       this.updateSubsBtn();
       document.querySelectorAll(".speed-btn").forEach(b => b.classList.toggle("active", b.dataset.speed === "1"));
     },
@@ -1220,6 +1325,7 @@
       if (!this.lm || !App.currentItem) return;
       App.currentItem.full = { ...App.currentItem.full, ...this.lm.result() };
       App.currentItem.userMinutes = this.lm.minutesMap();
+      if (this.interactive) App.currentItem.userRatings = this.lm.ratings();
     },
 
     // ---- Substitutions ----
@@ -1268,6 +1374,11 @@
       document.getElementById("btnMatchStart").disabled = true;
       document.getElementById("btnMatchPause").disabled = true;
       document.getElementById("btnMatchSubs").classList.add("hidden");
+      document.getElementById("matchTactics").classList.add("hidden");
+      // Match report — stats + player ratings (interactive matches only).
+      const report = document.getElementById("matchReport");
+      if (this.interactive && App.currentItem) { UI.renderMatchReport(App.currentItem, App.currentItem.userRatings); report.classList.remove("hidden"); }
+      else report.classList.add("hidden");
       document.getElementById("btnMatchContinue").classList.remove("hidden");
       App.onLiveMatchEnded();
     },

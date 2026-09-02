@@ -187,10 +187,11 @@ const Market = {
     const rivals = state.clubs.filter(c => c.id !== state.clubId && !c.strengthOnly);
     club.squad.forEach(p => {
       p.offers = p.offers || [];
-      const cap = p.transferListed ? 5 : 2;
+      const cap = (p.transferListed || p.wantsOut) ? 5 : 2;
       if (p.offers.length >= cap) return;
       const desire = clamp((p.rating - 60) / 50, 0, 0.25); // better players draw interest anyway
-      const chance = clamp((p.transferListed ? 0.65 : 0.06) + desire, 0, 0.92);
+      // A player agitating to leave draws bids like a transfer-listed one.
+      const chance = clamp(((p.transferListed || p.wantsOut) ? 0.65 : 0.06) + desire, 0, 0.92);
       if (Math.random() > chance) return;
       const fee = Math.max(0.2, Math.round(p.value * (0.75 + Math.random() * 0.5) * 10) / 10); // ±25%
       const weights = rivals.map(c => { const exp = 54 + c.tier * 6; return 1 / (1 + Math.abs(p.rating - exp)); });
@@ -283,6 +284,10 @@ const Market = {
       Stats.ensure(player);
       buyer.squad.push({ ...player, club: buyer.id, stats: { ...player.stats }, bonus: { ...player.bonus }, career: { ...player.career } });
       seller.lineup = null; buyer.lineup = null;
+      // Notable rival business makes the news.
+      if (typeof News !== "undefined" && (fee >= 12 || player.rating >= 78)) {
+        News.transfer(state, `${buyer.short} sign ${player.name} (${player.rating}) from ${seller.short} for £${fee}m.`);
+      }
       // Drop any user-market listing referencing a player who's just moved.
       state.market = (state.market || []).filter(l => l.player.id !== player.id);
     }
@@ -425,6 +430,7 @@ const Market = {
     Stats.ensure(deal.player);
     const signed = { ...deal.player, transferListed: false, offers: [], stats: { ...deal.player.stats }, bonus: { ...deal.player.bonus }, career: { ...deal.player.career } };
     Contracts.applyContract(signed, deal.wage, deal.years);
+    if (typeof Morale !== "undefined") Morale.onSign(signed); // fresh signing settles in
     Contracts.clearNeg(state, deal.player.id);
 
     if (immediate) {
@@ -498,6 +504,7 @@ const Market = {
     if (!p) return { ok: false, reason: "That player is no longer at the club." };
     if (wage > Contracts.wageRoom(club) + Contracts.effWage(p)) return { ok: false, reason: "Not enough room in your wage budget." };
     Contracts.applyContract(p, wage, years);
+    if (typeof Morale !== "undefined") Morale.onRenew(p); // a new deal lifts spirits
     Contracts.clearNeg(state, playerId);
     return { ok: true, name: p.name };
   },

@@ -193,7 +193,9 @@
            // overachievement was dramatic.
            let delta = 0;
            if (p.age < 30) {
-             if (p.rating < p.potential) delta += this.growthStep(p.age) * coachMult;
+             // A happy player develops a little faster; a miserable one stalls.
+             const moraleMult = (club.id === state.clubId && typeof Morale !== "undefined") ? Morale.devMult(p) : 1;
+             if (p.rating < p.potential) delta += this.growthStep(p.age) * coachMult * moraleMult;
            } else {
              delta -= this.declineStep(p.age) * clamp(1.3 - coachMult * 0.3, 0.55, 1.3);
            }
@@ -202,8 +204,12 @@
            // A storming season can push a player past their old ceiling.
            if (p.rating > p.potential) p.potential = p.rating;
 
-           if (club.id === state.clubId && p.rating - before >= 4) {
-             news.breakouts.push({ name: p.name, age: p.age, from: before, to: p.rating });
+           if (club.id === state.clubId) {
+             // Development history for the player profile (OVR over time).
+             p.ratingHistory = p.ratingHistory || [];
+             p.ratingHistory.push({ season: state.season, ovr: p.rating });
+             if (p.ratingHistory.length > 14) p.ratingHistory.shift();
+             if (p.rating - before >= 4) news.breakouts.push({ name: p.name, age: p.age, from: before, to: p.rating });
            }
            survivors.push(p);
          });
@@ -280,7 +286,12 @@
        Scouting.ensure(this.state);
        Fitness.ensure(this.state);
        Contracts.ensure(this.state);
+       Morale.ensure(this.state);
+       Tactics.ensure(this.myClub());
        Board.setObjective(this.state);
+       Career.ensure(this.state);
+       News.ensure(this.state);
+       News.push(this.state, "manager", `${managerName} takes charge of ${this.myClub().name}.`);
        this.save();
      },
      myClub() {
@@ -436,6 +447,10 @@
      state.clubs.forEach(c => { if (!c.strengthOnly && c.squad) c.squad.forEach(p => { p.value = parValue(p.rating, p.age); }); }); // refresh values to the current age curve
      Board.ensure(state);    // board objectives are newer than some saves
      Contracts.ensure(state); // contracts + wage budget are newer than some saves
+     Morale.ensure(state);    // dynamic morale is newer than some saves
+     { const mc = state.clubs.find(c => c.id === state.clubId); if (mc) Tactics.ensure(mc); } // team tactics newer than some saves
+     Career.ensure(state);    // manager reputation / board confidence / job market newer than some saves
+     News.ensure(state);      // the news feed is newer than some saves
 
      ensureCareers(state);
    }

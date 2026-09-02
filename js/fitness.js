@@ -63,11 +63,12 @@ const Fitness = {
   recordMatch(club, minutesMap) {
     if (!club || club.strengthOnly || !club.squad || !minutesMap) return;
     const [lo, spread] = this.MATCH_DRAIN;
+    const pressMult = typeof Tactics !== "undefined" ? Tactics.drainMult(club) : 1; // high press tires legs faster
     club.squad.forEach(p => {
       const mins = minutesMap[p.id];
       if (mins == null || mins <= 0) return;
       p._played = true;
-      const drain = (lo + Math.random() * spread) * clamp(mins / 90, 0, 1.1) * this.posDrain(p.pos) / this.staminaFactor(p);
+      const drain = (lo + Math.random() * spread) * clamp(mins / 90, 0, 1.1) * this.posDrain(p.pos) * pressMult / this.staminaFactor(p);
       p.fitness = clamp((p.fitness ?? 100) - drain, 5, 100);
     });
   },
@@ -118,7 +119,8 @@ const Fitness = {
     club.squad.forEach(p => {
       if (!p._played || p.injuryWeeks > 0) return;
       const lowFit = 1 + (100 - (p.fitness ?? 100)) / 70;
-      if (Math.random() < this.INJURY_BASE * lowFit * (1 - cut)) {
+      const traitMult = typeof Players !== "undefined" ? Players.injuryMult(p) : 1; // Injury Prone ↑, Professional ↓
+      if (Math.random() < this.INJURY_BASE * lowFit * (1 - cut) * traitMult) {
         p.injuryWeeks = this.injuryDuration(club);
         this.dropFromLineup(club, p.id);
         state.medicalNews.push(`⚠️ ${p.name} injured — out ${p.injuryWeeks} week${p.injuryWeeks === 1 ? "" : "s"}`);
