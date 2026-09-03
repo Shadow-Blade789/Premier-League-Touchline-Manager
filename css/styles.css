@@ -134,22 +134,57 @@
 
    /* ---------- App shell ---------- */
    #app { max-width: 1140px; margin: 0 auto; padding: 0 0 4rem; }
+   #content { min-width: 0; }
 
    .topbar {
-     position: sticky; top: 0; z-index: 20;
-     display: flex; align-items: center; gap: 1rem;
-     background: linear-gradient(180deg, rgba(19,29,49,0.96), rgba(15,23,38,0.96));
-     backdrop-filter: blur(8px);
+     position: sticky; top: 0; z-index: 30;
+     display: flex; align-items: center; gap: 0.9rem;
+     background: linear-gradient(180deg, rgba(21,32,54,0.98), rgba(14,22,37,0.98));
+     backdrop-filter: blur(10px);
      border-bottom: 1px solid var(--glass-border);
-     padding: 0.7rem 1.3rem;
-     box-shadow: 0 8px 24px -16px rgba(0,0,0,0.8);
+     padding: 0.6rem 1.3rem;
+     box-shadow: 0 10px 30px -20px rgba(0,0,0,0.9);
    }
-   .topbar .brand { font-family: var(--font-display); font-size: 1.1rem; letter-spacing: 0.06em; line-height: 1.05; }
-   .topbar .brand small { display: block; font-size: 0.62rem; color: var(--muted); letter-spacing: 0.1em; margin-top: 0.15em; }
+   .topbar .brand { font-family: var(--font-display); font-size: 1.08rem; letter-spacing: 0.05em; line-height: 1.05; }
+   .topbar .brand small { display: block; font-size: 0.6rem; color: var(--muted); letter-spacing: 0.1em; margin-top: 0.15em; }
    .topbar .spacer { flex: 1; }
-   .topbar .stat { text-align: right; font-family: var(--font-mono); font-size: 0.92rem; }
-   .topbar .stat .label { display:block; font-family: var(--font-display); font-size:0.58rem; letter-spacing:0.12em; color: var(--muted); text-transform: uppercase; margin-bottom: 0.1em; }
-   .topbar-trophy { padding: 0.35em 0.55em; font-size: 1.05rem; line-height: 1; background: var(--panel-3); border-radius: var(--radius-xs); }
+   .topbar .stat { text-align: center; font-family: var(--font-mono); font-size: 0.9rem; padding: 0.25rem 0.7rem; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: var(--radius-xs); min-width: 3.4em; }
+   .topbar .stat .label { display:block; font-family: var(--font-display); font-size:0.56rem; letter-spacing:0.12em; color: var(--muted); text-transform: uppercase; margin-bottom: 0.15em; }
+   .topbar-trophy { padding: 0.4em 0.6em; font-size: 1.05rem; line-height: 1; background: var(--panel-3); border-radius: var(--radius-xs); }
+
+   /* ---------- Sidebar navigation (wide screens) ---------- */
+   .nav-brand { display: none; align-items: center; gap: 0.55rem; padding: 0.2rem 0.7rem 1rem; margin-bottom: 0.4rem; border-bottom: 1px solid var(--hairline); }
+   .nav-mark { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(150deg, var(--amber), #e0a53a); color: var(--amber-ink); font-family: var(--font-display); font-weight: 700; font-size: 0.86rem; box-shadow: 0 6px 16px -8px rgba(255,200,87,0.6); }
+   .nav-brand-txt { font-family: var(--font-display); font-size: 1.05rem; letter-spacing: 0.05em; line-height: 1; }
+   .nav-brand-txt small { display: block; font-size: 0.56rem; color: var(--muted); letter-spacing: 0.1em; margin-top: 0.2em; }
+   .nav-ico { font-size: 1em; filter: saturate(0.85); }
+
+   @media (min-width: 900px) {
+     #app:has(#tabs:not(.hidden)) {
+       display: grid;
+       grid-template-columns: 236px minmax(0, 1fr);
+       grid-template-rows: auto 1fr;
+       max-width: 1520px; margin: 0 auto; padding-bottom: 0;
+       column-gap: 0;
+     }
+     #app:has(#tabs:not(.hidden)) > .topbar { grid-column: 1 / -1; }
+     #app:has(#tabs:not(.hidden)) > #tabs {
+       grid-column: 1; grid-row: 2;
+       position: sticky; top: 61px; align-self: start;
+       height: calc(100vh - 61px); overflow-y: auto;
+       flex-direction: column; gap: 0.25rem;
+       padding: 1.1rem 0.75rem; border-bottom: none;
+       border-right: 1px solid var(--glass-border);
+       background: linear-gradient(180deg, rgba(16,25,42,0.55), rgba(9,15,25,0.35));
+       backdrop-filter: none;
+     }
+     #app:has(#tabs:not(.hidden)) > #content { grid-column: 2; grid-row: 2; padding-bottom: 4rem; }
+     #tabs .nav-brand { display: flex; }
+     #tabs button { flex: 0 0 auto; justify-content: flex-start; text-align: left; padding: 0.72em 0.9em; font-size: 0.82rem; gap: 0.7em; }
+     #tabs button.active { box-shadow: none; background: var(--amber-soft); color: var(--chalk); border-color: transparent; border-left: 3px solid var(--amber); border-radius: 0 var(--radius-xs) var(--radius-xs) 0; }
+     #tabs button.active .nav-ico { filter: none; }
+     #tabs button:hover:not(.active) { background: rgba(255,255,255,0.04); }
+   }
 
    /* ---------- Modal (trophy cabinet) ---------- */
    .modal-overlay {
@@ -174,7 +209,7 @@
    .trophy-line .tr-count { color: var(--amber); }
    .trophy-line .tr-seasons { grid-column: 2; font-family: var(--font-mono); font-size: 0.76rem; color: var(--muted); }
 
-   /* ---------- Tabs ---------- */
+   /* ---------- Tabs (horizontal bar — narrow screens) ---------- */
    .tabs {
      display: flex; gap: 0.25rem; padding: 0.4rem 0.6rem;
      background: linear-gradient(180deg, rgba(15,23,38,0.96), rgba(12,19,31,0.94));
@@ -183,17 +218,19 @@
      position: sticky; top: 55px; z-index: 19;
      overflow-x: auto;
    }
+   .tabs .nav-brand { display: none; }
    .tabs button {
      flex: 1; border: 1px solid transparent; border-radius: var(--radius-xs);
-     background: transparent; padding: 0.62em 0.5em; font-size: 0.76rem;
-     white-space: nowrap; color: var(--muted); letter-spacing: 0.05em;
-     display: flex; align-items: center; justify-content: center; gap: 0.4em;
+     background: transparent; padding: 0.62em 0.5em; font-size: 0.74rem;
+     white-space: nowrap; color: var(--muted); letter-spacing: 0.04em;
+     display: flex; align-items: center; justify-content: center; gap: 0.4em; text-transform: uppercase;
    }
-   .tabs button .tico { font-size: 0.95em; filter: saturate(0.9); }
+   .tabs button .nav-ico { font-size: 0.95em; }
    .tabs button.active { color: var(--amber-ink); background: linear-gradient(180deg, #ffd270, var(--amber)); border-color: var(--amber); font-weight: 600; box-shadow: 0 6px 14px -8px rgba(255,200,87,0.55); }
    .tabs button:hover:not(.active) { background: rgba(255,255,255,0.05); color: var(--chalk); }
+   @media (max-width: 560px) { .tabs button .nav-lbl { display: none; } .tabs button { font-size: 1.05rem; } }
 
-   .screen { padding: 1.5rem 1.3rem; animation: screenIn 0.25s ease; }
+   .screen { padding: 1.5rem 1.6rem; animation: screenIn 0.25s ease; }
    @keyframes screenIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
    @media (prefers-reduced-motion: reduce) { .screen { animation: none; } }
 
