@@ -305,6 +305,15 @@
 
       const attackers = list => { const l = list.filter(p => p.pos === "FW" || p.pos === "MF"); return l.length ? l : list; };
       const rnd = arr => arr.length ? arr[Math.floor(Math.random() * arr.length)] : null;
+      // Scorer pick that leans toward Shoot-on-Sight players on the given side.
+      const scorerW = (list, side) => {
+        const ii = side === "home" ? st.instrH : st.instrA;
+        if (!ii || !ii.shootIds.size) return eng.weightedScorer(list);
+        const weights = list.map(p => p.rating * (p.pos === "FW" ? 1.9 : 1) * (1 + ((p.bonus && p.bonus.goal) || 0)) * (ii.shootIds.has(p.id) ? 1.7 : 1));
+        const tot = weights.reduce((s, w) => s + w, 0); let r = Math.random() * tot;
+        for (let i = 0; i < list.length; i++) { r -= weights[i]; if (r <= 0) return list[i]; }
+        return list[list.length - 1];
+      };
       // BOTH clubs play to their PHILOSOPHY now — the managed side to the one the
       // manager set, the opponent to its stable identity (the one shown in the
       // pre-match brief). `sideMods` folds mentality/width/line into a side's
@@ -327,9 +336,18 @@
           st.aAtt *= aMods.att; st.aDef *= aMods.def;
         }
         st._uMods = userSide === "home" ? hMods : userSide === "away" ? aMods : null;
+        // Individual player instructions (Get Forward, Keep It Simple, Press Hard…)
+        // aggregate per side and layer on top of the team philosophy.
+        const R = typeof PlayerRoles !== "undefined" ? PlayerRoles : null;
+        const iH = st.instrH = R ? R.sideEffect(st.hOn) : null;
+        const iA = st.instrA = R ? R.sideEffect(st.aOn) : null;
+        if (iH) { st.hAtt *= 1 + iH.att; st.hDef *= 1 + iH.def; }
+        if (iA) { st.aAtt *= 1 + iA.att; st.aDef *= 1 + iA.def; }
         // Possession-heavy styles pull the run of play (and the possession stat)
-        // toward their side; counter/direct styles cede it. Net of both clubs.
+        // toward their side; counter/direct styles cede it. Net of both clubs,
+        // plus each side's Keep-It-Simple / Play-Direct instructions.
         st._possBias = (hMods && aMods) ? (hMods.poss - aMods.poss) * 0.65 : 0;
+        if (iH) st._possBias += iH.poss * 0.5; if (iA) st._possBias -= iA.poss * 0.5;
         let pHome = 0.0130 * eng.goalRatio(st.hAtt, st.aDef) * formFactor;
         let pAway = 0.0110 * eng.goalRatio(st.aAtt, st.hDef) * formFactor;
         if (hMods && aMods) {
@@ -337,8 +355,12 @@
           pHome *= hMods.cf * aMods.ca;
           pAway *= aMods.cf * hMods.ca;
         }
-        st.pHomeGoal = clamp(pHome, 0.004, 0.085);
-        st.pAwayGoal = clamp(pAway, 0.004, 0.082);
+        // Instructions: own openness (direct passing, runs in behind, pressing) and
+        // the opponent leaving space behind (their press/direct risk).
+        if (iH) { pHome *= 1 + iH.cf + iH.press; pAway *= 1 + iH.ca + iH.press * 0.5; }
+        if (iA) { pAway *= 1 + iA.cf + iA.press; pHome *= 1 + iA.ca + iA.press * 0.5; }
+        st.pHomeGoal = clamp(pHome, 0.004, 0.09);
+        st.pAwayGoal = clamp(pAway, 0.004, 0.087);
       }
       st.stats = { home: { shots: 0, sot: 0, xg: 0, corners: 0, fouls: 0, poss: 0 }, away: { shots: 0, sot: 0, xg: 0, corners: 0, fouls: 0, poss: 0 } };
       recalc();
@@ -364,6 +386,13 @@
           const isStoppage = (m > 45 && m <= 45 + st.stoppage1) || (m > 45 + st.stoppage1 + 45);
           const lab = label();
           const roll = Math.random();
+          // Instructions widen the event bands: Shoot-on-Sight → more shots/chances;
+          // Hard Tackling → more fouls & cards.
+          const hAggro = st.instrH ? st.instrH.foul : 0, aAggro = st.instrA ? st.instrA.foul : 0;
+          const shootTot = (st.instrH ? st.instrH.shootIds.size : 0) + (st.instrA ? st.instrA.shootIds.size : 0);
+          const goalTop = st.pHomeGoal + st.pAwayGoal;
+          const chanceTop = goalTop + 0.05 + 0.004 * shootTot;
+          const discTop = chanceTop + 0.01 + 0.0035 * (hAggro + aAggro);
 
           // Live match stats: possession follows momentum; the odd corner falls to
           // whoever's on top. Background half-chances/fouls (no commentary) pad the
@@ -372,26 +401,26 @@
           st.stats.home.poss += st.momentum / 100; st.stats.away.poss += (100 - st.momentum) / 100;
           if (Math.random() < 0.045) (Math.random() * 100 < st.momentum ? st.stats.home : st.stats.away).corners++;
           if (m <= 90 + st.stoppage1 + st.stoppage2) {
-            if (Math.random() < 0.11) { const sd = (Math.random() * 100 < st.momentum) ? st.stats.home : st.stats.away; sd.shots++; if (Math.random() < 0.34) sd.sot++; sd.xg += 0.02 + Math.random() * 0.09; }
-            if (Math.random() < 0.14) (Math.random() < 0.5 ? st.stats.home : st.stats.away).fouls++;
+            if (Math.random() < 0.11 + 0.006 * shootTot) { const sd = (Math.random() * 100 < st.momentum) ? st.stats.home : st.stats.away; sd.shots++; if (Math.random() < 0.34) sd.sot++; sd.xg += 0.02 + Math.random() * 0.09; }
+            if (Math.random() < 0.14 + 0.012 * (hAggro + aAggro)) { const pick2 = (hAggro + aAggro) > 0 ? (Math.random() * (hAggro + aAggro + 2) < hAggro + 1 ? st.stats.home : st.stats.away) : (Math.random() < 0.5 ? st.stats.home : st.stats.away); pick2.fouls++; }
           }
 
           if (roll < st.pHomeGoal) {
-            st.hg++; const s = eng.weightedScorer(attackers(st.hOn)); st.homeScorers.push(s.id);
+            st.hg++; const s = scorerW(attackers(st.hOn), "home"); st.homeScorers.push(s.id);
             st.stats.home.shots++; st.stats.home.sot++; st.stats.home.xg += 0.42 + Math.random() * 0.36;
             if (userSide === "home") { bumpR(s.id, 1.3); attackers(st.hOn).forEach(p => bumpR(p.id, 0.08)); }
             else if (userSide === "away") st.aOn.forEach(p => { if (p.pos === "GK") bumpR(p.id, -0.6); else if (p.pos === "DF") bumpR(p.id, -0.35); });
             events.push(mk(lab, "goal", fmt(pick(Commentary.goal), { player: s.name, team: st.home.name }), { side: "home", stoppage: isStoppage }));
-          } else if (roll < st.pHomeGoal + st.pAwayGoal) {
-            st.ag++; const s = eng.weightedScorer(attackers(st.aOn)); st.awayScorers.push(s.id);
+          } else if (roll < goalTop) {
+            st.ag++; const s = scorerW(attackers(st.aOn), "away"); st.awayScorers.push(s.id);
             st.stats.away.shots++; st.stats.away.sot++; st.stats.away.xg += 0.42 + Math.random() * 0.36;
             if (userSide === "away") { bumpR(s.id, 1.3); attackers(st.aOn).forEach(p => bumpR(p.id, 0.08)); }
             else if (userSide === "home") st.hOn.forEach(p => { if (p.pos === "GK") bumpR(p.id, -0.6); else if (p.pos === "DF") bumpR(p.id, -0.35); });
             events.push(mk(lab, "goal", fmt(pick(Commentary.goal), { player: s.name, team: st.away.name }), { side: "away", stoppage: isStoppage }));
-          } else if (roll < st.pHomeGoal + st.pAwayGoal + 0.05) {
+          } else if (roll < chanceTop) {
             const homeChance = Math.random() * 100 < st.momentum;
             const team = homeChance ? st.home : st.away;
-            const p = eng.weightedScorer(attackers(homeChance ? st.hOn : st.aOn));
+            const p = scorerW(attackers(homeChance ? st.hOn : st.aOn), homeChance ? "home" : "away");
             const flavor = Math.random();
             const pool = flavor < 0.45 ? Commentary.chanceMiss : flavor < 0.85 ? Commentary.shotSaved : Commentary.woodwork;
             const sd = homeChance ? st.stats.home : st.stats.away;
@@ -403,11 +432,16 @@
               else { const d = rnd(uOn.filter(p => p.pos === "DF" || p.pos === "GK")); if (d) bumpR(d.id, -0.05); }
             }
             events.push(mk(lab, "chance", fmt(pick(pool), { player: p.name, team: team.name }), { side: homeChance ? "home" : "away", stoppage: isStoppage }));
-          } else if (roll < st.pHomeGoal + st.pAwayGoal + 0.06) {
+          } else if (roll < discTop) {
             const homeChance = Math.random() < 0.5;
             const team = homeChance ? st.home : st.away;
-            const p = pick(homeChance ? st.hOn : st.aOn);
-            const isRed = Math.random() < 0.05;
+            const onArr = homeChance ? st.hOn : st.aOn;
+            const ii = homeChance ? st.instrH : st.instrA;
+            // Hard Tacklers are the likely culprits, and likelier to see red.
+            const aggList = ii ? onArr.filter(x => ii.aggroIds.has(x.id)) : [];
+            const p = (aggList.length && Math.random() < 0.72) ? pick(aggList) : pick(onArr);
+            const hasAgg = !!(ii && p && ii.aggroIds.has(p.id));
+            const isRed = Math.random() < (0.05 + (hasAgg ? 0.06 : 0));
             (homeChance ? st.stats.home : st.stats.away).fouls++;
             if (isRed && p) st.reds.push({ side: homeChance ? "home" : "away", playerId: p.id, name: p.name });
             events.push(mk(lab, isRed ? "red" : "yellow", fmt(pick(isRed ? Commentary.red : Commentary.yellow), { player: p.name, team: team.name }), { side: homeChance ? "home" : "away", playerId: p && p.id, stoppage: isStoppage }));

@@ -1081,16 +1081,18 @@
         const p = club.squad.find(pl => pl.id === id);
         const [x, y] = layout[i] || [50, 50];
         const token = document.createElement("div");
-        token.className = "token";
+        token.className = "token" + (p ? " tappable" : "");
         token.style.left = x + "%";
         token.style.top = y + "%";
+        if (p) token.dataset.roleplayer = p.id;
         const initials = p ? p.name.split(" ").slice(-1)[0] : "—";
         const slotPos = slotMap[id] || "";
         // Flag a player fielded out of position (an amber ring + note).
         const fit = p && slotPos && typeof Positions !== "undefined" ? Positions.fit(slotPos, Positions.dposOf(p)) : 1;
         const ofp = fit < 0.8;
-        const fitTitle = p ? `${p.name} · ${slotPos}${typeof Positions !== "undefined" && p ? " (nat " + Positions.dposOf(p) + ", " + Math.round(fit * 100) + "%)" : ""} · ${Math.round(p.fitness ?? 100)}% fit` : "";
-        token.innerHTML = `<div class="dot${ofp ? " ofp" : ""}" title="${fitTitle}" style="background:${this.fitnessColor(p)};">${p ? p.rating : ""}</div><div class="lbl">${slotPos ? `<span class="tok-pos">${slotPos}</span> ` : ""}${initials}</div>`;
+        const hasInstr = p && typeof PlayerRoles !== "undefined" && PlayerRoles.isSet(p);
+        const fitTitle = p ? `${p.name} · ${slotPos}${typeof Positions !== "undefined" && p ? " (nat " + Positions.dposOf(p) + ", " + Math.round(fit * 100) + "%)" : ""} · ${Math.round(p.fitness ?? 100)}% fit — tap to set role` : "";
+        token.innerHTML = `<div class="dot${ofp ? " ofp" : ""}" title="${fitTitle}" style="background:${this.fitnessColor(p)};">${p ? p.rating : ""}${hasInstr ? '<span class="tok-instr" title="Has instructions">★</span>' : ""}</div><div class="lbl">${slotPos ? `<span class="tok-pos">${slotPos}</span> ` : ""}${initials}</div>`;
         pitch.appendChild(token);
       });
     },
@@ -1139,6 +1141,51 @@
         ? bench.map(p => `<span class="bench-chip">${typeof Positions !== "undefined" ? Positions.dposOf(p) : p.pos} · ${p.name} (${p.rating})</span>`).join("")
         : `<span class="muted">No bench players.</span>`;
     },
+
+    // Player role & instructions panel — a coverage highlight + plain-English
+    // "style" dials and switches. Opened by tapping a player on the pitch.
+    renderRole(club, playerId) {
+      const p = club.squad.find(pl => pl.id === playerId);
+      if (!p) return;
+      const dpos = Positions.dposOf(p);
+      const instr = PlayerRoles.of(p);
+      const cov = PlayerRoles.coverage(dpos, instr);
+      const base = PlayerRoles.BASE[dpos] || PlayerRoles.BASE.CM;
+      document.getElementById("roleTitle").textContent = `${p.name} — ${dpos}`;
+      const dials = PlayerRoles.DIALS.map(d => {
+        const cur = d.opts.find(o => o.k === instr[d.key]) || d.opts[1];
+        return `<div class="role-dial">
+          <span class="rd-label">${d.label}</span>
+          <div class="seg">${d.opts.map(o => `<button type="button" class="seg-btn${o.k === instr[d.key] ? " active" : ""}" data-rdial="${d.key}" data-val="${o.k}">${o.label}</button>`).join("")}</div>
+          <div class="rd-desc">${cur.desc}</div>
+        </div>`;
+      }).join("");
+      const toggles = PlayerRoles.TOGGLES.map(t =>
+        `<button type="button" class="role-tog${instr[t.key] ? " active" : ""}" data-rtog="${t.key}">
+          <span class="rt-ico">${t.icon}</span>
+          <span class="rt-txt"><span class="rt-lbl">${t.label}</span><span class="rt-desc">${t.desc}</span></span>
+          <span class="rt-switch"></span>
+        </button>`).join("");
+      document.getElementById("roleBody").innerHTML = `
+        <div class="role-layout">
+          <div class="role-pitch-wrap">
+            <div class="role-pitch">
+              <div class="rp-line rp-half"></div><div class="rp-circle"></div>
+              <div class="rp-box rp-box-top"></div><div class="rp-box rp-box-bot"></div>
+              <div class="role-zone" style="left:${cov.cx}%;top:${cov.cy}%;width:${cov.w}%;height:${cov.h}%;"></div>
+              <div class="role-base" style="left:${base[0]}%;top:${base[1]}%;">${dpos}</div>
+              <div class="rp-goal-note top">Attack ↑</div>
+            </div>
+            <div class="role-sum" id="roleSum">${PlayerRoles.summary(p)}</div>
+          </div>
+          <div class="role-controls">
+            ${dials}
+            <div class="rd-label" style="margin-top:0.2rem;">Instructions</div>
+            <div class="role-toggles">${toggles}</div>
+            <button type="button" class="ghost small role-reset" data-rreset="1">Reset to natural game</button>
+          </div>
+        </div>`;
+    },
   
     renderLineup(state) {
       const club = Game.myClub();
@@ -1168,12 +1215,14 @@
         return `<label class="dial"><span class="dial-lbl">${d[0].toUpperCase() + d.slice(1)}</span><select data-dial="${d}">${opts}</select></label>`;
       }).join("");
       const ph = Tactics.philosophy(club);
+      const badges = (ph.effects || []).map(x => `<span class="tac-fx">${x}</span>`).join("");
       container.dataset.tacctx = ctx;
       container.innerHTML =
         `<div class="tac-head"><span class="eyebrow">Club Philosophy</span><span class="tac-current">${ph.icon} ${Tactics.summary(club)}</span></div>` +
         `<div class="phil-grid">${chips}</div>` +
         `<p class="tac-desc">${ph.desc}</p>` +
-        `<div class="dial-grid">${dials}</div>`;
+        (badges ? `<div class="tac-fx-row">${badges}</div>` : "") +
+        `<details class="tac-fine"><summary>Fine-tune the dials</summary><div class="dial-grid">${dials}</div></details>`;
     },
 
     // ---- match statistics + player ratings report ----------------------------

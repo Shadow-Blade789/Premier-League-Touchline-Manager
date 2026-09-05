@@ -736,6 +736,62 @@
    .tok-pos { font-size: 0.72em; font-weight: 800; opacity: 0.75; }
    .dot.ofp { box-shadow: 0 0 0 2px #e6a94b, 0 2px 6px rgba(0,0,0,0.4); }
 
+   /* Tactics clarity: effect badges + collapsible dials */
+   .tac-fx-row { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.2rem 0 0.55rem; }
+   .tac-fx { font-size: 0.68rem; font-weight: 700; color: var(--chalk); background: var(--panel-3); border: 1px solid var(--glass-border); border-radius: 999px; padding: 0.2em 0.6em; }
+   .tac-fine { margin-top: 0.2rem; }
+   .tac-fine > summary { cursor: pointer; font-size: 0.72rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; list-style: revert; padding: 0.2rem 0; }
+   .tac-fine[open] > summary { color: var(--chalk); margin-bottom: 0.4rem; }
+
+   /* Pitch: tappable tokens + "has instructions" star */
+   .token.tappable { cursor: pointer; }
+   .token.tappable:hover .dot { filter: brightness(1.12); box-shadow: 0 0 0 2px var(--accent); }
+   .tok-instr { position: absolute; top: -4px; right: -4px; font-size: 0.62rem; color: #ffd76a; text-shadow: 0 1px 2px rgba(0,0,0,0.7); }
+   .pitch-hint { text-align: center; font-size: 0.74rem; color: var(--muted); margin: 0.4rem 0 0; }
+
+   /* ---------- Player role & instructions modal ---------- */
+   .role-layout { display: grid; grid-template-columns: minmax(150px, 210px) 1fr; gap: 1rem; align-items: start; }
+   .role-pitch-wrap { position: sticky; top: 0; }
+   .role-pitch { position: relative; width: 100%; aspect-ratio: 3 / 4; border-radius: var(--radius);
+     background: linear-gradient(180deg, #1f7a43 0%, #1a6b3a 100%); overflow: hidden; border: 1px solid rgba(255,255,255,0.15); }
+   .rp-line { position: absolute; background: rgba(255,255,255,0.28); }
+   .rp-half { left: 0; right: 0; top: 50%; height: 2px; }
+   .rp-circle { position: absolute; left: 50%; top: 50%; width: 30%; aspect-ratio: 1; transform: translate(-50%,-50%); border: 2px solid rgba(255,255,255,0.28); border-radius: 50%; }
+   .rp-box { position: absolute; left: 25%; width: 50%; height: 15%; border: 2px solid rgba(255,255,255,0.24); }
+   .rp-box-top { top: 0; border-top: none; } .rp-box-bot { bottom: 0; border-bottom: none; }
+   .rp-goal-note { position: absolute; left: 50%; transform: translateX(-50%); font-size: 0.6rem; font-weight: 800; color: rgba(255,255,255,0.7); letter-spacing: 0.05em; }
+   .rp-goal-note.top { top: 3px; }
+   .role-zone { position: absolute; transform: translate(-50%,-50%); border-radius: 40%;
+     background: radial-gradient(ellipse at center, rgba(255,206,84,0.55), rgba(255,206,84,0.16));
+     border: 1.5px solid rgba(255,206,84,0.85); transition: all 0.22s ease; }
+   .role-base { position: absolute; transform: translate(-50%,-50%); font-size: 0.6rem; font-weight: 800; color: #0e2a18;
+     background: #fff; border-radius: 999px; padding: 0.12em 0.4em; box-shadow: 0 1px 3px rgba(0,0,0,0.4); }
+   .role-sum { margin-top: 0.55rem; font-size: 0.78rem; font-style: italic; color: var(--chalk); text-align: center; }
+   .role-controls { display: flex; flex-direction: column; gap: 0.7rem; }
+   .role-dial { display: flex; flex-direction: column; gap: 0.25rem; }
+   .rd-label { font-size: 0.66rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+   .seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 0.25rem; }
+   .seg-btn { font-family: inherit; font-size: 0.72rem; font-weight: 700; padding: 0.42em 0.3em; color: var(--muted);
+     background: var(--panel); border: 1px solid var(--glass-border); border-radius: var(--radius-xs); cursor: pointer; transition: all 0.12s ease; }
+   .seg-btn:hover { color: var(--chalk); border-color: var(--accent); }
+   .seg-btn.active { background: color-mix(in srgb, var(--accent) 24%, var(--panel)); border-color: var(--accent); color: var(--chalk); }
+   .rd-desc { font-size: 0.72rem; color: var(--muted); }
+   .role-toggles { display: flex; flex-direction: column; gap: 0.4rem; }
+   .role-tog { display: flex; align-items: center; gap: 0.6rem; text-align: left; padding: 0.5rem 0.6rem;
+     background: var(--panel); border: 1px solid var(--glass-border); border-radius: var(--radius-xs); cursor: pointer; transition: all 0.12s ease; }
+   .role-tog:hover { border-color: var(--accent); }
+   .role-tog.active { background: color-mix(in srgb, var(--accent) 16%, var(--panel)); border-color: var(--accent); }
+   .rt-ico { font-size: 1.2rem; flex: 0 0 auto; }
+   .rt-txt { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; }
+   .rt-lbl { font-size: 0.82rem; font-weight: 700; color: var(--chalk); }
+   .rt-desc { font-size: 0.7rem; color: var(--muted); }
+   .rt-switch { flex: 0 0 auto; width: 34px; height: 19px; border-radius: 999px; background: var(--panel-3); border: 1px solid var(--glass-border); position: relative; transition: background 0.14s ease; }
+   .rt-switch::after { content: ""; position: absolute; top: 1px; left: 1px; width: 15px; height: 15px; border-radius: 50%; background: var(--muted); transition: transform 0.14s ease, background 0.14s ease; }
+   .role-tog.active .rt-switch { background: var(--accent); }
+   .role-tog.active .rt-switch::after { transform: translateX(15px); background: #fff; }
+   .role-reset { align-self: flex-start; margin-top: 0.2rem; }
+   @media (max-width: 560px) { .role-layout { grid-template-columns: 1fr; } .role-pitch-wrap { max-width: 220px; margin: 0 auto; } }
+
    /* Pre-match opposition brief (their philosophy, nothing more) */
    .opp-brief { display: flex; align-items: center; justify-content: center; gap: 0.6rem; max-width: 640px; margin: 0.5rem auto 0; padding: 0.4rem 0.9rem; background: var(--panel-2); border: 1px solid var(--glass-border); border-radius: 999px; }
    .opp-brief .ob-eyebrow { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); font-weight: 800; }

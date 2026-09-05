@@ -610,8 +610,39 @@
         UI.renderBench(club);
       });
       document.getElementById("btnPlayMatch").addEventListener("click", () => this.startMatch());
+
+      // Tap a player on the pitch → open their role & instructions panel.
+      document.getElementById("pitch").addEventListener("click", e => {
+        const tok = e.target.closest("[data-roleplayer]");
+        if (tok) this.openRole(tok.dataset.roleplayer);
+      });
+      document.getElementById("btnRoleClose").addEventListener("click", () => this.closeRole());
+      document.getElementById("roleModal").addEventListener("click", e => { if (e.target.id === "roleModal") this.closeRole(); });
+      // Role dials / toggles / reset — all live-update the panel + save.
+      document.getElementById("roleBody").addEventListener("click", e => {
+        const club = Game.myClub();
+        const p = club.squad.find(pl => pl.id === this._rolePlayer);
+        if (!p) return;
+        const dial = e.target.closest("[data-rdial]");
+        const tog = e.target.closest("[data-rtog]");
+        const reset = e.target.closest("[data-rreset]");
+        if (dial) PlayerRoles.set(p, dial.dataset.rdial, dial.dataset.val);
+        else if (tog) PlayerRoles.set(p, tog.dataset.rtog, !PlayerRoles.of(p)[tog.dataset.rtog]);
+        else if (reset) delete p.instr;
+        else return;
+        Game.save();
+        UI.renderRole(club, p.id);
+        UI.renderPitch(club);
+      });
     },
-  
+
+    openRole(playerId) {
+      this._rolePlayer = playerId;
+      UI.renderRole(Game.myClub(), playerId);
+      document.getElementById("roleModal").classList.remove("hidden");
+    },
+    closeRole() { document.getElementById("roleModal").classList.add("hidden"); },
+
     startMatch() {
       const club = Game.myClub();
       if (!club.lineup || !Lineup.isComplete(club.lineup)) {
