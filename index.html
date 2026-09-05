@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PLFC Touchline Manager</title>
 <meta name="description" content="A Premier League club-management sim — pick your club, run the transfer market, set your lineup, and live the season.">
-<link rel="stylesheet" href="css/styles.css?v=69">
+<link rel="stylesheet" href="css/styles.css?v=79">
 </head>
 <body>
 
@@ -312,13 +312,7 @@
               <span>Tired</span>
             </div>
           </div>
-          <div class="lineup-controls tactics-row">
-            <span class="eyebrow">Mentality</span>
-            <select id="mentalitySelect" data-tac="mentality"></select>
-            <span class="eyebrow">Pressing</span>
-            <select id="pressingSelect" data-tac="pressing"></select>
-            <span class="muted" id="tacticsHint" style="font-size:0.74rem;"></span>
-          </div>
+          <div class="tactics-panel" id="tacticsPanel"></div>
           <div class="pitch-wrap" id="pitch">
             <div class="halfway"></div><div class="centre-circle"></div>
             <div class="box-top"></div><div class="box-bottom"></div>
@@ -380,8 +374,36 @@
       </div>
     </div>
 
-    <div class="momentum-labels"><span>Home pressure</span><span>Away pressure</span></div>
+    <div class="opp-brief hidden" id="oppBrief"></div>
+
+    <div class="mpitch" id="matchPitch">
+      <div class="mp-grass">
+        <div class="mp-line mp-halfway"></div>
+        <div class="mp-circle"></div>
+        <div class="mp-box mp-box-l"></div><div class="mp-box mp-box-r"></div>
+        <div class="mp-6 mp-6-l"></div><div class="mp-6 mp-6-r"></div>
+        <div class="mp-goal mp-goal-l"></div><div class="mp-goal mp-goal-r"></div>
+        <div class="mp-players" id="mpPlayers"></div>
+        <div class="mp-ball" id="mpBall"></div>
+        <div class="mp-flash" id="mpFlash"></div>
+      </div>
+    </div>
+
+    <div class="momentum-labels"><span id="momLabelH">Home</span><span id="momStatus" class="mom-status">Kick-off</span><span id="momLabelA">Away</span></div>
     <div class="momentum-bar"><div class="home" id="momHome" style="width:50%;"></div><div class="away" id="momAway" style="width:50%;"></div></div>
+
+    <div class="live-stats" id="matchLiveStats">
+      <div class="ls-poss">
+        <span class="ls-side mono" id="lsPossH">50%</span>
+        <div class="ls-bar"><div class="ls-fill" id="lsPossBar" style="width:50%;"></div></div>
+        <span class="ls-side mono" id="lsPossA">50%</span>
+      </div>
+      <div class="ls-grid">
+        <div class="ls-num mono" id="lsShotsH">0</div><div class="ls-lbl">Shots</div><div class="ls-num mono" id="lsShotsA">0</div>
+        <div class="ls-num mono" id="lsSotH">0</div><div class="ls-lbl">On target</div><div class="ls-num mono" id="lsSotA">0</div>
+        <div class="ls-num mono" id="lsXgH">0.0</div><div class="ls-lbl">xG</div><div class="ls-num mono" id="lsXgA">0.0</div>
+      </div>
+    </div>
 
     <div class="match-controls">
       <button class="primary" id="btnMatchStart">Start</button>
@@ -395,12 +417,7 @@
       <button id="btnMatchSkip">Skip to Full Time</button>
     </div>
 
-    <div class="match-tactics hidden" id="matchTactics">
-      <span class="eyebrow">Mentality</span>
-      <select id="mMentality" data-mtac="mentality"></select>
-      <span class="eyebrow">Pressing</span>
-      <select id="mPressing" data-mtac="pressing"></select>
-    </div>
+    <div class="match-tactics tactics-panel hidden" id="matchTactics"></div>
 
     <div class="subs-panel hidden" id="subsPanel">
       <div class="subs-head">
@@ -432,30 +449,31 @@
 
 </div>
 
-<script src="js/data.js?v=69"></script>
-<script src="js/state.js?v=69"></script>
-<script src="js/lineup.js?v=69"></script>
-<script src="js/match.js?v=69"></script>
-<script src="js/stats.js?v=69"></script>
-<script src="js/players.js?v=69"></script>
-<script src="js/cup.js?v=69"></script>
-<script src="js/vertu.js?v=69"></script>
-<script src="js/europe.js?v=69"></script>
-<script src="js/season.js?v=69"></script>
-<script src="js/board.js?v=69"></script>
-<script src="js/career.js?v=69"></script>
-<script src="js/news.js?v=69"></script>
-<script src="js/squad.js?v=69"></script>
-<script src="js/contracts.js?v=69"></script>
-<script src="js/coaches.js?v=69"></script>
-<script src="js/academy.js?v=69"></script>
-<script src="js/scouting.js?v=69"></script>
-<script src="js/fitness.js?v=69"></script>
-<script src="js/morale.js?v=69"></script>
-<script src="js/tactics.js?v=69"></script>
-<script src="js/shootout.js?v=69"></script>
-<script src="js/dynamics.js?v=69"></script>
-<script src="js/ui.js?v=69"></script>
-<script src="js/main.js?v=69"></script>
+<script src="js/data.js?v=79"></script>
+<script src="js/state.js?v=79"></script>
+<script src="js/positions.js?v=79"></script>
+<script src="js/lineup.js?v=79"></script>
+<script src="js/match.js?v=79"></script>
+<script src="js/stats.js?v=79"></script>
+<script src="js/players.js?v=79"></script>
+<script src="js/cup.js?v=79"></script>
+<script src="js/vertu.js?v=79"></script>
+<script src="js/europe.js?v=79"></script>
+<script src="js/season.js?v=79"></script>
+<script src="js/board.js?v=79"></script>
+<script src="js/career.js?v=79"></script>
+<script src="js/news.js?v=79"></script>
+<script src="js/squad.js?v=79"></script>
+<script src="js/contracts.js?v=79"></script>
+<script src="js/coaches.js?v=79"></script>
+<script src="js/academy.js?v=79"></script>
+<script src="js/scouting.js?v=79"></script>
+<script src="js/fitness.js?v=79"></script>
+<script src="js/morale.js?v=79"></script>
+<script src="js/tactics.js?v=79"></script>
+<script src="js/shootout.js?v=79"></script>
+<script src="js/dynamics.js?v=79"></script>
+<script src="js/ui.js?v=79"></script>
+<script src="js/main.js?v=79"></script>
 </body>
 </html>

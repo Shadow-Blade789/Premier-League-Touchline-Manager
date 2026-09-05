@@ -65,18 +65,25 @@
   function condFactor(p) { return fitFactor(p) * (typeof Morale !== "undefined" ? Morale.factor(p) : 1); }
 
   const MatchEngine = {
-    attackRating(players) {
-      const eff = p => p.rating * (1 + 0.5 * goalBoost(p) + 0.3 * assistBoost(p)) * condFactor(p);
-      const fw = players.filter(p => p.pos === "FW");
-      const mf = players.filter(p => p.pos === "MF");
+    // `slotOf` ({playerId: detailedPos}) is optional. When supplied (live match),
+    // each player is bucketed by the LINE THEY'RE PLAYING (so a striker shoved to
+    // centre-back defends instead of attacking) and scaled by positional fit — a
+    // player out of position contributes less. Without it (quick-sims, where the
+    // XI is auto-picked in position) behaviour is bit-identical to before.
+    _lineOf(p, slotOf) { return (slotOf && slotOf[p.id] && typeof Positions !== "undefined") ? Positions.broad(slotOf[p.id]) : p.pos; },
+    _posFF(p, slotOf) { return (slotOf && slotOf[p.id] && typeof Positions !== "undefined") ? Positions.fitFactor(slotOf[p.id], p) : 1; },
+    attackRating(players, slotOf) {
+      const eff = p => p.rating * (1 + 0.5 * goalBoost(p) + 0.3 * assistBoost(p)) * condFactor(p) * this._posFF(p, slotOf);
+      const fw = players.filter(p => this._lineOf(p, slotOf) === "FW");
+      const mf = players.filter(p => this._lineOf(p, slotOf) === "MF");
       const avg = arr => arr.length ? arr.reduce((s, p) => s + eff(p), 0) / arr.length : 60;
       return avg(fw) * 0.6 + avg(mf) * 0.4;
     },
-    defenseRating(players) {
-      const df = players.filter(p => p.pos === "DF");
-      const gk = players.filter(p => p.pos === "GK");
-      const avgDf = df.length ? df.reduce((s, p) => s + p.rating * (1 + defenseBoost(p)) * condFactor(p), 0) / df.length : 60;
-      const avgGk = gk.length ? gk.reduce((s, p) => s + p.rating * (1 + keeperBoost(p)) * condFactor(p), 0) / gk.length : 60;
+    defenseRating(players, slotOf) {
+      const df = players.filter(p => this._lineOf(p, slotOf) === "DF");
+      const gk = players.filter(p => this._lineOf(p, slotOf) === "GK");
+      const avgDf = df.length ? df.reduce((s, p) => s + p.rating * (1 + defenseBoost(p)) * condFactor(p) * this._posFF(p, slotOf), 0) / df.length : 60;
+      const avgGk = gk.length ? gk.reduce((s, p) => s + p.rating * (1 + keeperBoost(p)) * condFactor(p) * this._posFF(p, slotOf), 0) / gk.length : 60;
       return avgDf * 0.72 + avgGk * 0.28;
     },
     overallRating(players) {
@@ -289,25 +296,49 @@
         minutes: {}, seq: 0,
       };
       st.totalMinutes = 45 + st.stoppage1 + 45 + st.stoppage2;
-      (userSide === "home" ? hStart : userSide === "away" ? aStart : []).forEach(p => { st.minutes[p.id] = 0; });
+      // Which detailed position each starter is playing — drives out-of-position
+      // penalties in the rating functions. A sub inherits the slot they come into.
+      st.slotOf = (typeof Positions !== "undefined") ? { ...Positions.slotMap(home), ...Positions.slotMap(away) } : {};
+      st.pr = {}; // live per-player match rating (managed side), 0.1–10
+      (userSide === "home" ? hStart : userSide === "away" ? aStart : []).forEach(p => { st.minutes[p.id] = 0; st.pr[p.id] = 6.5; });
+      const bumpR = (id, d) => { if (st.pr[id] != null) st.pr[id] = clamp(st.pr[id] + d, 0.1, 10); };
 
       const attackers = list => { const l = list.filter(p => p.pos === "FW" || p.pos === "MF"); return l.length ? l : list; };
-      // Managed club's tactics shape its own side; the opponent plays it straight.
+      const rnd = arr => arr.length ? arr[Math.floor(Math.random() * arr.length)] : null;
+      // BOTH clubs play to their PHILOSOPHY now — the managed side to the one the
+      // manager set, the opponent to its stable identity (the one shown in the
+      // pre-match brief). `sideMods` folds mentality/width/line into a side's
+      // attack/defence ratings; its own pressing/tempo (`cf`, openness) plus the
+      // OPPONENT's line/press (`ca`, how much they leave at the back) set each
+      // side's goal chances; the philosophy signatures (counter break, tiki-taka
+      // quality, etc.) layer on top. So a "Highly Defensive" opponent really is
+      // hard to break down, a "High Pressure" one really does trade chances.
       const T = typeof Tactics !== "undefined" ? Tactics : null;
-      function tacFor(side) {
-        const club = side === "home" ? st.home : st.away;
-        if (!T || userSide !== side || !club) return { att: 1, def: 1, press: 1 };
-        return { att: T.ment(club).att, def: T.ment(club).def, press: T.press(club).chance };
-      }
       function recalc() {
-        const hT = tacFor("home"), aT = tacFor("away");
-        st.hAtt = eng.attackRating(st.hOn) * 1.04 * hT.att; st.hDef = eng.defenseRating(st.hOn) * hT.def;
-        st.aAtt = eng.attackRating(st.aOn) * aT.att; st.aDef = eng.defenseRating(st.aOn) * aT.def;
-        // Pressing opens the game up BOTH ways (the manager's press, applied to
-        // the whole match): more of their chances, but more counters against.
-        const press = userSide === "home" ? hT.press : userSide === "away" ? aT.press : 1;
-        st.pHomeGoal = clamp(0.0130 * eng.goalRatio(st.hAtt, st.aDef) * formFactor * press, 0.004, 0.075);
-        st.pAwayGoal = clamp(0.0110 * eng.goalRatio(st.aAtt, st.hDef) * formFactor * press, 0.004, 0.072);
+        st.hAtt = eng.attackRating(st.hOn, st.slotOf) * 1.04; st.hDef = eng.defenseRating(st.hOn, st.slotOf);
+        st.aAtt = eng.attackRating(st.aOn, st.slotOf); st.aDef = eng.defenseRating(st.aOn, st.slotOf);
+        let hMods = null, aMods = null;
+        if (T) {
+          if (userSide === "home") T.ensure(st.home); else if (userSide === "away") T.ensure(st.away);
+          const rawHAtt = st.hAtt, rawAAtt = st.aAtt;
+          hMods = T.sideMods(st.home, clamp((rawAAtt - 60) / 30, 0, 1));
+          aMods = T.sideMods(st.away, clamp((rawHAtt - 60) / 30, 0, 1));
+          st.hAtt *= hMods.att; st.hDef *= hMods.def;
+          st.aAtt *= aMods.att; st.aDef *= aMods.def;
+        }
+        st._uMods = userSide === "home" ? hMods : userSide === "away" ? aMods : null;
+        // Possession-heavy styles pull the run of play (and the possession stat)
+        // toward their side; counter/direct styles cede it. Net of both clubs.
+        st._possBias = (hMods && aMods) ? (hMods.poss - aMods.poss) * 0.65 : 0;
+        let pHome = 0.0130 * eng.goalRatio(st.hAtt, st.aDef) * formFactor;
+        let pAway = 0.0110 * eng.goalRatio(st.aAtt, st.hDef) * formFactor;
+        if (hMods && aMods) {
+          // Own openness (cf) × opponent's vulnerability (ca).
+          pHome *= hMods.cf * aMods.ca;
+          pAway *= aMods.cf * hMods.ca;
+        }
+        st.pHomeGoal = clamp(pHome, 0.004, 0.085);
+        st.pAwayGoal = clamp(pAway, 0.004, 0.082);
       }
       st.stats = { home: { shots: 0, sot: 0, xg: 0, corners: 0, fouls: 0, poss: 0 }, away: { shots: 0, sot: 0, xg: 0, corners: 0, fouls: 0, poss: 0 } };
       recalc();
@@ -328,7 +359,7 @@
 
           if (m === 46 + st.stoppage1) events.push(mk(45, "half", fmt(pick(Commentary.half), { stadium: st.home.stadium })));
 
-          const driftTarget = 50 + (st.hAtt - st.aAtt + (st.aDef - st.hDef)) * 1.4;
+          const driftTarget = clamp(50 + (st.hAtt - st.aAtt + (st.aDef - st.hDef)) * 1.4 + (st._possBias || 0), 8, 92);
           st.momentum = clamp(st.momentum + (driftTarget - st.momentum) * 0.04 + (Math.random() - 0.5) * 6, 5, 95);
           const isStoppage = (m > 45 && m <= 45 + st.stoppage1) || (m > 45 + st.stoppage1 + 45);
           const lab = label();
@@ -348,10 +379,14 @@
           if (roll < st.pHomeGoal) {
             st.hg++; const s = eng.weightedScorer(attackers(st.hOn)); st.homeScorers.push(s.id);
             st.stats.home.shots++; st.stats.home.sot++; st.stats.home.xg += 0.42 + Math.random() * 0.36;
+            if (userSide === "home") { bumpR(s.id, 1.3); attackers(st.hOn).forEach(p => bumpR(p.id, 0.08)); }
+            else if (userSide === "away") st.aOn.forEach(p => { if (p.pos === "GK") bumpR(p.id, -0.6); else if (p.pos === "DF") bumpR(p.id, -0.35); });
             events.push(mk(lab, "goal", fmt(pick(Commentary.goal), { player: s.name, team: st.home.name }), { side: "home", stoppage: isStoppage }));
           } else if (roll < st.pHomeGoal + st.pAwayGoal) {
             st.ag++; const s = eng.weightedScorer(attackers(st.aOn)); st.awayScorers.push(s.id);
             st.stats.away.shots++; st.stats.away.sot++; st.stats.away.xg += 0.42 + Math.random() * 0.36;
+            if (userSide === "away") { bumpR(s.id, 1.3); attackers(st.aOn).forEach(p => bumpR(p.id, 0.08)); }
+            else if (userSide === "home") st.hOn.forEach(p => { if (p.pos === "GK") bumpR(p.id, -0.6); else if (p.pos === "DF") bumpR(p.id, -0.35); });
             events.push(mk(lab, "goal", fmt(pick(Commentary.goal), { player: s.name, team: st.away.name }), { side: "away", stoppage: isStoppage }));
           } else if (roll < st.pHomeGoal + st.pAwayGoal + 0.05) {
             const homeChance = Math.random() * 100 < st.momentum;
@@ -362,7 +397,12 @@
             const sd = homeChance ? st.stats.home : st.stats.away;
             sd.shots++; if (flavor >= 0.45 && flavor < 0.85) sd.sot++; // saved shots are on target
             sd.xg += flavor < 0.45 ? 0.07 + Math.random() * 0.12 : flavor < 0.85 ? 0.14 + Math.random() * 0.22 : 0.2 + Math.random() * 0.2;
-            events.push(mk(lab, "chance", fmt(pick(pool), { player: p.name, team: team.name }), { stoppage: isStoppage }));
+            if (userSide) {
+              const uOn = userSide === "home" ? st.hOn : st.aOn;
+              if ((homeChance && userSide === "home") || (!homeChance && userSide === "away")) { const a = rnd(attackers(uOn)); if (a) bumpR(a.id, 0.12); }
+              else { const d = rnd(uOn.filter(p => p.pos === "DF" || p.pos === "GK")); if (d) bumpR(d.id, -0.05); }
+            }
+            events.push(mk(lab, "chance", fmt(pick(pool), { player: p.name, team: team.name }), { side: homeChance ? "home" : "away", stoppage: isStoppage }));
           } else if (roll < st.pHomeGoal + st.pAwayGoal + 0.06) {
             const homeChance = Math.random() < 0.5;
             const team = homeChance ? st.home : st.away;
@@ -379,10 +419,19 @@
               if (!bench.length) return null;
               const off = pick(onArr); const on = pick(bench);
               const i = onArr.indexOf(off); if (i >= 0) onArr[i] = on;
+              if (st.slotOf && st.slotOf[off.id] != null) st.slotOf[on.id] = st.slotOf[off.id];
               return mk(lab, "sub", fmt(pick(Commentary.sub), { team: club.name, playerOff: off.name, playerOn: on.name }), { stoppage: isStoppage });
             };
             if (st.userSide !== "home") { const e = aiSub(st.home, st.hOn, () => st.hSubsUsed, 60 + (m > 45 ? st.stoppage1 : 0)); if (e) { st.hSubsUsed++; recalc(); events.push(e); } }
             if (st.userSide !== "away") { const e = aiSub(st.away, st.aOn, () => st.aSubsUsed, 67 + (m > 45 ? st.stoppage1 : 0)); if (e) { st.aSubsUsed++; recalc(); events.push(e); } }
+          }
+
+          // Ratings drift gently toward a baseline set by the scoreline (a team
+          // that's winning is generally playing well).
+          if (st.userSide) {
+            const gd = (st.userSide === "home" ? st.hg - st.ag : st.ag - st.hg);
+            const baseline = clamp(6.4 + gd * 0.16, 5.6, 7.4);
+            for (const id in st.pr) st.pr[id] = clamp(st.pr[id] + (baseline - st.pr[id]) * 0.02, 0.1, 10);
           }
 
           if (m >= st.totalMinutes) { st.done = true; events.push(mk(90, "full", fmt(pick(Commentary.full), {}), { stoppage: st.stoppage2 > 0 })); }
@@ -400,20 +449,24 @@
           if (!offP || !onP || onArr.some(p => p.id === onId)) return null;
           onArr[onArr.indexOf(offP)] = onP;
           st.userSubsUsed++;
+          if (st.slotOf && st.slotOf[offId] != null) st.slotOf[onId] = st.slotOf[offId]; // take the same position
           if (st.minutes[onId] == null) st.minutes[onId] = 0; // starts accruing from now
+          if (st.pr[onId] == null) st.pr[onId] = 6.4; // fresh legs start neutral
           recalc();
           return mk(label(), "sub", fmt(pick(Commentary.sub), { team: club.name, playerOff: offP.name, playerOn: onP.name }), { stoppage: (st.minute > 45 && st.minute <= 45 + st.stoppage1) || (st.minute > 45 + st.stoppage1 + 45) });
         },
 
         // Change the managed club's tactics mid-match (recomputes the balance).
-        setTactics(mentality, pressing) {
-          if (!st.userSide) return;
+        // Accepts a philosophy (applies its whole preset) and/or individual dials.
+        setTactics(opts) {
+          if (!st.userSide || !opts) return;
           const club = st.userSide === "home" ? st.home : st.away;
           if (!club.tactics) club.tactics = {};
-          if (mentality) club.tactics.mentality = mentality;
-          if (pressing) club.tactics.pressing = pressing;
+          if (opts.philosophy && T) T.applyPhilosophy(club, opts.philosophy);
+          ["mentality", "pressing", "tempo", "width", "line"].forEach(d => { if (opts[d]) club.tactics[d] = opts[d]; });
           recalc();
         },
+        tactics() { const club = st.userSide === "home" ? st.home : st.userSide === "away" ? st.away : null; return club ? club.tactics : null; },
 
         // Match statistics from the live sim (possession normalised to 100).
         stats() {
@@ -426,8 +479,11 @@
           };
         },
 
-        // Post-match player ratings (6–10) for the managed club's players who
-        // featured, from goals, result, clean sheet, cards + deterministic noise.
+        // Current live per-player ratings (managed side) for the pitch dot colours.
+        ratingsLive() { return { ...st.pr }; },
+
+        // Final player ratings (0.1–10) for the managed club's players who
+        // featured — the live tally plus a clean-sheet bonus and red-card penalty.
         ratings() {
           if (!st.userSide) return [];
           const side = st.userSide;
@@ -435,23 +491,18 @@
           const started = side === "home" ? st.hStart : st.aStart;
           const onNow = side === "home" ? st.hOn : st.aOn;
           const scorers = side === "home" ? st.homeScorers : st.awayScorers;
-          const gf = side === "home" ? st.hg : st.ag, ga = side === "home" ? st.ag : st.hg;
-          const won = gf > ga, lost = gf < ga, cs = ga === 0;
+          const ga = side === "home" ? st.ag : st.hg;
           const reds = st.reds.filter(r => r.side === side).map(r => r.playerId);
-          const seed = st.hg + "-" + st.ag;
           const out = [];
           Object.keys(st.minutes).forEach(id => {
             const mins = st.minutes[id];
             if (!mins) return;
             const p = (club.squad || []).find(x => x.id === id) || started.find(x => x.id === id) || onNow.find(x => x.id === id);
             if (!p) return;
-            const goals = scorers.filter(s => s === id).length;
-            let r = 6.4 + goals * 1.1;
-            if ((p.pos === "GK" || p.pos === "DF")) r += cs ? 0.7 : ga >= 3 ? -0.5 : 0;
-            r += won ? 0.4 : lost ? -0.35 : 0;
-            if (reds.includes(id)) r -= 1.6;
-            r += (Players.rand01(id, "rt:" + seed) - 0.5) * 1.1; // per-match variance
-            out.push({ id, name: p.name, pos: p.pos, mins, goals, rating: clamp(Math.round(r * 10) / 10, 4.5, 10) });
+            let r = st.pr[id] != null ? st.pr[id] : 6.4;
+            if ((p.pos === "GK" || p.pos === "DF") && ga === 0) r += 0.6; // clean sheet
+            if (reds.includes(id)) r -= 1.4;
+            out.push({ id, name: p.name, pos: p.pos, mins, goals: scorers.filter(s => s === id).length, rating: clamp(Math.round(r * 10) / 10, 0.1, 10) });
           });
           out.sort((a, b) => b.rating - a.rating);
           if (out.length) out[0].potm = true;

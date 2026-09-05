@@ -617,10 +617,74 @@
    .scoreboard .clock { font-family: var(--font-mono); color: var(--amber); font-size: 0.95rem; margin-top: 0.2rem; }
    .scoreboard .status { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
 
-   .momentum-bar { height: 8px; display: flex; margin-bottom: 1rem; border: 1px solid var(--hairline); overflow:hidden; border-radius: 999px; }
-   .momentum-bar .home { background: var(--amber); transition: width 0.4s ease; }
-   .momentum-bar .away { background: var(--muted); transition: width 0.4s ease; }
-   .momentum-labels { display:flex; justify-content: space-between; font-size: 0.62rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.8rem; }
+   /* ---------- Live match pitch (watch the ball move) ---------- */
+   .mpitch { margin: 0 0 0.9rem; }
+   .mp-grass {
+     position: relative; width: 100%; aspect-ratio: 16 / 8.4; border-radius: var(--radius-sm);
+     overflow: hidden; border: 1px solid var(--glass-border);
+     background:
+       repeating-linear-gradient(90deg, rgba(255,255,255,0.028) 0 9%, transparent 9% 18%),
+       radial-gradient(120% 90% at 50% 40%, #1a6f4a, #0f4b34 70%, #0c3a29);
+   }
+   .mp-grass > div { position: absolute; }
+   .mp-players { inset: 0; } /* dots position against the full pitch */
+   .mp-line, .mp-circle, .mp-box, .mp-6, .mp-goal { border: 2px solid rgba(255,255,255,0.22); }
+   .mp-halfway { left: 50%; top: 0; bottom: 0; width: 0; border-width: 0 0 0 2px; }
+   .mp-circle { left: 50%; top: 50%; width: 16%; aspect-ratio: 1; border-radius: 50%; transform: translate(-50%,-50%); }
+   .mp-box { top: 22%; height: 56%; width: 15%; }
+   .mp-box-l { left: 0; border-left: none; } .mp-box-r { right: 0; border-right: none; }
+   .mp-6 { top: 35%; height: 30%; width: 6%; }
+   .mp-6-l { left: 0; border-left: none; } .mp-6-r { right: 0; border-right: none; }
+   .mp-goal { top: 42%; height: 16%; width: 1.5%; background: rgba(255,255,255,0.5); border: none; }
+   .mp-goal-l { left: 0; } .mp-goal-r { right: 0; }
+   .mp-dot {
+     position: absolute; width: 3.2%; aspect-ratio: 1; border-radius: 50%;
+     transform: translate(-50%, -50%); transition: left 0.34s ease, top 0.34s ease, background 0.6s ease;
+     box-shadow: 0 2px 5px -1px rgba(0,0,0,0.6); border: 1.5px solid rgba(0,0,0,0.35);
+   }
+   .mp-dot.you { background: radial-gradient(circle at 35% 30%, #ffe08a, var(--amber)); }
+   .mp-dot.opp { background: radial-gradient(circle at 35% 30%, #9fb0c4, #5b6b82); }
+   .mp-dot.gk { filter: saturate(0.6) brightness(0.85); }
+   .mp-dot.active { box-shadow: 0 0 0 3px rgba(255,255,255,0.4), 0 2px 6px rgba(0,0,0,0.6); z-index: 3; }
+   .mp-ball {
+     position: absolute; left: 50%; top: 50%; width: 2.4%; aspect-ratio: 1; border-radius: 50%; z-index: 4;
+     background: radial-gradient(circle at 35% 30%, #fff, #d6dde6); transform: translate(-50%,-50%);
+     box-shadow: 0 0 8px 2px rgba(255,255,255,0.5), 0 2px 4px rgba(0,0,0,0.5);
+     transition: left 0.28s linear, top 0.28s linear;
+   }
+   .mp-flash { inset: 0; opacity: 0; pointer-events: none; }
+   .mp-flash.goal-for { animation: mpGoalFor 1s ease; }
+   .mp-flash.goal-against { animation: mpGoalAgainst 1s ease; }
+   .mp-flash.shot { animation: mpShot 0.5s ease; }
+   @keyframes mpGoalFor { 0% { opacity: 0.55; background: radial-gradient(circle, rgba(74,217,145,0.7), transparent 70%); } 100% { opacity: 0; } }
+   @keyframes mpGoalAgainst { 0% { opacity: 0.5; background: radial-gradient(circle, rgba(242,73,92,0.6), transparent 70%); } 100% { opacity: 0; } }
+   @keyframes mpShot { 0% { opacity: 0.28; background: radial-gradient(circle, rgba(255,255,255,0.5), transparent 65%); } 100% { opacity: 0; } }
+   @media (prefers-reduced-motion: reduce) { .mp-ball, .mp-dot { transition: none; } .mp-flash { animation: none !important; } }
+
+   .momentum-bar { height: 9px; display: flex; margin-bottom: 0.9rem; border: 1px solid var(--hairline); overflow:hidden; border-radius: 999px; }
+   .momentum-bar .home { background: linear-gradient(90deg, #e0a53a, var(--amber)); transition: width 0.5s ease; }
+   .momentum-bar .away { background: var(--muted); transition: width 0.5s ease; }
+   .momentum-labels { display:grid; grid-template-columns: 1fr auto 1fr; align-items:center; font-size: 0.66rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.5rem; }
+   .momentum-labels #momLabelA { text-align: right; }
+   .mom-status { font-family: var(--font-display); color: var(--amber); font-size: 0.72rem; letter-spacing: 0.04em; }
+
+   /* Live match statistics (updates every minute during play). */
+   .live-stats { background: var(--panel-2); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 0.7rem 0.9rem; margin-bottom: 1rem; }
+   .ls-poss { display: grid; grid-template-columns: 2.8em 1fr 2.8em; align-items: center; gap: 0.6rem; margin-bottom: 0.55rem; }
+   .ls-poss .ls-side { font-size: 0.8rem; font-weight: 600; }
+   .ls-poss .ls-side:last-child { text-align: right; }
+   .ls-bar { height: 7px; background: var(--muted); border-radius: 999px; overflow: hidden; }
+   .ls-fill { height: 100%; background: linear-gradient(90deg, #e0a53a, var(--amber)); transition: width 0.5s ease; }
+   .ls-grid { display: grid; grid-template-columns: 1fr auto 1fr; gap: 0.15rem 0.6rem; align-items: center; }
+   .ls-grid .ls-num { font-size: 1.05rem; font-weight: 700; text-align: left; }
+   .ls-grid .ls-num:nth-child(3n) { text-align: right; }
+   .ls-grid .ls-lbl { text-align: center; color: var(--muted); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; }
+   /* Tint the managed side's numbers so you can find yourself at a glance. */
+   .live-stats[data-you="home"] .ls-poss .ls-side:first-child,
+   .live-stats[data-you="home"] .ls-grid .ls-num:nth-child(3n-2),
+   .live-stats[data-you="home"] #momLabelH { color: var(--amber); }
+   .live-stats[data-you="away"] .ls-poss .ls-side:last-child,
+   .live-stats[data-you="away"] .ls-grid .ls-num:nth-child(3n) { color: var(--amber); }
 
    .match-controls { display:flex; gap: 0.5rem; align-items:center; margin-bottom: 1rem; flex-wrap: wrap; }
    .match-controls .speedgroup { display:flex; border: 1px solid var(--glass-border); border-radius: var(--radius-xs); overflow: hidden; }
@@ -629,13 +693,54 @@
    .match-controls .speedgroup button.active { background: var(--amber); color: var(--amber-ink); }
 
    /* ---------- Tactics ---------- */
-   .tactics-row { margin-top: 0.5rem; }
-   .lineup-controls select, .match-tactics select, .role-select {
+   .lineup-controls select, .role-select, .dial select {
      font-family: inherit; font-size: 0.82rem; padding: 0.3em 0.5em; border-radius: var(--radius-xs);
      background: var(--panel-2); color: var(--chalk); border: 1px solid var(--glass-border); cursor: pointer;
    }
-   .match-tactics { display: flex; align-items: center; gap: 0.5rem; justify-content: center; flex-wrap: wrap; margin: 0.6rem 0; padding: 0.5rem; background: var(--panel-2); border: 1px solid var(--glass-border); border-radius: var(--radius); }
    .role-select { font-size: 0.86rem; }
+
+   /* FC-Mobile-style philosophy + dials panel */
+   .tactics-panel { margin: 0.6rem 0; padding: 0.7rem 0.8rem; background: var(--panel-2); border: 1px solid var(--glass-border); border-radius: var(--radius); }
+   .match-tactics.tactics-panel { max-width: 640px; margin: 0.6rem auto; }
+   .tac-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.5rem; }
+   .tac-current { font-size: 0.82rem; font-weight: 700; color: var(--chalk); }
+   .phil-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 0.4rem; }
+   .phil-chip {
+     display: flex; flex-direction: column; align-items: center; gap: 0.2rem; padding: 0.5rem 0.35rem;
+     font-family: inherit; font-size: 0.72rem; font-weight: 600; line-height: 1.15; text-align: center;
+     color: var(--muted); background: var(--panel); border: 1px solid var(--glass-border);
+     border-radius: var(--radius-xs); cursor: pointer; transition: transform .12s ease, border-color .12s ease, background .12s ease, color .12s ease;
+   }
+   .phil-chip .pc-ico { font-size: 1.1rem; line-height: 1; }
+   .phil-chip:hover { transform: translateY(-1px); border-color: var(--accent); color: var(--chalk); }
+   .phil-chip.active { background: color-mix(in srgb, var(--accent) 22%, var(--panel)); border-color: var(--accent); color: var(--chalk); box-shadow: 0 0 0 1px var(--accent) inset; }
+   .tac-desc { margin: 0.5rem 0 0.55rem; font-size: 0.76rem; color: var(--muted); font-style: italic; }
+   .dial-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.45rem; }
+   .dial { display: flex; flex-direction: column; gap: 0.18rem; }
+   .dial-lbl { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 700; }
+   .dial select { width: 100%; }
+
+   /* ---------- Detailed positions ---------- */
+   /* pos-chip holds a 2–3 letter detailed position (GK/LB/CDM/CAM/…) */
+   .pos-chip { min-width: 2.6em; padding-left: 0.2em; padding-right: 0.2em; font-size: 0.72rem; letter-spacing: 0.01em; }
+   .pos-chip.big { font-size: 1rem; min-width: 2.4em; }
+   .can-play { font-size: 0.72rem; margin-top: 0.15rem; }
+   .slot-row { display: flex; align-items: center; gap: 0.4rem; }
+   .slot-pos { flex: 0 0 auto; min-width: 2.7em; text-align: center; font-size: 0.66rem; font-weight: 800; letter-spacing: 0.03em; color: var(--muted); background: var(--panel-3); border: 1px solid var(--glass-border); border-radius: var(--radius-xs); padding: 0.22em 0.3em; }
+   .slot-row select { flex: 1 1 auto; min-width: 0; }
+   .slot-fit { flex: 0 0 auto; font-size: 0.64rem; font-weight: 800; padding: 0.12em 0.32em; border-radius: 999px; }
+   .slot-fit.nat { color: var(--pitch-green, #7ddc8f); }
+   .slot-fit.ok  { color: #a7d98a; }
+   .slot-fit.meh { color: #e6c268; }
+   .slot-fit.bad { color: #e88a7d; }
+   .tok-pos { font-size: 0.72em; font-weight: 800; opacity: 0.75; }
+   .dot.ofp { box-shadow: 0 0 0 2px #e6a94b, 0 2px 6px rgba(0,0,0,0.4); }
+
+   /* Pre-match opposition brief (their philosophy, nothing more) */
+   .opp-brief { display: flex; align-items: center; justify-content: center; gap: 0.6rem; max-width: 640px; margin: 0.5rem auto 0; padding: 0.4rem 0.9rem; background: var(--panel-2); border: 1px solid var(--glass-border); border-radius: 999px; }
+   .opp-brief .ob-eyebrow { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); font-weight: 800; }
+   .opp-brief .ob-club { font-weight: 700; color: var(--chalk); }
+   .opp-brief .ob-phil { font-weight: 700; color: var(--accent); }
 
    /* ---------- Match report ---------- */
    .match-report { max-width: 560px; margin: 1rem auto 0; background: var(--panel-2); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 0.9rem 1rem; }
@@ -816,6 +921,16 @@
    .feed-item .min { font-family: var(--font-mono); color: var(--amber); flex: 0 0 3.4em; }
    .feed-item.goal { background: var(--amber-soft); font-weight: 600; border-radius: var(--radius-xs); }
    .feed-item.red { color: var(--alert-red); }
+   /* Colour events by whether they help or hurt your team. */
+   .feed-item.ev-for { box-shadow: inset 3px 0 0 var(--green); }
+   .feed-item.ev-against { box-shadow: inset 3px 0 0 var(--alert-red); }
+   .feed-item.goal.ev-for { background: rgba(74,217,145,0.16); }
+   .feed-item.goal.ev-against { background: rgba(242,73,92,0.14); }
+   /* Score flashes when a goal goes in. */
+   @keyframes scoreFlashFor { 0% { color: var(--green); transform: scale(1.18); } 100% { color: var(--chalk); transform: scale(1); } }
+   @keyframes scoreFlashAgainst { 0% { color: var(--alert-red); transform: scale(1.18); } 100% { color: var(--chalk); transform: scale(1); } }
+   #matchScore.flash-for { animation: scoreFlashFor 0.9s ease; }
+   #matchScore.flash-against { animation: scoreFlashAgainst 0.9s ease; }
    @keyframes fadeIn { from { opacity:0; transform: translateY(4px); } to { opacity:1; transform: translateY(0); } }
    @media (prefers-reduced-motion: reduce) { .feed-item { animation: none; } .momentum-bar .home, .momentum-bar .away { transition: none; } }
 
@@ -884,10 +999,18 @@
    .bonus-callout li { margin-bottom: 0.25rem; }
    .amber { color: var(--amber); }
 
-   .toast {
-     position: fixed; bottom: 1.4rem; left: 50%; transform: translateX(-50%);
-     background: linear-gradient(180deg, #10192a, var(--ink)); border: 1px solid var(--amber); color: var(--chalk);
-     padding: 0.75em 1.3em; font-size: 0.85rem; z-index: 50; border-radius: var(--radius-sm);
-     box-shadow: var(--shadow-lg); animation: toastIn 0.25s ease;
+   /* Toasts stack in their own column instead of piling on one spot. */
+   #toastStack {
+     position: fixed; bottom: 1.4rem; right: 1.4rem; z-index: 50;
+     display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end;
+     max-width: min(92vw, 30rem); pointer-events: none;
    }
-   @keyframes toastIn { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+   .toast {
+     background: linear-gradient(180deg, #10192a, var(--ink)); border: 1px solid var(--amber); color: var(--chalk);
+     padding: 0.7em 1.1em; font-size: 0.85rem; border-radius: var(--radius-sm);
+     box-shadow: var(--shadow-lg); animation: toastIn 0.28s ease; pointer-events: auto;
+   }
+   .toast.toast-out { animation: toastOut 0.3s ease forwards; }
+   @keyframes toastIn { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: translateX(0); } }
+   @keyframes toastOut { to { opacity: 0; transform: translateX(14px); } }
+   @media (max-width: 560px) { #toastStack { left: 50%; right: auto; transform: translateX(-50%); align-items: center; } }

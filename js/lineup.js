@@ -23,17 +23,29 @@
       const used = new Set();
   
       // Injured or suspended players can't be selected.
-      const fit = p => !p.injuryWeeks && !p.suspendedMatches;
+      const available = p => !p.injuryWeeks && !p.suspendedMatches;
+      const slotsFor = (typeof Positions !== "undefined") && Positions.FORMATION_SLOTS[formationKey];
       POSITIONS.forEach(pos => {
-        const pool = club.squad.filter(p => p.pos === pos && fit(p)).sort((a, b) => b.rating - a.rating);
+        const pool = club.squad.filter(p => p.pos === pos && available(p));
+        const detailed = slotsFor && slotsFor[pos];
         for (let i = 0; i < req[pos]; i++) {
-          const pick = pool[i];
-          if (pick) { lineup.slots[pos][i] = pick.id; used.add(pick.id); }
+          // Fill each detailed slot with the best remaining player of this line,
+          // scored by rating × positional fit — so a natural left-back takes the
+          // LB slot over a marginally higher-rated centre-back, and a squad short
+          // in a position covers it with the nearest fit rather than leaving a hole.
+          const slotPos = detailed ? detailed[i] : pos;
+          let best = null, bestScore = -Infinity;
+          for (const p of pool) {
+            if (used.has(p.id)) continue;
+            const score = p.rating * (typeof Positions !== "undefined" ? Positions.fit(slotPos, Positions.dposOf(p)) : 1);
+            if (score > bestScore) { bestScore = score; best = p; }
+          }
+          if (best) { lineup.slots[pos][i] = best.id; used.add(best.id); }
         }
       });
 
       // Bench: best remaining players, up to 7, at least one spare keeper if possible.
-      const rest = club.squad.filter(p => !used.has(p.id) && fit(p)).sort((a, b) => b.rating - a.rating);
+      const rest = club.squad.filter(p => !used.has(p.id) && available(p)).sort((a, b) => b.rating - a.rating);
       lineup.bench = rest.slice(0, 7).map(p => p.id);
   
       club.formation = formationKey;

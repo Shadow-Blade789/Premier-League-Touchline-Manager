@@ -132,10 +132,10 @@
    
    const Aging = {
      retirementChance(age, pos) {
-       const effAge = pos === "GK" ? age - 2 : age;
-       if (effAge < 33) return 0;
-       if (effAge >= 39) return 1;
-       return clamp01((effAge - 32) * 0.15);
+       const effAge = pos === "GK" ? age - 2 : age; // keepers play on longer
+       if (effAge < 34) return 0;
+       if (effAge >= 40) return 1;
+       return clamp01((effAge - 33) * 0.14);
      },
    
      growthStep(age) {
@@ -156,7 +156,8 @@
      // ratings, retires the oldest, and tops squads back up. Returns a news
      // digest for the season-end screen.
      advanceSeason(state) {
-       const news = { retirements: [], breakouts: [], totalRetired: 0 };
+       const news = { retirements: [], breakouts: [], willRetire: [], totalRetired: 0 };
+       const mine = state.clubId;
 
        // Judge everyone's season BEFORE ratings move, then let it reshape both
        // potential and rating — relative to the player's own level, judged
@@ -168,48 +169,66 @@
          const survivors = [];
          club.squad.forEach(p => {
            p.age += 1;
-           const retireChance = this.retirementChance(p.age, p.pos);
-           if (p.age >= 43 || Math.random() < retireChance) {
-             news.totalRetired++;
-             if (club.id === state.clubId) news.retirements.push({ name: p.name, age: p.age, pos: p.pos });
-             return; // not pushed to survivors — retires
-           }
-           const before = p.rating;
-           const perf = perfIndex[p.id] || 0;
-           // How far a season BEAT expectation (a relegation-tipped side finishing
-           // top five scores big here) — the part that still earns huge growth.
-           const over = perf > 0.5 ? perf - 0.5 : 0;
-           // Coaching is the dominant driver of development.
-           const coachMult = Coaching.growthMultiplier(club, p.pos);
 
-           // Potential: a small nudge for an ordinary season, a big jump for a
-           // dramatic overachievement; a strong coach can unlock a touch more.
+           // A player who announced last season now hangs up his boots — never
+           // mid-season, always at the end of his farewell campaign.
+           if (p.retiringEndOfSeason) {
+             news.totalRetired++;
+             if (club.id === mine) {
+               news.retirements.push({ name: p.name, age: p.age, pos: p.pos });
+               if (typeof News !== "undefined") News.push(state, "player", `👏 ${p.name} has retired from football, aged ${p.age}.`);
+             }
+             return; // not pushed to survivors
+           }
+
+           const before = p.rating;
+           const perf = perfIndex[p.id] || 0;             // ~[-1.5 … 2], vs expectation
+           const over = perf > 0.5 ? perf - 0.5 : 0;
+           const coachMult = Coaching.growthMultiplier(club, p.pos);
+           const moraleMult = (club.id === mine && typeof Morale !== "undefined") ? Morale.devMult(p) : 1;
+
+           // Potential drifts with performance (a big overachievement can raise the ceiling).
            let potDelta = clamp(Math.round(perf * 2 + over * 9), -4, 9);
            if (p.age < 24 && coachMult > 1 && Math.random() < coachMult - 1) potDelta += 1;
            p.potential = clamp(p.potential + potDelta, 40, 99);
 
-           // Rating: coaching drives growth toward potential (and cushions
-           // decline); the season result is only a small nudge unless the
-           // overachievement was dramatic.
-           let delta = 0;
-           if (p.age < 30) {
-             // A happy player develops a little faster; a miserable one stalls.
-             const moraleMult = (club.id === state.clubId && typeof Morale !== "undefined") ? Morale.devMult(p) : 1;
-             if (p.rating < p.potential) delta += this.growthStep(p.age) * coachMult * moraleMult;
+           // Rating change is PERFORMANCE-DRIVEN with an age trend on top: youth
+           // surges, prime fluctuates on form, veterans decline UNLESS they had a
+           // good season — a strong campaign lets a 37-year-old hold his level
+           // (a great one can even nudge him up), a poor one accelerates the drop.
+           const perfComp = clamp(perf * 6, -7, 7);
+           let delta;
+           if (p.age < 24) {
+             const room = p.rating < p.potential ? this.growthStep(p.age) * coachMult * moraleMult : 0;
+             delta = room + perfComp * 0.5;
+             delta = Math.max(delta, -1.5); // young talent rarely collapses
+           } else if (p.age < 30) {
+             const room = p.rating < p.potential ? this.growthStep(p.age) * coachMult * moraleMult * 0.7 : 0;
+             delta = room + perfComp;
            } else {
-             delta -= this.declineStep(p.age) * clamp(1.3 - coachMult * 0.3, 0.55, 1.3);
+             const ageDecline = this.declineStep(p.age) * clamp(1.25 - coachMult * 0.25, 0.6, 1.25);
+             delta = -ageDecline + perfComp; // good season offsets the years
            }
-           delta += clamp(Math.round(perf * 1.0 + over * 8), -2, 9);
+           delta += (Math.random() - 0.5) * 1.3; // churn so nearly everyone moves a touch
            p.rating = clamp(Math.round(p.rating + delta), 40, 99);
-           // A storming season can push a player past their old ceiling.
-           if (p.rating > p.potential) p.potential = p.rating;
+           if (p.rating > p.potential) p.potential = p.rating; // a storming season lifts the ceiling
 
-           if (club.id === state.clubId) {
-             // Development history for the player profile (OVR over time).
+           if (club.id === mine) {
              p.ratingHistory = p.ratingHistory || [];
              p.ratingHistory.push({ season: state.season, ovr: p.rating });
              if (p.ratingHistory.length > 14) p.ratingHistory.shift();
              if (p.rating - before >= 4) news.breakouts.push({ name: p.name, age: p.age, from: before, to: p.rating });
+           }
+
+           // Apply to retire: an ageing player announces he'll go at the end of
+           // the COMING season, then plays it out (never a surprise mid-contract
+           // exit). Certain by the time his effective age passes 38.
+           if (p.age >= 41 || Math.random() < this.retirementChance(p.age, p.pos)) {
+             p.retiringEndOfSeason = true;
+             if (club.id === mine) {
+               news.willRetire.push({ name: p.name, age: p.age, pos: p.pos });
+               if (typeof News !== "undefined") News.push(state, "player", `📣 ${p.name} (${p.age}) has announced he'll retire at the end of next season.`, { playerId: p.id });
+             }
            }
            survivors.push(p);
          });

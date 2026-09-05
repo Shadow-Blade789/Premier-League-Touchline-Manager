@@ -473,7 +473,8 @@
       const myClub = mine ? Game.myClub() : null;
       const sqRole = mine && myClub ? Morale.role(myClub, p) : null;
       const statusHTML = mine ? `
-        ${p.wantsOut ? `<div class="wantsout-banner">✈️ ${p.name} has requested a transfer — he wants to leave the club.</div>` : ""}
+        ${p.retiringEndOfSeason ? `<div class="wantsout-banner" style="border-color:rgba(255,200,87,0.4);background:var(--amber-soft);">👋 ${p.name} will retire at the end of the season.</div>` : ""}
+        ${p.wantsOut && !p.retiringEndOfSeason ? `<div class="wantsout-banner">✈️ ${p.name} has requested a transfer — he wants to leave the club.</div>` : ""}
         <div class="profile-status">
           <div><span class="eyebrow">Morale</span><div class="ps-val ${Morale.cls(p.morale)}">${Morale.emoji(p.morale)} ${Morale.label(p.morale)}</div></div>
           <div><span class="eyebrow">Squad role</span><div class="ps-val"><select class="role-select" data-setrole="${p.id}">${["auto"].concat(Morale.ROLES).map(r => `<option value="${r}" ${(p.squadRoleSet ? p.squadRole : "auto") === r ? "selected" : ""}>${r === "auto" ? "Auto (" + sqRole + ")" : r}</option>`).join("")}</select></div></div>
@@ -483,10 +484,11 @@
 
       document.getElementById("profileBody").innerHTML = `
         <div class="profile-head">
-          <div class="pos-chip ${p.pos} big">${p.pos}</div>
+          <div class="pos-chip ${p.pos} big">${typeof Positions !== "undefined" ? Positions.dposOf(p) : p.pos}</div>
           <div class="profile-id">
             <div class="profile-name">${p.wonderkid ? "⭐ " : ""}${p.name} <span class="nat-tag">${p.nat || "ENG"}</span></div>
             <div class="muted">${p.age} yrs · ${Players.role(p)}${mine ? "" : (p.club ? " · " + clubShortLookup(p.club) : " · free agent")}</div>
+            ${typeof Positions !== "undefined" ? `<div class="muted can-play">Can play: ${Positions.canPlay(p).join(", ")}</div>` : ""}
           </div>
           <div class="profile-ovr">
             <div class="po-main">${p.rating}</div>
@@ -549,7 +551,7 @@
       const actionHTML = opts.action || "";
       return `
         <div class="player-row ${opts.rowClass || ""}">
-          <div class="pos-chip ${p.pos}">${p.pos}</div>
+          <div class="pos-chip ${p.pos}">${typeof Positions !== "undefined" ? Positions.dposOf(p) : p.pos}</div>
           <div>
             <div class="name">${p.wonderkid ? "⭐ " : ""}<span class="pname" data-profile="${p.id}" role="button" tabindex="0">${p.name}</span> <span class="nat-tag">${p.nat || "ENG"}</span>${opts.badge || ""}</div>
             <div class="sub">${opts.subLabel || (p.club ? clubShortLookup(p.club) : "Free agent")}</div>
@@ -1071,6 +1073,7 @@
   
     renderPitch(club) {
       const layout = FORMATION_LAYOUT[club.formation];
+      const slotMap = typeof Positions !== "undefined" ? Positions.slotMap(club) : {};
       const ids = Lineup.starterIds(club.lineup);
       const pitch = document.getElementById("pitch");
       pitch.querySelectorAll(".token").forEach(t => t.remove());
@@ -1082,8 +1085,12 @@
         token.style.left = x + "%";
         token.style.top = y + "%";
         const initials = p ? p.name.split(" ").slice(-1)[0] : "—";
-        const fitTitle = p ? `${p.name} · ${Math.round(p.fitness ?? 100)}% fit` : "";
-        token.innerHTML = `<div class="dot" title="${fitTitle}" style="background:${this.fitnessColor(p)};">${p ? p.rating : ""}</div><div class="lbl">${initials}</div>`;
+        const slotPos = slotMap[id] || "";
+        // Flag a player fielded out of position (an amber ring + note).
+        const fit = p && slotPos && typeof Positions !== "undefined" ? Positions.fit(slotPos, Positions.dposOf(p)) : 1;
+        const ofp = fit < 0.8;
+        const fitTitle = p ? `${p.name} · ${slotPos}${typeof Positions !== "undefined" && p ? " (nat " + Positions.dposOf(p) + ", " + Math.round(fit * 100) + "%)" : ""} · ${Math.round(p.fitness ?? 100)}% fit` : "";
+        token.innerHTML = `<div class="dot${ofp ? " ofp" : ""}" title="${fitTitle}" style="background:${this.fitnessColor(p)};">${p ? p.rating : ""}</div><div class="lbl">${slotPos ? `<span class="tok-pos">${slotPos}</span> ` : ""}${initials}</div>`;
         pitch.appendChild(token);
       });
     },
@@ -1096,18 +1103,29 @@
         return all;
       };
       const container = document.getElementById("lineupSlots");
+      const hasPos = typeof Positions !== "undefined";
       let html = "";
       POSITIONS.forEach(pos => {
         if (!lineup.slots[pos].length) return;
         html += `<div class="slot-group"><span class="eyebrow">${posLabel(pos)}</span>`;
         lineup.slots[pos].forEach((id, idx) => {
           const used = usedElsewhere(pos);
-          const eligible = club.squad.filter(p => p.pos === pos && !p.injuryWeeks && !p.suspendedMatches && (!used.includes(p.id) || p.id === id)).sort((a, b) => b.rating - a.rating);
+          const slotPos = hasPos ? Positions.slotLabel(lineup.formation, pos, idx) : pos;
+          // Any fit player can fill any slot — sorted best-fit first, each showing
+          // their natural position and how effective they'd be here (100% = natural).
+          const eligible = club.squad
+            .filter(p => !p.injuryWeeks && !p.suspendedMatches && (!used.includes(p.id) || p.id === id))
+            .map(p => ({ p, fit: hasPos ? Positions.fit(slotPos, Positions.dposOf(p)) : 1 }))
+            .sort((a, b) => b.fit - a.fit || b.p.rating - a.p.rating);
+          const cur = id ? eligible.find(e => e.p.id === id) : null;
+          const tag = cur ? `<span class="slot-fit ${cur.fit >= 0.999 ? "nat" : cur.fit >= 0.8 ? "ok" : cur.fit >= 0.6 ? "meh" : "bad"}">${Math.round(cur.fit * 100)}%</span>` : "";
           html += `<div class="slot-row">
+            <span class="slot-pos">${slotPos}</span>
             <select data-pos="${pos}" data-idx="${idx}">
               <option value="">— Empty —</option>
-              ${eligible.map(p => `<option value="${p.id}" ${p.id === id ? "selected" : ""}>${p.name} (${p.rating}) · ${Math.round(p.fitness ?? 100)}%</option>`).join("")}
+              ${eligible.map(e => `<option value="${e.p.id}" ${e.p.id === id ? "selected" : ""}>${e.p.name} (${e.p.rating}) · ${hasPos ? Positions.dposOf(e.p) : e.p.pos} ${Math.round(e.fit * 100)}%${e.p.fitness != null && e.p.fitness < 100 ? " · " + Math.round(e.p.fitness) + "% fit" : ""}</option>`).join("")}
             </select>
+            ${tag}
           </div>`;
         });
         html += `</div>`;
@@ -1118,7 +1136,7 @@
     renderBench(club) {
       const bench = club.lineup.bench.map(id => club.squad.find(p => p.id === id)).filter(Boolean);
       document.getElementById("benchList").innerHTML = bench.length
-        ? bench.map(p => `<span class="bench-chip">${p.pos} · ${p.name} (${p.rating})</span>`).join("")
+        ? bench.map(p => `<span class="bench-chip">${typeof Positions !== "undefined" ? Positions.dposOf(p) : p.pos} · ${p.name} (${p.rating})</span>`).join("")
         : `<span class="muted">No bench players.</span>`;
     },
   
@@ -1129,20 +1147,33 @@
       // the manager sees the empty slot to fill.
       (club.squad || []).forEach(p => { if (p.injuryWeeks || p.suspendedMatches) Fitness.dropFromLineup(club, p.id); });
       document.getElementById("formationSelect").innerHTML = this.formationOptions(club.formation);
-      Tactics.ensure(club);
-      this.fillTacticsSelect("mentalitySelect", Tactics.MENTALITY, club.tactics.mentality);
-      this.fillTacticsSelect("pressingSelect", Tactics.PRESSING, club.tactics.pressing);
-      const th = document.getElementById("tacticsHint");
-      if (th) th.textContent = Tactics.ment(club).desc;
+      this.renderTactics(club, document.getElementById("tacticsPanel"), "lineup");
       this.renderPitch(club);
       this.renderLineupSlots(club);
       this.renderBench(club);
       document.getElementById("lineupError").textContent = "";
     },
 
-    fillTacticsSelect(id, defs, current) {
-      const el = document.getElementById(id);
-      if (el) el.innerHTML = defs.map(d => `<option value="${d.k}" ${d.k === current ? "selected" : ""}>${d.label}</option>`).join("");
+    // FC-Mobile-style tactics panel: pick a club PHILOSOPHY for a one-tap
+    // identity, then fine-tune the five dials. Reused on the lineup screen
+    // (ctx "lineup") and the in-match bar (ctx "match").
+    renderTactics(club, container, ctx) {
+      if (!container) return;
+      Tactics.ensure(club);
+      const t = club.tactics;
+      const chips = Tactics.PHILOSOPHIES.map(p =>
+        `<button type="button" class="phil-chip${p.k === t.philosophy ? " active" : ""}" data-phil="${p.k}"><span class="pc-ico">${p.icon}</span><span class="pc-lbl">${p.label}</span></button>`).join("");
+      const dials = Tactics.DIAL_ORDER.map(d => {
+        const opts = Tactics.DIALS[d].map(o => `<option value="${o.k}"${o.k === t[d] ? " selected" : ""}>${o.label}</option>`).join("");
+        return `<label class="dial"><span class="dial-lbl">${d[0].toUpperCase() + d.slice(1)}</span><select data-dial="${d}">${opts}</select></label>`;
+      }).join("");
+      const ph = Tactics.philosophy(club);
+      container.dataset.tacctx = ctx;
+      container.innerHTML =
+        `<div class="tac-head"><span class="eyebrow">Club Philosophy</span><span class="tac-current">${ph.icon} ${Tactics.summary(club)}</span></div>` +
+        `<div class="phil-grid">${chips}</div>` +
+        `<p class="tac-desc">${ph.desc}</p>` +
+        `<div class="dial-grid">${dials}</div>`;
     },
 
     // ---- match statistics + player ratings report ----------------------------
@@ -1335,11 +1366,14 @@
     },
 
     toast(msg) {
+      let stack = document.getElementById("toastStack");
+      if (!stack) { stack = document.createElement("div"); stack.id = "toastStack"; document.body.appendChild(stack); }
       const el = document.createElement("div");
       el.className = "toast";
       el.textContent = msg;
-      document.body.appendChild(el);
-      setTimeout(() => el.remove(), 2400);
+      stack.appendChild(el);
+      while (stack.children.length > 5) stack.firstChild.remove(); // keep the stack tidy
+      setTimeout(() => { el.classList.add("toast-out"); setTimeout(() => el.remove(), 300); }, 3400);
     },
   };
   

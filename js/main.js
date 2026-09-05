@@ -555,24 +555,37 @@
         Game.save();
         UI.renderLineup(Game.state);
       });
-      // Pre-match tactics.
-      document.querySelectorAll("[data-tac]").forEach(sel => sel.addEventListener("change", e => {
-        const club = Game.myClub();
-        Tactics.ensure(club);
-        club.tactics[e.target.dataset.tac] = e.target.value;
-        Game.save();
-        const th = document.getElementById("tacticsHint");
-        if (th) th.textContent = Tactics.ment(club).desc;
-      }));
-      // In-match tactics — take effect immediately on the live sim.
-      document.querySelectorAll("[data-mtac]").forEach(sel => sel.addEventListener("change", e => {
-        if (!MatchPlayer.lm) return;
-        const club = MatchPlayer.lm.state.userSide === "home" ? MatchPlayer.home : MatchPlayer.away;
-        const m = e.target.dataset.mtac === "mentality" ? e.target.value : null;
-        const p = e.target.dataset.mtac === "pressing" ? e.target.value : null;
-        MatchPlayer.lm.setTactics(m, p);
-        UI.toast(`Tactics changed — ${Tactics.summary(club)}`);
-      }));
+      // Tactics: philosophy chips + dial selects, delegated so they work on the
+      // dynamically-rendered panels. ctx "lineup" edits the club's setup; ctx
+      // "match" pushes the change into the live sim immediately.
+      const applyTac = (ctx, opts) => {
+        if (ctx === "match") {
+          if (!MatchPlayer.lm) return;
+          MatchPlayer.lm.setTactics(opts);
+          const club = MatchPlayer.lm.state.userSide === "home" ? MatchPlayer.home : MatchPlayer.away;
+          UI.renderTactics(club, document.getElementById("matchTactics"), "match");
+          UI.toast(`Tactics — ${Tactics.summary(club)}`);
+        } else {
+          const club = Game.myClub();
+          Tactics.ensure(club);
+          if (opts.philosophy) Tactics.applyPhilosophy(club, opts.philosophy);
+          else Object.assign(club.tactics, opts);
+          Game.save();
+          UI.renderTactics(club, document.getElementById("tacticsPanel"), "lineup");
+        }
+      };
+      document.addEventListener("click", e => {
+        const chip = e.target.closest("[data-phil]");
+        if (!chip) return;
+        const panel = chip.closest("[data-tacctx]");
+        applyTac(panel ? panel.dataset.tacctx : "lineup", { philosophy: chip.dataset.phil });
+      });
+      document.addEventListener("change", e => {
+        const sel = e.target.closest("select[data-dial]");
+        if (!sel) return;
+        const panel = sel.closest("[data-tacctx]");
+        applyTac(panel ? panel.dataset.tacctx : "lineup", { [sel.dataset.dial]: sel.value });
+      });
       document.getElementById("btnAutoPick").addEventListener("click", () => {
         const club = Game.myClub();
         Lineup.autoPick(club, club.formation);
@@ -1141,10 +1154,13 @@
       const zone = Season.zoneFor(result.myFinalPos, result.userLeague, size);
       const news = result.ageingNews;
       let newsHTML = "";
-      if (news && (news.retirements.length || news.breakouts.length)) {
+      if (news && (news.retirements.length || news.breakouts.length || (news.willRetire && news.willRetire.length))) {
         newsHTML = `<div class="panel" style="text-align:left; margin-top:1.2rem;"><h3>Off-season news — ${club.name}</h3>`;
         if (news.retirements.length) {
           newsHTML += `<p class="muted">Retired: ${news.retirements.map(r => `${r.name} (${r.age})`).join(", ")}</p>`;
+        }
+        if (news.willRetire && news.willRetire.length) {
+          newsHTML += `<p>📣 Retiring at the end of next season: <strong>${news.willRetire.map(r => `${r.name} (${r.age})`).join(", ")}</strong></p>`;
         }
         if (news.breakouts.length) {
           newsHTML += `<p>Breakout development: ${news.breakouts.map(b => `${b.name} ${b.from}→${b.to}`).join(", ")}</p>`;
@@ -1222,6 +1238,17 @@
       document.getElementById("commentaryFeed").innerHTML = "";
       document.getElementById("momHome").style.width = "50%";
       document.getElementById("momAway").style.width = "50%";
+      // Live-stats panel — team labels, your side highlighted, everything reset.
+      const us = this.lm.state.userSide;
+      document.getElementById("momLabelH").textContent = home.short + (us === "home" ? " (you)" : "");
+      document.getElementById("momLabelA").textContent = away.short + (us === "away" ? " (you)" : "");
+      document.getElementById("momStatus").textContent = "Kick-off";
+      const ls = document.getElementById("matchLiveStats");
+      ls.dataset.you = us || "";
+      ["lsPossH", "lsPossA"].forEach(id => document.getElementById(id).textContent = "50%");
+      document.getElementById("lsPossBar").style.width = "50%";
+      ["lsShotsH", "lsShotsA", "lsSotH", "lsSotA"].forEach(id => document.getElementById(id).textContent = "0");
+      ["lsXgH", "lsXgA"].forEach(id => document.getElementById(id).textContent = "0.0");
       document.getElementById("btnMatchStart").disabled = false;
       document.getElementById("btnMatchPause").disabled = true;
       document.getElementById("btnMatchContinue").classList.add("hidden");
@@ -1233,11 +1260,20 @@
       mt.classList.toggle("hidden", !this.interactive);
       if (this.interactive) {
         const club = this.lm.state.userSide === "home" ? home : away;
-        Tactics.ensure(club);
-        UI.fillTacticsSelect("mMentality", Tactics.MENTALITY, club.tactics.mentality);
-        UI.fillTacticsSelect("mPressing", Tactics.PRESSING, club.tactics.pressing);
+        UI.renderTactics(club, document.getElementById("matchTactics"), "match");
+      }
+      // Basic opposition scouting: their club philosophy only, nothing more.
+      const ob = document.getElementById("oppBrief");
+      if (this.interactive && typeof Tactics !== "undefined") {
+        const opp = this.lm.state.userSide === "home" ? away : home;
+        const ph = Tactics.philosophyOf(opp);
+        ob.innerHTML = `<span class="ob-eyebrow">Opposition</span><span class="ob-club">${opp.short}</span><span class="ob-phil">${ph.icon} ${ph.label}</span>`;
+        ob.classList.remove("hidden");
+      } else {
+        ob.classList.add("hidden");
       }
       this.updateSubsBtn();
+      this.buildPitch(home, away);
       document.querySelectorAll(".speed-btn").forEach(b => b.classList.toggle("active", b.dataset.speed === "1"));
     },
 
@@ -1276,9 +1312,107 @@
 
     tick() {
       if (this.lm.state.done) { this.endMatch(); return; }
-      this.lm.stepMinute().forEach(e => this.reveal(e));
+      const events = this.lm.stepMinute();
+      events.forEach(e => this.reveal(e));
+      this.movePitch(events);
       this.updateClock();
       if (this.lm.state.done) this.endMatch();
+    },
+
+    // ---- live pitch (watch the game happen) ----
+    buildPitch(home, away) {
+      const wrap = document.getElementById("mpPlayers");
+      if (!wrap) return;
+      wrap.innerHTML = "";
+      this.dots = [];
+      const us = this.lm.state.userSide;
+      const userXI = us ? this.lm.onPitchUser() : [];
+      const byPos = { GK: userXI.filter(p => p.pos === "GK"), DF: userXI.filter(p => p.pos === "DF"), MF: userXI.filter(p => p.pos === "MF"), FW: userXI.filter(p => p.pos === "FW") };
+      const idx = { GK: 0, DF: 0, MF: 0, FW: 0 };
+      const add = (x, y, side, team, role, pid) => { const d = document.createElement("div"); d.className = "mp-dot " + team + (role === "gk" ? " gk" : ""); d.style.left = x + "%"; d.style.top = y + "%"; wrap.appendChild(d); this.dots.push({ el: d, bx: x, by: y, x, y, side, team, role, pid }); };
+      const layout = (formation, side) => {
+        const rows = String(formation || "4-4-2").split("-").map(Number).filter(n => n > 0);
+        const team = side === us ? "you" : "opp";
+        const isUser = side === us;
+        const pool = pn => { if (!isUser) return null; const arr = byPos[pn]; const p = arr && arr[idx[pn]] ? arr[idx[pn]] : null; idx[pn]++; return p && p.id; };
+        add(side === "home" ? 5 : 95, 50, side, team, "gk", pool("GK"));
+        const names = rows.length === 3 ? ["DF", "MF", "FW"] : rows.length === 4 ? ["DF", "MF", "MF", "FW"] : rows.map((_, i) => i === 0 ? "DF" : i === rows.length - 1 ? "FW" : "MF");
+        rows.forEach((n, bi) => {
+          const t = (bi + 1) / (rows.length + 1);
+          const x = side === "home" ? 12 + t * 36 : 88 - t * 36;
+          const role = bi === 0 ? "def" : bi === rows.length - 1 ? "fwd" : "mid";
+          for (let i = 0; i < n; i++) add(x, n === 1 ? 50 : 14 + (i / (n - 1)) * 72, side, team, role, pool(names[bi] || "MF"));
+        });
+      };
+      layout(home.formation, "home");
+      layout(away.formation, "away");
+      this.ballX = 50; this.ballY = 50;
+      const b = document.getElementById("mpBall"); if (b) { b.style.left = "50%"; b.style.top = "50%"; }
+      this.updateFormation();
+      this.updateDotColors();
+    },
+    setBall(x, y) {
+      this.ballX = x; this.ballY = y;
+      const b = document.getElementById("mpBall");
+      if (b) { b.style.left = x + "%"; b.style.top = y + "%"; }
+      this.updateFormation();
+    },
+    // Every dot chases the play: the team shifts up when attacking and drops when
+    // defending (forwards stay high, defenders hold the line), and whoever's near
+    // the ball collapses onto it.
+    updateFormation() {
+      if (!this.dots) return;
+      const bx = this.ballX ?? 50, by = this.ballY ?? 50;
+      const atk = { gk: 0.04, def: 0.4, mid: 0.78, fwd: 1.05 };
+      const def = { gk: 0.14, def: 0.85, mid: 0.58, fwd: 0.26 };
+      this.dots.forEach(d => {
+        const dir = d.side === "home" ? 1 : -1;      // this team's attacking direction in x
+        const advance = dir * (bx - 50);              // >0 → team is attacking
+        const w = advance > 0 ? atk[d.role] : def[d.role];
+        let tx = d.bx + dir * advance * w * 0.62;
+        const dist = Math.hypot(d.bx - bx, d.by - by);
+        const pull = clamp(1 - dist / 34, 0, 1) * (d.role === "gk" ? 0.12 : 0.55);
+        tx += (bx - tx) * pull * 0.5;
+        let ty = d.by + (by - d.by) * (0.1 + pull * 0.5);
+        if (d.role === "gk") tx = clamp(tx, d.side === "home" ? 2.5 : 87, d.side === "home" ? 13 : 97.5);
+        else tx = clamp(tx, 6, 94);
+        ty = clamp(ty, 8, 92);
+        d.x = tx; d.y = ty; d.el.style.left = tx + "%"; d.el.style.top = ty + "%";
+      });
+      // ring the dot nearest the ball
+      let best = null, bd = 1e9;
+      this.dots.forEach(d => { const dd = (d.x - bx) ** 2 + (d.y - by) ** 2; if (dd < bd) { bd = dd; best = d; } });
+      this.dots.forEach(d => d.el.classList.toggle("active", d === best));
+    },
+    ratingColor(r) { const hue = clamp((r - 4) / 5, 0, 1) * 125; return `hsl(${Math.round(hue)}, 68%, 52%)`; },
+    updateDotColors() {
+      if (!this.dots || !this.lm) return;
+      const lr = this.lm.ratingsLive();
+      this.dots.forEach(d => { if (d.team !== "you" || !d.pid) return; const r = lr[d.pid]; if (r != null) d.el.style.background = this.ratingColor(r); });
+    },
+    flashPitch(type) {
+      const f = document.getElementById("mpFlash");
+      if (!f) return;
+      f.className = "mp-flash"; void f.offsetWidth; f.classList.add(type);
+    },
+    movePitch(events) {
+      if (!this.dots) return;
+      const st = this.lm.state, us = st.userSide;
+      let goalSide = null, chanceSide = null;
+      events.forEach(e => { if (e.type === "goal") goalSide = e.side; else if (e.type === "chance") chanceSide = e.side || chanceSide; });
+      if (goalSide) {
+        this.flashPitch(us && goalSide === us ? "goal-for" : us && goalSide ? "goal-against" : "goal-for");
+        this.setBall(goalSide === "home" ? 96 : 4, 50);
+        clearTimeout(this._ballReset);
+        this._ballReset = setTimeout(() => { if (this.lm && !this.lm.state.done) this.setBall(50, 45 + Math.random() * 10); }, 800);
+      } else if (chanceSide) {
+        this.flashPitch("shot");
+        this.setBall(chanceSide === "home" ? 84 : 16, 24 + Math.random() * 52);
+      } else {
+        const m = st.momentum;
+        this.setBall(clamp(50 + (m - 50) * 0.72 + (Math.random() - 0.5) * 30, 9, 91), clamp((this.ballY ?? 50) + (Math.random() - 0.5) * 42, 12, 88));
+      }
+      this.updateDotColors();
     },
 
     clockLabel() {
@@ -1291,16 +1425,37 @@
       const st = this.lm.state;
       document.getElementById("matchScore").textContent = `${st.hg} – ${st.ag}`;
       document.getElementById("matchClock").textContent = this.clockLabel();
-      document.getElementById("momHome").style.width = Math.round(st.momentum) + "%";
-      document.getElementById("momAway").style.width = (100 - Math.round(st.momentum)) + "%";
+      const mh = Math.round(st.momentum);
+      document.getElementById("momHome").style.width = mh + "%";
+      document.getElementById("momAway").style.width = (100 - mh) + "%";
+      const status = document.getElementById("momStatus");
+      if (status) status.textContent = mh >= 60 ? `${st.home.short} on top` : mh <= 40 ? `${st.away.short} on top` : "End to end";
+      // Live match stats — so you can SEE whether you're on top or hanging on.
+      const s = this.lm.stats();
+      const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+      set("lsPossH", s.home.poss + "%"); set("lsPossA", s.away.poss + "%");
+      const bar = document.getElementById("lsPossBar"); if (bar) bar.style.width = s.home.poss + "%";
+      set("lsShotsH", s.home.shots); set("lsShotsA", s.away.shots);
+      set("lsSotH", s.home.sot); set("lsSotA", s.away.sot);
+      set("lsXgH", s.home.xg.toFixed(1)); set("lsXgA", s.away.xg.toFixed(1));
     },
 
     reveal(evt) {
       const feed = document.getElementById("commentaryFeed");
       const item = document.createElement("div");
-      item.className = "feed-item " + evt.type;
+      let cls = "feed-item " + evt.type;
+      // Colour events by whether they helped or hurt the managed side.
+      const us = this.lm.state.userSide;
+      if (us && evt.side) cls += evt.side === us ? " ev-for" : " ev-against";
+      item.className = cls;
       item.innerHTML = `<div class="min mono">${evt.minute}${evt.stoppage ? "+" : ""}'</div><div>${evt.text}</div>`;
       feed.appendChild(item);
+      // A goal flashes the scoreline so it lands.
+      if (evt.type === "goal") {
+        const sc = document.getElementById("matchScore");
+        sc.classList.remove("flash-for", "flash-against"); void sc.offsetWidth;
+        sc.classList.add(us && evt.side === us ? "flash-for" : us && evt.side ? "flash-against" : "flash-for");
+      }
     },
 
     skip() {
