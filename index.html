@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PLFC Touchline Manager</title>
 <meta name="description" content="A Premier League club-management sim — pick your club, run the transfer market, set your lineup, and live the season.">
-<link rel="stylesheet" href="css/styles.css?v=80">
+<link rel="stylesheet" href="css/styles.css?v=83">
 </head>
 <body>
 
@@ -398,6 +398,12 @@
         <div class="mp-players" id="mpPlayers"></div>
         <div class="mp-ball" id="mpBall"></div>
         <div class="mp-flash" id="mpFlash"></div>
+        <div class="goal-flash" id="goalFlash">
+          <div class="gf-word">GOAL!</div>
+          <div class="gf-scorer" id="gfScorer"></div>
+          <div class="gf-assist" id="gfAssist"></div>
+          <div class="gf-score" id="gfScore"></div>
+        </div>
       </div>
     </div>
 
@@ -425,11 +431,21 @@
         <button data-speed="2" class="speed-btn">2x</button>
         <button data-speed="4" class="speed-btn">4x</button>
       </div>
+      <button id="btnMatchRatings" class="hidden">📊 Ratings</button>
       <button id="btnMatchSubs" class="hidden">🔁 Subs</button>
       <button id="btnMatchSkip">Skip to Full Time</button>
     </div>
 
-    <div class="match-tactics tactics-panel hidden" id="matchTactics"></div>
+    <div class="match-mentality hidden" id="matchTactics"></div>
+
+    <div class="ratings-panel hidden" id="matchRatings">
+      <div class="ratings-head">
+        <span class="eyebrow">Player Ratings — live</span>
+        <button class="small primary" id="btnRatingsClose">Resume ▶</button>
+      </div>
+      <p class="muted" style="font-size:0.76rem;margin:0.2rem 0 0.5rem;">Struggling players are listed first — spot where it's going wrong.</p>
+      <div id="matchRatingsList"></div>
+    </div>
 
     <div class="subs-panel hidden" id="subsPanel">
       <div class="subs-head">
@@ -461,32 +477,32 @@
 
 </div>
 
-<script src="js/data.js?v=80"></script>
-<script src="js/state.js?v=80"></script>
-<script src="js/positions.js?v=80"></script>
-<script src="js/roles.js?v=80"></script>
-<script src="js/lineup.js?v=80"></script>
-<script src="js/match.js?v=80"></script>
-<script src="js/stats.js?v=80"></script>
-<script src="js/players.js?v=80"></script>
-<script src="js/cup.js?v=80"></script>
-<script src="js/vertu.js?v=80"></script>
-<script src="js/europe.js?v=80"></script>
-<script src="js/season.js?v=80"></script>
-<script src="js/board.js?v=80"></script>
-<script src="js/career.js?v=80"></script>
-<script src="js/news.js?v=80"></script>
-<script src="js/squad.js?v=80"></script>
-<script src="js/contracts.js?v=80"></script>
-<script src="js/coaches.js?v=80"></script>
-<script src="js/academy.js?v=80"></script>
-<script src="js/scouting.js?v=80"></script>
-<script src="js/fitness.js?v=80"></script>
-<script src="js/morale.js?v=80"></script>
-<script src="js/tactics.js?v=80"></script>
-<script src="js/shootout.js?v=80"></script>
-<script src="js/dynamics.js?v=80"></script>
-<script src="js/ui.js?v=80"></script>
-<script src="js/main.js?v=80"></script>
+<script src="js/data.js?v=83"></script>
+<script src="js/state.js?v=83"></script>
+<script src="js/positions.js?v=83"></script>
+<script src="js/roles.js?v=83"></script>
+<script src="js/lineup.js?v=83"></script>
+<script src="js/match.js?v=83"></script>
+<script src="js/stats.js?v=83"></script>
+<script src="js/players.js?v=83"></script>
+<script src="js/cup.js?v=83"></script>
+<script src="js/vertu.js?v=83"></script>
+<script src="js/europe.js?v=83"></script>
+<script src="js/season.js?v=83"></script>
+<script src="js/board.js?v=83"></script>
+<script src="js/career.js?v=83"></script>
+<script src="js/news.js?v=83"></script>
+<script src="js/squad.js?v=83"></script>
+<script src="js/contracts.js?v=83"></script>
+<script src="js/coaches.js?v=83"></script>
+<script src="js/academy.js?v=83"></script>
+<script src="js/scouting.js?v=83"></script>
+<script src="js/fitness.js?v=83"></script>
+<script src="js/morale.js?v=83"></script>
+<script src="js/tactics.js?v=83"></script>
+<script src="js/shootout.js?v=83"></script>
+<script src="js/dynamics.js?v=83"></script>
+<script src="js/ui.js?v=83"></script>
+<script src="js/main.js?v=83"></script>
 </body>
 </html>

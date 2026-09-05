@@ -1152,7 +1152,7 @@
       const cov = PlayerRoles.coverage(dpos, instr);
       const base = PlayerRoles.BASE[dpos] || PlayerRoles.BASE.CM;
       document.getElementById("roleTitle").textContent = `${p.name} — ${dpos}`;
-      const dials = PlayerRoles.DIALS.map(d => {
+      const dials = PlayerRoles.dialsFor(dpos).map(d => {
         const cur = d.opts.find(o => o.k === instr[d.key]) || d.opts[1];
         return `<div class="role-dial">
           <span class="rd-label">${d.label}</span>
@@ -1160,12 +1160,13 @@
           <div class="rd-desc">${cur.desc}</div>
         </div>`;
       }).join("");
-      const toggles = PlayerRoles.TOGGLES.map(t =>
+      const relevant = PlayerRoles.togglesFor(dpos);
+      const toggles = relevant.length ? relevant.map(t =>
         `<button type="button" class="role-tog${instr[t.key] ? " active" : ""}" data-rtog="${t.key}">
           <span class="rt-ico">${t.icon}</span>
           <span class="rt-txt"><span class="rt-lbl">${t.label}</span><span class="rt-desc">${t.desc}</span></span>
           <span class="rt-switch"></span>
-        </button>`).join("");
+        </button>`).join("") : `<p class="muted" style="font-size:0.76rem;">No special instructions for this position.</p>`;
       document.getElementById("roleBody").innerHTML = `
         <div class="role-layout">
           <div class="role-pitch-wrap">
@@ -1199,6 +1200,17 @@
       this.renderLineupSlots(club);
       this.renderBench(club);
       document.getElementById("lineupError").textContent = "";
+    },
+
+    // In-match you can't rewrite your whole style or re-brief players — you can
+    // only shift the team's approach more attacking or more defensive.
+    renderMatchMentality(club, container) {
+      if (!container) return;
+      Tactics.ensure(club);
+      const m = club.tactics.mentality;
+      const bucket = (m === "very-defensive" || m === "defensive") ? "defensive" : (m === "attacking" || m === "very-attacking") ? "attacking" : "balanced";
+      const opts = [{ k: "defensive", label: "Defend", icon: "🛡️" }, { k: "balanced", label: "Balanced", icon: "⚖️" }, { k: "attacking", label: "Attack", icon: "⚔️" }];
+      container.innerHTML = `<span class="mm-label">Approach</span><div class="mm-seg">${opts.map(o => `<button type="button" class="mm-btn${o.k === bucket ? " active" : ""}" data-mment="${o.k}"><span class="mm-ico">${o.icon}</span>${o.label}</button>`).join("")}</div>`;
     },
 
     // FC-Mobile-style tactics panel: pick a club PHILOSOPHY for a one-tap

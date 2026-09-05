@@ -661,6 +661,29 @@
    @keyframes mpShot { 0% { opacity: 0.28; background: radial-gradient(circle, rgba(255,255,255,0.5), transparent 65%); } 100% { opacity: 0; } }
    @media (prefers-reduced-motion: reduce) { .mp-ball, .mp-dot { transition: none; } .mp-flash { animation: none !important; } }
 
+   /* Super-brief GOAL! flash with scorer + assister */
+   .goal-flash { position: absolute; inset: 0; z-index: 6; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.12rem; text-align: center; pointer-events: none; opacity: 0;
+     background: radial-gradient(ellipse at center, rgba(0,0,0,0.5), rgba(0,0,0,0.14) 68%, transparent); }
+   .goal-flash.show { animation: goalFlashPop 2s ease forwards; }
+   .gf-word { font-family: var(--font-display, inherit); font-weight: 900; font-size: clamp(2.2rem, 8.5vw, 4.6rem); line-height: 1; letter-spacing: 0.05em; color: #fff; text-shadow: 0 3px 18px rgba(0,0,0,0.65); }
+   .gf-scorer { font-size: clamp(0.95rem, 3.1vw, 1.45rem); font-weight: 800; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,0.7); }
+   .gf-assist { font-size: clamp(0.72rem, 2.1vw, 0.98rem); font-weight: 600; color: rgba(255,255,255,0.85); }
+   .gf-score { margin-top: 0.3rem; font-family: var(--font-mono, monospace); font-size: clamp(1.05rem, 3vw, 1.6rem); font-weight: 800; letter-spacing: 0.12em; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,0.7); }
+   .goal-flash.gf-for .gf-word { color: #86f2a0; text-shadow: 0 0 26px rgba(80,220,120,0.55), 0 3px 18px rgba(0,0,0,0.6); }
+   .goal-flash.gf-against .gf-word { color: #ff8f7f; text-shadow: 0 0 22px rgba(230,90,70,0.45), 0 3px 18px rgba(0,0,0,0.6); }
+   @keyframes goalFlashPop {
+     0% { opacity: 0; transform: scale(0.62); } 12% { opacity: 1; transform: scale(1.06); }
+     22% { transform: scale(1); } 82% { opacity: 1; } 100% { opacity: 0; transform: scale(1.02); }
+   }
+
+   /* Slow-motion cue for the key moments */
+   #screen-match.slowmo .mp-grass { box-shadow: inset 0 0 80px rgba(0,0,0,0.5); }
+   #screen-match.slowmo .mp-dot, #screen-match.slowmo .mp-ball { transition-duration: 0.62s !important; }
+   #screen-match.slowmo .mpitch::after { content: "◐ slow-mo"; position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 5; pointer-events: none;
+     font-size: 0.6rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.9); background: rgba(0,0,0,0.42); padding: 0.16em 0.7em; border-radius: 999px; }
+   .mpitch { position: relative; }
+   @media (prefers-reduced-motion: reduce) { .goal-flash.show { animation-duration: 2s; } #screen-match.slowmo .mp-dot, #screen-match.slowmo .mp-ball { transition-duration: 0s !important; } }
+
    .momentum-bar { height: 9px; display: flex; margin-bottom: 0.9rem; border: 1px solid var(--hairline); overflow:hidden; border-radius: 999px; }
    .momentum-bar .home { background: linear-gradient(90deg, #e0a53a, var(--amber)); transition: width 0.5s ease; }
    .momentum-bar .away { background: var(--muted); transition: width 0.5s ease; }
@@ -791,6 +814,26 @@
    .role-tog.active .rt-switch::after { transform: translateX(15px); background: #fff; }
    .role-reset { align-self: flex-start; margin-top: 0.2rem; }
    @media (max-width: 560px) { .role-layout { grid-template-columns: 1fr; } .role-pitch-wrap { max-width: 220px; margin: 0 auto; } }
+
+   /* In-match approach (attack/defend only) */
+   .match-mentality { display: flex; align-items: center; justify-content: center; gap: 0.6rem; max-width: 520px; margin: 0.6rem auto; padding: 0.45rem 0.7rem; background: var(--panel-2); border: 1px solid var(--glass-border); border-radius: 999px; }
+   .mm-label { font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
+   .mm-seg { display: flex; gap: 0.35rem; }
+   .mm-btn { display: inline-flex; align-items: center; gap: 0.3rem; font-family: inherit; font-size: 0.78rem; font-weight: 700; padding: 0.35em 0.75em; color: var(--muted); background: var(--panel); border: 1px solid var(--glass-border); border-radius: 999px; cursor: pointer; transition: all 0.12s ease; }
+   .mm-btn:hover { color: var(--chalk); border-color: var(--accent); }
+   .mm-btn.active { background: color-mix(in srgb, var(--accent) 22%, var(--panel)); border-color: var(--accent); color: var(--chalk); }
+   .mm-ico { font-size: 0.9rem; }
+
+   /* Live player ratings panel */
+   .ratings-panel { max-width: 560px; margin: 0.6rem auto; padding: 0.7rem 0.9rem; background: var(--panel-2); border: 1px solid var(--glass-border); border-radius: var(--radius); }
+   .ratings-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+   .rate-row { display: grid; grid-template-columns: 2.6em 1fr 90px 2.4em; align-items: center; gap: 0.5rem; padding: 0.28rem 0; border-top: 1px solid var(--glass-border); }
+   .rate-row:first-child { border-top: none; }
+   .rate-pos { font-size: 0.64rem; font-weight: 800; letter-spacing: 0.03em; color: var(--muted); text-align: center; background: var(--panel-3); border-radius: var(--radius-xs); padding: 0.18em 0; }
+   .rate-name { font-size: 0.82rem; font-weight: 600; color: var(--chalk); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+   .rate-bar { height: 7px; border-radius: 999px; background: var(--panel-3); overflow: hidden; }
+   .rate-fill { display: block; height: 100%; border-radius: 999px; transition: width 0.4s ease, background 0.4s ease; }
+   .rate-val { font-family: var(--font-mono, monospace); font-size: 0.86rem; font-weight: 800; text-align: right; }
 
    /* Pre-match opposition brief (their philosophy, nothing more) */
    .opp-brief { display: flex; align-items: center; justify-content: center; gap: 0.6rem; max-width: 640px; margin: 0.5rem auto 0; padding: 0.4rem 0.9rem; background: var(--panel-2); border: 1px solid var(--glass-border); border-radius: 999px; }

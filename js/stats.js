@@ -73,8 +73,9 @@ const Stats = {
   // goals to scorers/assisters. When `scorers` (an ordered list of player ids
   // straight from the live commentary) is supplied, those exact players are
   // credited so the feed and the stat sheet never disagree; otherwise scorers
-  // are drawn fresh (AI matches).
-  recordSide(starters, oppStarters, goalsFor, goalsAgainst, scorers) {
+  // are drawn fresh (AI matches). When `assists` (the live match's real assister
+  // ids) is supplied, those exact players are credited instead of a fresh roll.
+  recordSide(starters, oppStarters, goalsFor, goalsAgainst, scorers, assists) {
     starters.forEach(p => this.add(p, "apps", 1));
     const gk = starters.find(p => p.pos === "GK");
     if (gk) this.recordSaves(gk, starters, oppStarters, goalsAgainst);
@@ -93,11 +94,15 @@ const Stats = {
       if (!scorer) scorer = MatchEngine.weightedScorer(pool);
       if (!scorer) continue;
       this.add(scorer, "goals", 1);
-      if (Math.random() < 0.72) {
+      // When we have the live match's actual assisters, credit those exact
+      // players below; otherwise (AI matches) roll a plausible assist here.
+      if (!assists && Math.random() < 0.72) {
         const assister = MatchEngine.weightedAssister(pool, scorer);
         if (assister) this.add(assister, "assists", 1);
       }
     }
+    // Real assisters from the watched match (by id) — accurate, not re-rolled.
+    if (assists) assists.forEach(id => { const a = starters.find(p => p.id === id); if (a) this.add(a, "assists", 1); });
   },
 
   // AI-vs-AI fixtures: both sides attributed from the scoreline alone.
@@ -106,10 +111,11 @@ const Stats = {
     this.recordSide(aStarters, hStarters, ag, hg, null);
   },
 
-  // The user's watched match: goals follow the commentary's named scorers.
-  recordUserMatch(hStarters, aStarters, hg, ag, homeScorers, awayScorers) {
-    this.recordSide(hStarters, aStarters, hg, ag, homeScorers);
-    this.recordSide(aStarters, hStarters, ag, hg, awayScorers);
+  // The user's watched match: goals AND assists follow the exact players from
+  // the live sim, so player stats match what you actually saw happen.
+  recordUserMatch(hStarters, aStarters, hg, ag, homeScorers, awayScorers, homeAssists, awayAssists) {
+    this.recordSide(hStarters, aStarters, hg, ag, homeScorers, homeAssists);
+    this.recordSide(aStarters, hStarters, ag, hg, awayScorers, awayAssists);
   },
 
   // ---- leaderboards & awards ------------------------------------------------

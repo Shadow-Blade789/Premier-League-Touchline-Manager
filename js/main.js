@@ -958,7 +958,7 @@
       }
       if (item.type === "league") {
         Season.recordResult(state, item.home.id, item.away.id, item.full.hg, item.full.ag);
-        Stats.recordUserMatch(item.full.hStarters, item.full.aStarters, item.full.hg, item.full.ag, item.full.homeScorers, item.full.awayScorers);
+        Stats.recordUserMatch(item.full.hStarters, item.full.aStarters, item.full.hg, item.full.ag, item.full.homeScorers, item.full.awayScorers, item.full.homeAssists, item.full.awayAssists);
       } else if (item.type === "cup") {
         const cfg = Cup.CUPS[item.cupKey];
         const fc = state[cfg.stateKey];
@@ -1051,6 +1051,17 @@
       document.getElementById("btnMatchSkip").addEventListener("click", () => MatchPlayer.skip());
       document.getElementById("btnMatchSubs").addEventListener("click", () => MatchPlayer.openSubs());
       document.getElementById("btnSubsClose").addEventListener("click", () => { MatchPlayer.closeSubs(); MatchPlayer.start(); });
+      document.getElementById("btnMatchRatings").addEventListener("click", () => MatchPlayer.toggleRatings());
+      document.getElementById("btnRatingsClose").addEventListener("click", () => { MatchPlayer.closeRatings(); MatchPlayer.start(); });
+      // In-match approach shift (attack / defend) — the only tactical change allowed live.
+      document.getElementById("matchTactics").addEventListener("click", e => {
+        const b = e.target.closest("[data-mment]");
+        if (!b || !MatchPlayer.lm) return;
+        MatchPlayer.lm.setTactics({ mentality: b.dataset.mment });
+        const club = MatchPlayer.lm.state.userSide === "home" ? MatchPlayer.home : MatchPlayer.away;
+        UI.renderMatchMentality(club, document.getElementById("matchTactics"));
+        UI.toast(`Approach: ${b.dataset.mment === "attacking" ? "⚔️ Attack" : b.dataset.mment === "defensive" ? "🛡️ Defend" : "⚖️ Balanced"}`);
+      });
       document.getElementById("subsPanel").addEventListener("click", e => {
         const off = e.target.closest("button[data-suboff]");
         if (off) { MatchPlayer.selectOff(off.dataset.suboff); return; }
@@ -1286,12 +1297,15 @@
       document.getElementById("subsPanel").classList.add("hidden");
       document.getElementById("matchReport").classList.add("hidden");
       document.getElementById("btnMatchSubs").classList.toggle("hidden", !this.interactive);
-      // In-match tactics bar (managed side only), seeded from the club's setup.
+      document.getElementById("btnMatchRatings").classList.toggle("hidden", !this.interactive);
+      document.getElementById("matchRatings").classList.add("hidden");
+      // In-match you can only shift the approach (attack/defend) — not restyle the
+      // whole team or re-brief players (those are locked in from the lineup screen).
       const mt = document.getElementById("matchTactics");
       mt.classList.toggle("hidden", !this.interactive);
       if (this.interactive) {
         const club = this.lm.state.userSide === "home" ? home : away;
-        UI.renderTactics(club, document.getElementById("matchTactics"), "match");
+        UI.renderMatchMentality(club, mt);
       }
       // Basic opposition scouting: their club philosophy only, nothing more.
       const ob = document.getElementById("oppBrief");
@@ -1325,17 +1339,20 @@
       this.scheduleTick();
     },
 
-    scheduleTick() {
-      clearInterval(this.timer);
-      const baseDelay = 300; // one game-minute per tick
-      this.timer = setInterval(() => this.tick(), baseDelay / this.speed);
+    // Self-scheduling loop so each minute can run at its own pace: normal most of
+    // the time, but stretched out for the big moments (see nextDelay).
+    scheduleTick(delay) {
+      clearTimeout(this.timer);
+      if (!this.running) return;
+      this.timer = setTimeout(() => this.tick(), delay != null ? delay : 300 / this.speed);
     },
 
     setSpeed(n) { this.speed = n; if (this.running) this.scheduleTick(); },
 
     pause() {
       this.running = false;
-      clearInterval(this.timer);
+      clearTimeout(this.timer);
+      this.setSlowmo(false);
       document.getElementById("btnMatchStart").disabled = false;
       document.getElementById("btnMatchPause").disabled = true;
       document.getElementById("matchStatus").textContent = "Paused";
@@ -1347,7 +1364,35 @@
       events.forEach(e => this.reveal(e));
       this.movePitch(events);
       this.updateClock();
-      if (this.lm.state.done) this.endMatch();
+      if (!document.getElementById("matchRatings").classList.contains("hidden")) this.renderRatings();
+      if (this.lm.state.done) { this.endMatch(); return; }
+      if (this.running) this.scheduleTick(this.nextDelay(events));
+    },
+
+    // Drama-driven pacing: the clock slows for the moments that matter — a goal
+    // holds longest, then big chances and red cards, and a hard momentum swing
+    // (a team suddenly breaking / on the counter) gets stretched a little too.
+    nextDelay(events) {
+      const base = 300 / this.speed;
+      const mom = this.lm.state.momentum;
+      const swing = Math.abs(mom - (this._prevMom == null ? mom : this._prevMom));
+      this._prevMom = mom;
+      const has = t => events.some(e => e.type === t);
+      let mult = 1;
+      if (has("goal")) mult = 5.5;
+      else if (has("chance")) mult = 2.8;
+      else if (has("red")) mult = 2.2;
+      else if (swing >= 14 || mom >= 82 || mom <= 18) mult = 1.7; // a surge / counter breaking
+      const slow = mult >= 1.7;
+      this.setSlowmo(slow, base * mult);
+      return base * mult;
+    },
+    setSlowmo(on, holdMs) {
+      const scr = document.getElementById("screen-match");
+      if (!scr) return;
+      scr.classList.toggle("slowmo", !!on);
+      clearTimeout(this._slowClear);
+      if (on) this._slowClear = setTimeout(() => scr.classList.remove("slowmo"), (holdMs || 500) + 120);
     },
 
     // ---- live pitch (watch the game happen) ----
@@ -1366,12 +1411,16 @@
         const team = side === us ? "you" : "opp";
         const isUser = side === us;
         const pool = pn => { if (!isUser) return null; const arr = byPos[pn]; const p = arr && arr[idx[pn]] ? arr[idx[pn]] : null; idx[pn]++; return p && p.id; };
-        add(side === "home" ? 5 : 95, 50, side, team, "gk", pool("GK"));
+        add(side === "home" ? 7 : 93, 50, side, team, "gk", pool("GK"));
         const names = rows.length === 3 ? ["DF", "MF", "FW"] : rows.length === 4 ? ["DF", "MF", "MF", "FW"] : rows.map((_, i) => i === 0 ? "DF" : i === rows.length - 1 ? "FW" : "MF");
+        const R = rows.length;
         rows.forEach((n, bi) => {
-          const t = (bi + 1) / (rows.length + 1);
-          const x = side === "home" ? 12 + t * 36 : 88 - t * 36;
-          const role = bi === 0 ? "def" : bi === rows.length - 1 ? "fwd" : "mid";
+          // Spread the outfield rows across the pitch: defenders sit deep (~x22),
+          // forwards push into the opponent half (~x64), so the two teams
+          // actually meet in midfield instead of hugging their own halves.
+          const frac = R > 1 ? bi / (R - 1) : 0.5;
+          const x = side === "home" ? 22 + frac * 42 : 78 - frac * 42;
+          const role = bi === 0 ? "def" : bi === R - 1 ? "fwd" : "mid";
           for (let i = 0; i < n; i++) add(x, n === 1 ? 50 : 14 + (i / (n - 1)) * 72, side, team, role, pool(names[bi] || "MF"));
         });
       };
@@ -1388,29 +1437,26 @@
       if (b) { b.style.left = x + "%"; b.style.top = y + "%"; }
       this.updateFormation();
     },
-    // Every dot chases the play: the team shifts up when attacking and drops when
-    // defending (forwards stay high, defenders hold the line), and whoever's near
-    // the ball collapses onto it.
+    // The whole team breathes with the ball — it slides up the pitch when the ball
+    // is forward and drops when it's back — but everyone holds their formation
+    // shape (forwards stay high, defenders stay deep). Subtle, so dots stand where
+    // they're meant to rather than swarming the ball.
     updateFormation() {
       if (!this.dots) return;
       const bx = this.ballX ?? 50, by = this.ballY ?? 50;
-      const atk = { gk: 0.04, def: 0.4, mid: 0.78, fwd: 1.05 };
-      const def = { gk: 0.14, def: 0.85, mid: 0.58, fwd: 0.26 };
+      // How far each line shifts with the ball (forwards move most, keeper least).
+      const roleShift = { gk: 0.05, def: 0.30, mid: 0.46, fwd: 0.60 };
       this.dots.forEach(d => {
-        const dir = d.side === "home" ? 1 : -1;      // this team's attacking direction in x
-        const advance = dir * (bx - 50);              // >0 → team is attacking
-        const w = advance > 0 ? atk[d.role] : def[d.role];
-        let tx = d.bx + dir * advance * w * 0.62;
-        const dist = Math.hypot(d.bx - bx, d.by - by);
-        const pull = clamp(1 - dist / 34, 0, 1) * (d.role === "gk" ? 0.12 : 0.55);
-        tx += (bx - tx) * pull * 0.5;
-        let ty = d.by + (by - d.by) * (0.1 + pull * 0.5);
-        if (d.role === "gk") tx = clamp(tx, d.side === "home" ? 2.5 : 87, d.side === "home" ? 13 : 97.5);
-        else tx = clamp(tx, 6, 94);
-        ty = clamp(ty, 8, 92);
-        d.x = tx; d.y = ty; d.el.style.left = tx + "%"; d.el.style.top = ty + "%";
+        const dir = d.side === "home" ? 1 : -1;          // this team's attacking direction
+        const ballFwd = dir * (bx - 50);                  // >0 → ball is in this team's attacking half
+        const w = roleShift[d.role] ?? 0.4;
+        let tx = d.bx + ballFwd * w * 0.30;               // slide the block with the play
+        if (d.role === "gk") tx = d.bx + ballFwd * 0.05;  // keeper barely leaves the line
+        d.x = clamp(tx, 3, 97);
+        d.y = d.by;                                        // hold the formation's width
+        d.el.style.left = d.x + "%"; d.el.style.top = d.y + "%";
       });
-      // ring the dot nearest the ball
+      // Ring the dot nearest the ball, for a bit of life.
       let best = null, bd = 1e9;
       this.dots.forEach(d => { const dd = (d.x - bx) ** 2 + (d.y - by) ** 2; if (dd < bd) { bd = dd; best = d; } });
       this.dots.forEach(d => d.el.classList.toggle("active", d === best));
@@ -1421,18 +1467,63 @@
       const lr = this.lm.ratingsLive();
       this.dots.forEach(d => { if (d.team !== "you" || !d.pid) return; const r = lr[d.pid]; if (r != null) d.el.style.background = this.ratingColor(r); });
     },
+
+    // ---- live player ratings (spot who's struggling) ----
+    toggleRatings() {
+      const panel = document.getElementById("matchRatings");
+      if (panel.classList.contains("hidden")) { this.pause(); this.openRatings(); }
+      else { this.closeRatings(); }
+    },
+    openRatings() { document.getElementById("matchRatings").classList.remove("hidden"); this.renderRatings(); },
+    closeRatings() { document.getElementById("matchRatings").classList.add("hidden"); },
+    renderRatings() {
+      const panel = document.getElementById("matchRatings");
+      if (!this.lm || panel.classList.contains("hidden")) return;
+      const club = this.lm.state.userSide === "home" ? this.home : this.away;
+      const lr = this.lm.ratingsLive();
+      const slotMap = typeof Positions !== "undefined" ? Positions.slotMap(club) : {};
+      const list = this.lm.onPitchUser()
+        .map(p => ({ p, r: lr[p.id] != null ? lr[p.id] : 6.5, slot: slotMap[p.id] || (typeof Positions !== "undefined" ? Positions.dposOf(p) : p.pos) }))
+        .sort((a, b) => a.r - b.r); // worst first — surface the problems
+      document.getElementById("matchRatingsList").innerHTML = list.map(({ p, r, slot }) => {
+        const rr = r.toFixed(1);
+        return `<div class="rate-row">
+          <span class="rate-pos">${slot}</span>
+          <span class="rate-name">${p.name}</span>
+          <span class="rate-bar"><span class="rate-fill" style="width:${Math.round(r / 10 * 100)}%;background:${this.ratingColor(r)};"></span></span>
+          <span class="rate-val" style="color:${this.ratingColor(r)};">${rr}</span>
+        </div>`;
+      }).join("");
+    },
     flashPitch(type) {
       const f = document.getElementById("mpFlash");
       if (!f) return;
       f.className = "mp-flash"; void f.offsetWidth; f.classList.add(type);
     },
+    // A super-brief GOAL! flash with the scorer and (if any) the assister.
+    showGoalFlash(evt) {
+      const el = document.getElementById("goalFlash");
+      if (!el || !evt) return;
+      const us = this.lm.state.userSide;
+      const forUs = us && evt.side === us;
+      el.className = "goal-flash " + (us ? (forUs ? "gf-for" : "gf-against") : "gf-for");
+      document.getElementById("gfScorer").textContent = evt.scorer || "Goal";
+      const asst = document.getElementById("gfAssist");
+      asst.textContent = evt.assist ? "assist — " + evt.assist : "";
+      asst.hidden = !evt.assist;
+      document.getElementById("gfScore").textContent = `${this.lm.state.hg} – ${this.lm.state.ag}`;
+      void el.offsetWidth; el.classList.add("show");
+      clearTimeout(this._gfTimer);
+      this._gfTimer = setTimeout(() => el.classList.remove("show"), 2000);
+    },
     movePitch(events) {
       if (!this.dots) return;
       const st = this.lm.state, us = st.userSide;
-      let goalSide = null, chanceSide = null;
-      events.forEach(e => { if (e.type === "goal") goalSide = e.side; else if (e.type === "chance") chanceSide = e.side || chanceSide; });
+      let goalSide = null, chanceSide = null, goalEvt = null;
+      events.forEach(e => { if (e.type === "goal") { goalSide = e.side; goalEvt = e; } else if (e.type === "chance") chanceSide = e.side || chanceSide; });
       if (goalSide) {
         this.flashPitch(us && goalSide === us ? "goal-for" : us && goalSide ? "goal-against" : "goal-for");
+        this.showGoalFlash(goalEvt);
         this.setBall(goalSide === "home" ? 96 : 4, 50);
         clearTimeout(this._ballReset);
         this._ballReset = setTimeout(() => { if (this.lm && !this.lm.state.done) this.setBall(50, 45 + Math.random() * 10); }, 800);
@@ -1490,7 +1581,7 @@
     },
 
     skip() {
-      clearInterval(this.timer); this.running = false;
+      clearTimeout(this.timer); this.running = false; this.setSlowmo(false);
       document.getElementById("subsPanel").classList.add("hidden");
       while (!this.lm.state.done) this.lm.stepMinute().forEach(e => this.reveal(e));
       this.updateClock();
@@ -1552,14 +1643,17 @@
     },
 
     endMatch() {
-      clearInterval(this.timer);
+      clearTimeout(this.timer);
       this.running = false;
+      this.setSlowmo(false);
       this.writeResult();
       document.getElementById("subsPanel").classList.add("hidden");
       document.getElementById("matchStatus").textContent = "Full Time";
       document.getElementById("btnMatchStart").disabled = true;
       document.getElementById("btnMatchPause").disabled = true;
       document.getElementById("btnMatchSubs").classList.add("hidden");
+      document.getElementById("btnMatchRatings").classList.add("hidden");
+      document.getElementById("matchRatings").classList.add("hidden");
       document.getElementById("matchTactics").classList.add("hidden");
       // Match report — stats + player ratings (interactive matches only).
       const report = document.getElementById("matchReport");

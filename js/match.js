@@ -289,7 +289,7 @@
         home, away, userSide,
         hOn: hStart.slice(), aOn: aStart.slice(), hStart, aStart,
         minute: 0, hg: 0, ag: 0, momentum: 50, done: false,
-        homeScorers: [], awayScorers: [], reds: [],
+        homeScorers: [], awayScorers: [], homeAssists: [], awayAssists: [], reds: [],
         hSubsUsed: 0, aSubsUsed: 0, userSubsUsed: 0, USER_SUB_MAX: 5,
         stoppage1: 1 + Math.floor(Math.random() * 4),
         stoppage2: 1 + Math.floor(Math.random() * 6),
@@ -407,16 +407,20 @@
 
           if (roll < st.pHomeGoal) {
             st.hg++; const s = scorerW(attackers(st.hOn), "home"); st.homeScorers.push(s.id);
+            const asH = Math.random() < 0.72 ? eng.weightedAssister(attackers(st.hOn), s) : null;
+            if (asH) { st.homeAssists.push(asH.id); if (userSide === "home") bumpR(asH.id, 0.9); }
             st.stats.home.shots++; st.stats.home.sot++; st.stats.home.xg += 0.42 + Math.random() * 0.36;
             if (userSide === "home") { bumpR(s.id, 1.3); attackers(st.hOn).forEach(p => bumpR(p.id, 0.08)); }
             else if (userSide === "away") st.aOn.forEach(p => { if (p.pos === "GK") bumpR(p.id, -0.6); else if (p.pos === "DF") bumpR(p.id, -0.35); });
-            events.push(mk(lab, "goal", fmt(pick(Commentary.goal), { player: s.name, team: st.home.name }), { side: "home", stoppage: isStoppage }));
+            events.push(mk(lab, "goal", fmt(pick(Commentary.goal), { player: s.name, team: st.home.name }), { side: "home", scorer: s.name, assist: asH && asH.name, stoppage: isStoppage }));
           } else if (roll < goalTop) {
             st.ag++; const s = scorerW(attackers(st.aOn), "away"); st.awayScorers.push(s.id);
+            const asA = Math.random() < 0.72 ? eng.weightedAssister(attackers(st.aOn), s) : null;
+            if (asA) { st.awayAssists.push(asA.id); if (userSide === "away") bumpR(asA.id, 0.9); }
             st.stats.away.shots++; st.stats.away.sot++; st.stats.away.xg += 0.42 + Math.random() * 0.36;
             if (userSide === "away") { bumpR(s.id, 1.3); attackers(st.aOn).forEach(p => bumpR(p.id, 0.08)); }
             else if (userSide === "home") st.hOn.forEach(p => { if (p.pos === "GK") bumpR(p.id, -0.6); else if (p.pos === "DF") bumpR(p.id, -0.35); });
-            events.push(mk(lab, "goal", fmt(pick(Commentary.goal), { player: s.name, team: st.away.name }), { side: "away", stoppage: isStoppage }));
+            events.push(mk(lab, "goal", fmt(pick(Commentary.goal), { player: s.name, team: st.away.name }), { side: "away", scorer: s.name, assist: asA && asA.name, stoppage: isStoppage }));
           } else if (roll < chanceTop) {
             const homeChance = Math.random() * 100 < st.momentum;
             const team = homeChance ? st.home : st.away;
@@ -444,6 +448,9 @@
             const isRed = Math.random() < (0.05 + (hasAgg ? 0.06 : 0));
             (homeChance ? st.stats.home : st.stats.away).fouls++;
             if (isRed && p) st.reds.push({ side: homeChance ? "home" : "away", playerId: p.id, name: p.name });
+            // A booking dents the player's live match rating (so the ratings panel
+            // shows the cost of over-aggression).
+            if (p && ((homeChance && userSide === "home") || (!homeChance && userSide === "away"))) bumpR(p.id, isRed ? -2.4 : -0.7);
             events.push(mk(lab, isRed ? "red" : "yellow", fmt(pick(isRed ? Commentary.red : Commentary.yellow), { player: p.name, team: team.name }), { side: homeChance ? "home" : "away", playerId: p && p.id, stoppage: isStoppage }));
           } else {
             // AI auto-subs on the hour, but only for a side the user isn't managing.
@@ -544,7 +551,7 @@
         },
 
         result() {
-          return { hg: st.hg, ag: st.ag, hStarters: st.hStart, aStarters: st.aStart, homeScorers: st.homeScorers, awayScorers: st.awayScorers, reds: st.reds, timeline: [], stats: this.stats() };
+          return { hg: st.hg, ag: st.ag, hStarters: st.hStart, aStarters: st.aStart, homeScorers: st.homeScorers, awayScorers: st.awayScorers, homeAssists: st.homeAssists, awayAssists: st.awayAssists, reds: st.reds, timeline: [], stats: this.stats() };
         },
         minutesMap() { return st.minutes; },
       };
