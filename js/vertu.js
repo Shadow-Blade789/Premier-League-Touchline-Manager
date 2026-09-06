@@ -68,6 +68,7 @@ const Vertu = {
         const home = g[i], away = g[j];
         if (gi === v.userGroup && (home === state.clubId || away === state.clubId)) continue;
         const { hg, ag } = MatchEngine.simulateQuick(this.clubById(state, home), this.clubById(state, away));
+        this.creditMatch(state, home, away, hg, ag);
         this.applyGroupResult(state, home, away, hg, ag);
       }
     });
@@ -138,10 +139,19 @@ const Vertu = {
     tie.played = true;
   },
 
+  // Credit Vertu Trophy player stats (both English lower-tier clubs have real squads).
+  creditMatch(state, homeId, awayId, hg, ag) {
+    if (typeof Stats === "undefined") return;
+    const home = this.clubById(state, homeId), away = this.clubById(state, awayId);
+    if (!home || !away || home.strengthOnly || away.strengthOnly || !home.squad || !home.squad.length || !away.squad || !away.squad.length) return;
+    Stats.recordMatch(Lineup.starters(home), Lineup.starters(away), hg, ag, "vertu");
+  },
+
   simulateOtherKoTies(state) {
     state.vertu.koTies.forEach(t => {
       if (t.played || t.home === state.clubId || t.away === state.clubId) return;
       const { hg, ag } = MatchEngine.simulateQuick(this.clubById(state, t.home), this.clubById(state, t.away));
+      this.creditMatch(state, t.home, t.away, hg, ag);
       this.applyKoScore(state, t, hg, ag);
     });
   },
@@ -183,6 +193,7 @@ const Vertu = {
       const ut = this.userKoTie(state);
       if (ut && !ut.played) {
         const { hg, ag } = MatchEngine.simulateQuick(this.clubById(state, ut.home), this.clubById(state, ut.away));
+        this.creditMatch(state, ut.home, ut.away, hg, ag);
         this.applyKoScore(state, ut, hg, ag);
       }
       this.completeKoRoundIfDone(state);

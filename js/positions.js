@@ -63,11 +63,58 @@ const Positions = {
     if (a.f !== 0 && a.f === b.f) d *= 0.72; // same flank (full-back ↔ winger) costs less
     return clamp(1 - d, 0.3, 0.95);
   },
-  // How a player's contribution scales when played in `slot` (never below ~0.68).
-  fitFactor(slot, p) { return 0.55 + 0.45 * this.fit(slot, this.dposOf(p)); },
+  // A NATURAL secondary position some players are born comfortable in (Rodri at
+  // CM+CDM, say). ~40% of outfielders get one — the strongest adjacent spot —
+  // deterministically from their id, so it's stable and costs nothing to store.
+  nativeSecondary(p) {
+    if (!p) return null;
+    const prim = this.dposOf(p);
+    if (prim === "GK") return null;
+    const h = this._hash((p.id || p.name || "x") + "~sec");
+    if ((h % 100) >= 40) return null; // ~40% are two-footed positionally
+    const opts = this.ALL.filter(s => s !== prim && s !== "GK" && this.fit(s, prim) >= 0.82);
+    if (!opts.length) return null;
+    return opts[(Math.floor(h / 100)) % opts.length];
+  },
+  isNative(p, dpos) { return dpos === this.dposOf(p) || this.nativeSecondary(p) === dpos; },
 
-  // Natural spots a player is genuinely comfortable in (fit ≥ 0.82), for display.
-  canPlay(p) { const nat = this.dposOf(p); return this.ALL.filter(s => this.fit(s, nat) >= 0.82).sort((x, y) => (x === nat ? -1 : y === nat ? 1 : this.fit(y, nat) - this.fit(x, nat))); },
+  // How well a player KNOWS a position (0–1). Native spots are 1.0; anywhere else
+  // starts at the innate proximity fit and climbs toward 1.0 as they log games
+  // there (stored progress `p.posProg[dpos]`, 0–1). So a CM asked to play CDM is
+  // decent from day one and masters it over a run of matches.
+  familiarity(p, dpos) {
+    if (this.isNative(p, dpos)) return 1;
+    const base = this.fit(dpos, this.dposOf(p));
+    const prog = (p.posProg && p.posProg[dpos]) || 0;
+    return clamp(base + (1 - base) * prog, 0, 1);
+  },
+  // How a player's contribution scales when played in `slot` (never below ~0.68),
+  // using their learned FAMILIARITY so improvement over time shows up in results.
+  fitFactor(slot, p) { return 0.55 + 0.45 * this.familiarity(p, slot); },
+
+  // Spots a player is genuinely comfortable in (familiarity ≥ 0.82) — natives plus
+  // anywhere they've trained up. Grows as they play new positions.
+  canPlay(p) {
+    const prim = this.dposOf(p);
+    return this.ALL.filter(s => this.familiarity(p, s) >= 0.82)
+      .sort((x, y) => (x === prim ? -1 : y === prim ? 1 : this.familiarity(p, y) - this.familiarity(p, x)));
+  },
+
+  // Log a match at a position: nudges progress toward mastery. Closer positions
+  // are learned much faster (prox²), so a CM masters CDM in ~15 games while a
+  // striker barely learns centre-back in a career. Natives don't train (already 1).
+  trainPosition(p, dpos, minutes) {
+    if (!p || !dpos || dpos === "GK" || this.isNative(p, dpos)) return 0;
+    const prox = this.fit(dpos, this.dposOf(p));
+    // ~8 full games to master a near position (CM→CDM), ~20–25 for a far one
+    // (CB→ST): slow, but possible — the Christopher Samba / Adam Virgo switch.
+    const gain = 0.16 * clamp((minutes || 0) / 90, 0, 1) * Math.pow(prox, 1.5);
+    if (!p.posProg) p.posProg = {};
+    const cur = p.posProg[dpos] || 0;
+    const nv = Math.min(1, cur + gain);
+    if (nv > cur + 0.0005) { p.posProg[dpos] = Math.round(nv * 1000) / 1000; return nv - cur; }
+    return 0;
+  },
 
   // {playerId: slotDetailedPos} for a club's current XI — the map the match engine
   // reads to apply out-of-position penalties. Bench/unused players aren't included.

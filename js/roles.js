@@ -52,13 +52,19 @@ const PlayerRoles = {
     { key: "distrib", label: "Quick Distribution", icon: "🎯", desc: "Starts attacks fast with sharp throws and passes.", pos: ["GK"], fx: { poss: 1.5, cf: 0.008 } },
   ],
 
-  of(p) { return { ...this.DEFAULT, ...((p && p.instr) || {}) }; },
   _isDefault(i) { return this.DIALS.every(d => i[d.key] === this.DEFAULT[d.key]) && this.TOGGLES.every(t => !i[t.key]); },
-  isSet(p) { return !this._isDefault(this.of(p)); },
-  set(p, key, val) {
-    const i = this.of(p); i[key] = val;
-    if (this._isDefault(i)) { delete p.instr; } else { p.instr = i; }
+
+  // Instructions belong to a POSITION on the club, not a specific player — set the
+  // "CB role" and whoever you field at centre-back plays it. Stored on
+  // `club.roleInstr[dpos]`, only when it differs from default.
+  ofPos(club, dpos) { return { ...this.DEFAULT, ...((club && club.roleInstr && club.roleInstr[dpos]) || {}) }; },
+  isSetPos(club, dpos) { return !this._isDefault(this.ofPos(club, dpos)); },
+  setPos(club, dpos, key, val) {
+    if (!club.roleInstr) club.roleInstr = {};
+    const i = this.ofPos(club, dpos); i[key] = val;
+    if (this._isDefault(i)) delete club.roleInstr[dpos]; else club.roleInstr[dpos] = i;
   },
+  resetPos(club, dpos) { if (club.roleInstr) delete club.roleInstr[dpos]; },
   // The dials / toggles a given detailed position is actually offered.
   dialsFor(dpos) { return this.DIALS.filter(d => (!d.wide || ["LB", "RB", "LW", "RW"].includes(dpos)) && (!d.pos || d.pos.includes(dpos)) && dpos !== "GK"); },
   togglesFor(dpos) { return this.TOGGLES.filter(t => t.pos.includes(dpos)); },
@@ -83,27 +89,30 @@ const PlayerRoles = {
     return { cx: clamp(cx, 11, 89), cy: clamp(cy, 8, 92), w: clamp(w, 18, 66), h: clamp(h, 10, 54) };
   },
 
-  summary(p) {
-    const i = this.of(p), bits = [];
+  // Plain-English one-liner of what the player in this position will do.
+  summaryPos(club, dpos) {
+    const i = this.ofPos(club, dpos), bits = [];
     if (i.pos === "forward") bits.push("gets forward"); else if (i.pos === "back") bits.push("holds position");
     if (i.width === "wide") bits.push("stays wide"); else if (i.width === "inside") bits.push("cuts inside");
     if (i.ball === "safe") bits.push("keeps it simple"); else if (i.ball === "direct") bits.push("plays direct");
     if (i.free === "express") bits.push("expresses himself"); else if (i.free === "disciplined") bits.push("stays disciplined");
     const togWords = { overlap: "overlaps", bringout: "brings it out", ballwin: "wins the ball back", killer: "plays killer balls", getbox: "gets in the box", dribble: "dribbles", behind: "runs in behind", holdup: "holds it up", mark: "marks tight", shoot: "shoots on sight", press: "presses hard", aggro: "tackles hard", sweep: "sweeps behind", distrib: "distributes quickly" };
     this.TOGGLES.forEach(t => { if (i[t.key] && togWords[t.key]) bits.push(togWords[t.key]); });
-    if (!bits.length) return "Plays their natural game.";
-    return bits.join(", ").replace(/^./, c => c.toUpperCase()) + ".";
+    if (!bits.length) return "Plays the position's natural game.";
+    return "Whoever plays here " + bits.join(", ") + ".";
   },
 
-  // Per-side aggregate the match engine reads (built from the on-pitch XI). Every
-  // dial option's and active toggle's `fx` is summed, then clamped so a whole
-  // team of instructions nudges rather than breaks the balance.
-  sideEffect(onArr) {
+  // Per-side aggregate the match engine reads. Each on-pitch player's instructions
+  // come from the POSITION they're filling (`slotOf` → `club.roleInstr[slotPos]`),
+  // so it's the SPOT that carries the instructions, not the individual player.
+  sideEffect(onArr, slotOf, club) {
     const acc = { att: 0, def: 0, cf: 0, ca: 0, poss: 0, press: 0, drain: 0, foul: 0 };
     const shootIds = new Set(), aggroIds = new Set();
     const add = fx => { if (!fx) return; for (const k in fx) acc[k] = (acc[k] || 0) + fx[k]; };
     for (const p of onArr || []) {
-      const raw = p.instr; if (!raw) continue; const I = { ...this.DEFAULT, ...raw };
+      const dpos = (slotOf && slotOf[p.id]) || (typeof Positions !== "undefined" ? Positions.dposOf(p) : null);
+      const raw = club && club.roleInstr && club.roleInstr[dpos]; if (!raw) continue;
+      const I = { ...this.DEFAULT, ...raw };
       this.DIALS.forEach(d => { const o = d.opts.find(x => x.k === I[d.key]); if (o) add(o.fx); });
       this.TOGGLES.forEach(t => {
         if (!I[t.key]) return;

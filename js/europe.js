@@ -295,13 +295,15 @@ const Euro = {
     state.euro.userComp = userComp;
     EURO_COMP_KEYS.forEach(k => {
       if (k === userComp) return;
-      state.euro.champions[k] = this.resolveBackgroundChampion(state, built.fields[k]);
+      state.euro.champions[k] = this.resolveBackgroundChampion(state, built.fields[k], k);
     });
     if (userComp) this.setupUserComp(state, userComp, built.fields[userComp]);
   },
 
   // A lightweight seeded knockout among a field's 16 strongest, to name a winner.
-  resolveBackgroundChampion(state, field) {
+  // `comp` (uel/uecl) credits the ties' player stats so those competitions get a
+  // real Golden Boot & Team of the Tournament even though the user isn't in them.
+  resolveBackgroundChampion(state, field, comp) {
     let alive = field.slice()
       .sort((a, b) => Stats.clubStrength(this.club(state, b)) - Stats.clubStrength(this.club(state, a)))
       .slice(0, 16);
@@ -313,6 +315,7 @@ const Euro = {
         const hi = this.club(state, alive[i]);
         const lo = this.club(state, alive[alive.length - 1 - i]);
         const { hg, ag } = MatchEngine.simulateQuick(hi, lo);
+        if (comp) this.creditMatch(state, hi.id, lo.id, hg, ag, comp);
         winners.push(hg >= ag ? hi.id : lo.id);
       }
       alive = winners;
@@ -340,6 +343,19 @@ const Euro = {
     state.euro.user = eu;
   },
 
+  // Credit per-player stats for a simulated European tie, into the user's
+  // competition bucket (ucl/uel/uecl) — but only for real-squad clubs (the
+  // designated foreign keepers + the user's own nation's qualifiers). Strength-
+  // only clubs have no players, so those ties simply aren't attributed.
+  creditMatch(state, homeId, awayId, hg, ag, comp) {
+    comp = comp || (state.euro && state.euro.userComp);
+    if (typeof Stats === "undefined" || !comp) return;
+    const home = this.club(state, homeId), away = this.club(state, awayId);
+    if (!home || !away || home.strengthOnly || away.strengthOnly) return;
+    if (!home.squad || !home.squad.length || !away.squad || !away.squad.length) return;
+    Stats.recordMatch(Lineup.starters(home), Lineup.starters(away), hg, ag, comp);
+  },
+
   // Quick-sim every background league-phase match scheduled for this week.
   simBackgroundMatchday(state, week) {
     if (!this.isActive(state)) return;
@@ -348,6 +364,7 @@ const Euro = {
     eu.bgMatches.forEach(m => {
       if (m.played || m.week !== week) return;
       const { hg, ag } = MatchEngine.simulateQuick(this.club(state, m.home), this.club(state, m.away));
+      this.creditMatch(state, m.home, m.away, hg, ag);
       this.applyLeagueResult(eu, m.home, m.away, hg, ag);
       m.played = true;
     });
@@ -439,6 +456,7 @@ const Euro = {
     (eu.bgMatches || []).forEach(m => {
       if (m.played) return;
       const { hg, ag } = MatchEngine.simulateQuick(this.club(state, m.home), this.club(state, m.away));
+      this.creditMatch(state, m.home, m.away, hg, ag);
       this.applyLeagueResult(eu, m.home, m.away, hg, ag);
       m.played = true;
     });
@@ -490,6 +508,7 @@ const Euro = {
       if (!lf || lf.played) return;
       if (t.hi === state.clubId || t.lo === state.clubId) return; // user's leg is played live
       const { hg, ag } = MatchEngine.simulateQuick(this.club(state, lf.home), this.club(state, lf.away));
+      this.creditMatch(state, lf.home, lf.away, hg, ag);
       lf.hg = hg; lf.ag = ag; lf.played = true;
     });
   },

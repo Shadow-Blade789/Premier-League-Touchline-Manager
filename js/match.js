@@ -57,9 +57,14 @@
   function assistBoost(p) { return (p.bonus && p.bonus.assist) || 0; }
   function keeperBoost(p) { return (p.bonus && p.bonus.keeper) || 0; }
   function defenseBoost(p) { return (p.bonus && p.bonus.defense) || 0; }
-  // A tired player contributes less: full at 100% fitness, ~0.82 at 40%.
-  // Foreign/generated players have no fitness field and are unaffected.
-  function fitFactor(p) { const f = typeof p.fitness === "number" ? p.fitness : 100; return 0.7 + 0.3 * (f / 100); }
+  // A tired player contributes less. This mirrors the energy-adjusted rating the
+  // UI shows ("55 (-3)"), so a player performs exactly at the value on screen:
+  // fitFactor scales p.rating down to Fitness.effRating(p). Foreign/generated
+  // players have no fitness field and are unaffected (delta 0 → factor 1).
+  function fitFactor(p) {
+    if (typeof Fitness !== "undefined" && Fitness.effRating && p.rating) return Fitness.effRating(p) / p.rating;
+    const f = typeof p.fitness === "number" ? p.fitness : 100; return 0.7 + 0.3 * (f / 100);
+  }
   // Morale nudges a player's effective contribution (neutral for rivals / players
   // with no tracked morale). Combined with fitness for a single condition factor.
   function condFactor(p) { return fitFactor(p) * (typeof Morale !== "undefined" ? Morale.factor(p) : 1); }
@@ -339,8 +344,8 @@
         // Individual player instructions (Get Forward, Keep It Simple, Press Hard…)
         // aggregate per side and layer on top of the team philosophy.
         const R = typeof PlayerRoles !== "undefined" ? PlayerRoles : null;
-        const iH = st.instrH = R ? R.sideEffect(st.hOn) : null;
-        const iA = st.instrA = R ? R.sideEffect(st.aOn) : null;
+        const iH = st.instrH = R ? R.sideEffect(st.hOn, st.slotOf, st.home) : null;
+        const iA = st.instrA = R ? R.sideEffect(st.aOn, st.slotOf, st.away) : null;
         if (iH) { st.hAtt *= 1 + iH.att; st.hDef *= 1 + iH.def; }
         if (iA) { st.aAtt *= 1 + iA.att; st.aDef *= 1 + iA.def; }
         // Possession-heavy styles pull the run of play (and the possession stat)

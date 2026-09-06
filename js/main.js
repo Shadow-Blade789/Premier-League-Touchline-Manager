@@ -235,6 +235,20 @@
       });
       document.getElementById("btnCloseTrophies").addEventListener("click", () => modal.classList.add("hidden"));
       modal.addEventListener("click", e => { if (e.target === modal) modal.classList.add("hidden"); });
+
+      // Honours: awards & Teams of the Year (browsable any time).
+      const hon = document.getElementById("honoursModal");
+      document.getElementById("btnHonours").addEventListener("click", () => {
+        this._honComp = this._honComp || "league";
+        UI.renderHonours(Game.state, this._honComp);
+        hon.classList.remove("hidden");
+      });
+      document.getElementById("btnHonoursClose").addEventListener("click", () => hon.classList.add("hidden"));
+      hon.addEventListener("click", e => {
+        if (e.target === hon) { hon.classList.add("hidden"); return; }
+        const tab = e.target.closest("[data-honcomp]");
+        if (tab) { this._honComp = tab.dataset.honcomp; UI.renderHonours(Game.state, this._honComp); }
+      });
     },
 
     // ---------------- Table ----------------
@@ -611,34 +625,37 @@
       });
       document.getElementById("btnPlayMatch").addEventListener("click", () => this.startMatch());
 
-      // Tap a player on the pitch → open their role & instructions panel.
+      // Tap a spot on the pitch → set that POSITION's role & instructions.
       document.getElementById("pitch").addEventListener("click", e => {
-        const tok = e.target.closest("[data-roleplayer]");
-        if (tok) this.openRole(tok.dataset.roleplayer);
+        const tok = e.target.closest("[data-roleslot]");
+        if (tok) this.openRole(tok.dataset.roleslot, tok.dataset.roleplayer);
       });
       document.getElementById("btnRoleClose").addEventListener("click", () => this.closeRole());
       document.getElementById("roleModal").addEventListener("click", e => { if (e.target.id === "roleModal") this.closeRole(); });
-      // Role dials / toggles / reset — all live-update the panel + save.
+      // Role dials / toggles / reset — edit the POSITION's instructions.
       document.getElementById("roleBody").addEventListener("click", e => {
         const club = Game.myClub();
-        const p = club.squad.find(pl => pl.id === this._rolePlayer);
-        if (!p) return;
+        const dpos = this._roleDpos;
+        if (!dpos) return;
         const dial = e.target.closest("[data-rdial]");
         const tog = e.target.closest("[data-rtog]");
         const reset = e.target.closest("[data-rreset]");
-        if (dial) PlayerRoles.set(p, dial.dataset.rdial, dial.dataset.val);
-        else if (tog) PlayerRoles.set(p, tog.dataset.rtog, !PlayerRoles.of(p)[tog.dataset.rtog]);
-        else if (reset) delete p.instr;
+        if (dial) PlayerRoles.setPos(club, dpos, dial.dataset.rdial, dial.dataset.val);
+        else if (tog) PlayerRoles.setPos(club, dpos, tog.dataset.rtog, !PlayerRoles.ofPos(club, dpos)[tog.dataset.rtog]);
+        else if (reset) PlayerRoles.resetPos(club, dpos);
         else return;
         Game.save();
-        UI.renderRole(club, p.id);
+        UI.renderRole(club, dpos, this._roleOccupant);
         UI.renderPitch(club);
       });
     },
 
-    openRole(playerId) {
-      this._rolePlayer = playerId;
-      UI.renderRole(Game.myClub(), playerId);
+    openRole(dpos, playerId) {
+      this._roleDpos = dpos;
+      const club = Game.myClub();
+      const occ = playerId && club.squad.find(p => p.id === playerId);
+      this._roleOccupant = occ ? occ.name : "";
+      UI.renderRole(club, dpos, this._roleOccupant);
       document.getElementById("roleModal").classList.remove("hidden");
     },
     closeRole() { document.getElementById("roleModal").classList.add("hidden"); },
@@ -688,7 +705,7 @@
         const fc = state[cfg.stateKey];
         if (!Cup.isActive(fc) || fc.winner || !Cup.roundForWeek(cfg, state.week, fc)) return;
         Cup.drawRound(state, fc);
-        Cup.simulateOtherTies(state, fc);
+        Cup.simulateOtherTies(state, fc, cfg.key);
         const tie = Cup.userTie(state, fc);
         if (tie && !tie.played) {
           const roundDef = Cup.currentRoundDef(cfg, fc);
@@ -922,6 +939,15 @@
     },
 
     // Apply a match's precomputed outcome to game state (idempotent).
+    // Credit a played match's goals/assists into a competition bucket, using the
+    // real scorers/assisters from the live result (falls back gracefully).
+    creditUserSideMatch(item, comp) {
+      const f = item.full;
+      if (f && f.hStarters && f.aStarters && item.home && item.away) {
+        Stats.recordUserMatch(f.hStarters, f.aStarters, f.hg, f.ag, f.homeScorers, f.awayScorers, f.homeAssists, f.awayAssists, item.home.squad, item.away.squad, comp);
+      }
+    },
+
     recordItem(item) {
       if (!item || item.recorded) return;
       item.recorded = true;
@@ -936,6 +962,21 @@
           let minutes = item.userMinutes;
           if (!minutes && me.lineup) { minutes = {}; Lineup.starterIds(me.lineup).forEach(id => { minutes[id] = 90; }); }
           if (minutes) Fitness.recordMatch(me, minutes);
+          // Positional development: whoever played out of position gets a little
+          // better at that spot (a CM learning CDM, etc.). Uses the XI's slots.
+          if (minutes && typeof Positions !== "undefined") {
+            const slotMap = Positions.slotMap(me);
+            const learned = [];
+            Object.entries(slotMap).forEach(([id, dpos]) => {
+              const p = me.squad.find(x => x.id === id);
+              if (!p || !minutes[id]) return;
+              const before = Positions.familiarity(p, dpos);
+              Positions.trainPosition(p, dpos, minutes[id]);
+              const after = Positions.familiarity(p, dpos);
+              if (after >= 0.82 && before < 0.82) learned.push(`${p.name} can now play ${dpos}`);
+            });
+            learned.forEach(msg => { if (typeof News !== "undefined") News.push(state, "player", `📐 ${msg}.`); });
+          }
           // A standout or stinker of a performance nudges morale (feeds the loop).
           (item.userRatings || []).forEach(r => {
             const p = me.squad.find(x => x.id === r.id);
@@ -958,16 +999,20 @@
       }
       if (item.type === "league") {
         Season.recordResult(state, item.home.id, item.away.id, item.full.hg, item.full.ag);
-        Stats.recordUserMatch(item.full.hStarters, item.full.aStarters, item.full.hg, item.full.ag, item.full.homeScorers, item.full.awayScorers, item.full.homeAssists, item.full.awayAssists);
+        Stats.recordUserMatch(item.full.hStarters, item.full.aStarters, item.full.hg, item.full.ag, item.full.homeScorers, item.full.awayScorers, item.full.homeAssists, item.full.awayAssists, item.home.squad, item.away.squad);
       } else if (item.type === "cup") {
         const cfg = Cup.CUPS[item.cupKey];
         const fc = state[cfg.stateKey];
         Cup.recordUserTie(state, fc, item.full.hg, item.full.ag);
+        if (item.full.hStarters && item.full.aStarters) {
+          Stats.recordUserMatch(item.full.hStarters, item.full.aStarters, item.full.hg, item.full.ag, item.full.homeScorers, item.full.awayScorers, item.full.homeAssists, item.full.awayAssists, item.home.squad, item.away.squad, cfg.key);
+        }
         Cup.completeRoundIfDone(state, fc);
         if (item.tie.pens) {
           document.getElementById("matchStatus").textContent = "AET · " + Cup.clubShort(state, item.tie.winner) + " win on pens";
         }
       } else if (item.type === "shield") {
+        this.creditUserSideMatch(item, "supercup");
         let winnerId = item.full.hg > item.full.ag ? item.home.id
           : item.full.ag > item.full.hg ? item.away.id
           : Cup.penaltyWinner(item.home, item.away);
@@ -978,12 +1023,14 @@
         document.getElementById("matchStatus").textContent =
           (item.full.hg === item.full.ag ? "Pens · " : "") + Cup.clubShort(state, winnerId) + " lift the Shield";
       } else if (item.type === "supercopa-semi") {
+        this.creditUserSideMatch(item, "supercup");
         const w = item.full.hg > item.full.ag ? item.home.id
           : item.full.ag > item.full.hg ? item.away.id
           : Cup.penaltyWinner(item.home, item.away);
         document.getElementById("matchStatus").textContent =
           (item.full.hg === item.full.ag ? "Pens · " : "") + Cup.clubShort(state, w) + " reach the final";
       } else if (item.type === "supercopa-final") {
+        this.creditUserSideMatch(item, "supercup");
         const w = item.full.hg > item.full.ag ? item.home.id
           : item.full.ag > item.full.hg ? item.away.id
           : Cup.penaltyWinner(item.home, item.away);
@@ -994,6 +1041,7 @@
         document.getElementById("matchStatus").textContent =
           (item.full.hg === item.full.ag ? "Pens · " : "") + Cup.clubShort(state, w) + " win the Supercopa";
       } else if (item.type === "supercup") {
+        this.creditUserSideMatch(item, "supercup");
         const w = item.full.hg > item.full.ag ? item.home.id
           : item.full.ag > item.full.hg ? item.away.id
           : Cup.penaltyWinner(item.home, item.away);
@@ -1029,13 +1077,21 @@
         }
       } else if (item.type === "euro-league") {
         Euro.recordUserLeagueGame(state, item.fixture, item.full.hg, item.full.ag);
+        if (item.full.hStarters && item.full.aStarters && state.euro && state.euro.userComp) {
+          Stats.recordUserMatch(item.full.hStarters, item.full.aStarters, item.full.hg, item.full.ag, item.full.homeScorers, item.full.awayScorers, item.full.homeAssists, item.full.awayAssists, item.home.squad, item.away.squad, state.euro.userComp);
+        }
       } else if (item.type === "euro-ko") {
         const status = Euro.recordUserKoLeg(state, item.euro, item.full.hg, item.full.ag);
         if (status) document.getElementById("matchStatus").textContent = status;
+        if (item.full.hStarters && item.full.aStarters && state.euro && state.euro.userComp) {
+          Stats.recordUserMatch(item.full.hStarters, item.full.aStarters, item.full.hg, item.full.ag, item.full.homeScorers, item.full.awayScorers, item.full.homeAssists, item.full.awayAssists, item.home.squad, item.away.squad, state.euro.userComp);
+        }
       } else if (item.type === "vertu-group") {
         Vertu.recordUserGroupGame(state, item.game, item.full.hg, item.full.ag);
+        this.creditUserSideMatch(item, "vertu");
       } else if (item.type === "vertu-ko") {
         Vertu.recordUserKoTie(state, item.full.hg, item.full.ag);
+        this.creditUserSideMatch(item, "vertu");
         Vertu.completeKoRoundIfDone(state);
         if (item.tie.pens) {
           document.getElementById("matchStatus").textContent = "AET · " + Vertu.clubShort(state, item.tie.winner) + " win on pens";
@@ -1224,6 +1280,9 @@
              ${UI.seasonStatBoardsHTML(result.awards)}
            </div>`
         : "";
+      const teamsHTML = (result.teamsOfYear && result.teamsOfYear.length)
+        ? `<div class="panel" style="text-align:left; margin-top:1.2rem;"><h3>🏅 Teams of the Year — final</h3>${UI.renderSeasonEndTeams(result.teamsOfYear)}</div>`
+        : "";
       screen.innerHTML = `
         <div class="trophy-screen">
           <p class="eyebrow">${fromLeagueName} · Season ${state.season - 1}/${String(state.season).slice(2)} complete</p>
@@ -1240,6 +1299,7 @@
           ${result.vertu && result.vertu.eligible ? cupLine(result.vertu) : ""}
           <p class="muted">${fromLeagueName} champions: ${result.champion.name} · New budget: ${UI.money(club.budget)}</p>
           <button class="primary" id="btnSeasonContinue">Continue to Next Season</button>
+          ${teamsHTML}
           ${awardsHTML}
           ${newsHTML}
         </div>

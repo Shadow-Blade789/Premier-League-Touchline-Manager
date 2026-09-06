@@ -39,18 +39,29 @@ const Stats = {
     else BONUS_KEYS.forEach(k => { if (p.bonus[k] == null) p.bonus[k] = 0; });
     if (!p.career) p.career = this.blank();
     else STAT_KEYS.forEach(k => { if (p.career[k] == null) p.career[k] = 0; });
+    if (!p.compStats) p.compStats = {}; // per-competition buckets (cups, Europe)
     return p;
   },
   ensureAll(state) { state.clubs.forEach(c => c.squad.forEach(p => this.ensure(p))); },
 
-  // Add to a player's season tally AND their lifetime career total at once.
-  add(p, key, n = 1) {
+  // The stat bucket for a competition: "league" is the primary p.stats bucket
+  // (so all existing league code is untouched); every other competition gets its
+  // own bucket under p.compStats[comp].
+  bucket(p, comp) {
     this.ensure(p);
-    p.stats[key] += n;
+    if (!comp || comp === "league") return p.stats;
+    if (!p.compStats[comp]) p.compStats[comp] = this.blank();
+    return p.compStats[comp];
+  },
+
+  // Add to a player's competition tally AND their lifetime career total at once.
+  add(p, key, n = 1, comp = "league") {
+    this.ensure(p);
+    this.bucket(p, comp)[key] += n;
     p.career[key] += n;
   },
 
-  resetSeason(state) { state.clubs.forEach(c => c.squad.forEach(p => { p.stats = this.blank(); })); },
+  resetSeason(state) { state.clubs.forEach(c => c.squad.forEach(p => { p.stats = this.blank(); p.compStats = {}; })); },
   clearBonuses(state) { state.clubs.forEach(c => c.squad.forEach(p => { p.bonus = this.blankBonus(); })); },
 
   // ---- match attribution ----------------------------------------------------
@@ -59,14 +70,14 @@ const Stats = {
   // defence) minus the goals that beat the keeper, with a rare extra stop for
   // a Golden-Glove/Shot-Stopper keeper. Shared by every match so the
   // most-saves race is comparable across the whole division.
-  recordSaves(gk, starters, oppStarters, goalsAgainst) {
+  recordSaves(gk, starters, oppStarters, goalsAgainst, comp) {
     const oppAtt = MatchEngine.attackRating(oppStarters);
     const myDef = MatchEngine.defenseRating(starters);
     const keeperBonus = (gk.bonus && gk.bonus.keeper) || 0;
     const sot = poisson(clamp(oppAtt * 0.05 - myDef * 0.025 + 2.2, 0.4, 8));
     let saves = Math.max(0, sot - goalsAgainst);
     if (Math.random() < keeperBonus * 5) saves += 1;
-    this.add(gk, "saves", saves);
+    this.add(gk, "saves", saves, comp);
   },
 
   // Credit appearances, clean sheet, saves for one side, then hand `goalsFor`
@@ -75,72 +86,83 @@ const Stats = {
   // credited so the feed and the stat sheet never disagree; otherwise scorers
   // are drawn fresh (AI matches). When `assists` (the live match's real assister
   // ids) is supplied, those exact players are credited instead of a fresh roll.
-  recordSide(starters, oppStarters, goalsFor, goalsAgainst, scorers, assists) {
-    starters.forEach(p => this.add(p, "apps", 1));
+  recordSide(starters, oppStarters, goalsFor, goalsAgainst, scorers, assists, roster, comp) {
+    // Resolve a scorer/assister id to the real player — a substitute who came on
+    // won't be in the starting XI, so fall back to the club's full squad.
+    const find = id => (roster && roster.find(p => p.id === id)) || starters.find(p => p.id === id);
+    starters.forEach(p => this.add(p, "apps", 1, comp));
     const gk = starters.find(p => p.pos === "GK");
-    if (gk) this.recordSaves(gk, starters, oppStarters, goalsAgainst);
+    if (gk) this.recordSaves(gk, starters, oppStarters, goalsAgainst, comp);
     // A clean sheet is shared by the keeper and every starting defender — it
     // anchors both the Golden Glove (GK) and Best Defender (DF) races.
     if (goalsAgainst === 0) {
-      if (gk) this.add(gk, "cleanSheets", 1);
-      starters.filter(p => p.pos === "DF").forEach(d => this.add(d, "cleanSheets", 1));
+      if (gk) this.add(gk, "cleanSheets", 1, comp);
+      starters.filter(p => p.pos === "DF").forEach(d => this.add(d, "cleanSheets", 1, comp));
     }
 
     const attackers = starters.filter(p => p.pos === "FW" || p.pos === "MF");
     const pool = attackers.length ? attackers : starters;
     for (let i = 0; i < goalsFor; i++) {
       let scorer = null;
-      if (scorers && scorers[i]) scorer = starters.find(p => p.id === scorers[i]);
+      if (scorers && scorers[i]) scorer = find(scorers[i]);
       if (!scorer) scorer = MatchEngine.weightedScorer(pool);
       if (!scorer) continue;
-      this.add(scorer, "goals", 1);
+      this.add(scorer, "goals", 1, comp);
       // When we have the live match's actual assisters, credit those exact
       // players below; otherwise (AI matches) roll a plausible assist here.
       if (!assists && Math.random() < 0.72) {
         const assister = MatchEngine.weightedAssister(pool, scorer);
-        if (assister) this.add(assister, "assists", 1);
+        if (assister) this.add(assister, "assists", 1, comp);
       }
     }
     // Real assisters from the watched match (by id) — accurate, not re-rolled.
-    if (assists) assists.forEach(id => { const a = starters.find(p => p.id === id); if (a) this.add(a, "assists", 1); });
+    if (assists) assists.forEach(id => { const a = find(id); if (a) this.add(a, "assists", 1, comp); });
   },
 
-  // AI-vs-AI fixtures: both sides attributed from the scoreline alone.
-  recordMatch(hStarters, aStarters, hg, ag) {
-    this.recordSide(hStarters, aStarters, hg, ag, null);
-    this.recordSide(aStarters, hStarters, ag, hg, null);
+  // AI-vs-AI fixtures: both sides attributed from the scoreline alone. `comp`
+  // routes the stats to the right competition bucket (default the league).
+  recordMatch(hStarters, aStarters, hg, ag, comp) {
+    this.recordSide(hStarters, aStarters, hg, ag, null, null, null, comp);
+    this.recordSide(aStarters, hStarters, ag, hg, null, null, null, comp);
   },
 
   // The user's watched match: goals AND assists follow the exact players from
   // the live sim, so player stats match what you actually saw happen.
-  recordUserMatch(hStarters, aStarters, hg, ag, homeScorers, awayScorers, homeAssists, awayAssists) {
-    this.recordSide(hStarters, aStarters, hg, ag, homeScorers, homeAssists);
-    this.recordSide(aStarters, hStarters, ag, hg, awayScorers, awayAssists);
+  recordUserMatch(hStarters, aStarters, hg, ag, homeScorers, awayScorers, homeAssists, awayAssists, hRoster, aRoster, comp) {
+    this.recordSide(hStarters, aStarters, hg, ag, homeScorers, homeAssists, hRoster, comp);
+    this.recordSide(aStarters, hStarters, ag, hg, awayScorers, awayAssists, aRoster, comp);
   },
 
   // ---- leaderboards & awards ------------------------------------------------
 
-  allEntries(state, league = null) {
+  // Read a competition's bucket WITHOUT creating it (so ranking a comp doesn't
+  // stamp an empty bucket onto every player and bloat the save).
+  _ZERO: { goals: 0, assists: 0, cleanSheets: 0, saves: 0, apps: 0 },
+  readBucket(p, comp) {
+    if (!comp || comp === "league") return p.stats || this._ZERO;
+    return (p.compStats && p.compStats[comp]) || this._ZERO;
+  },
+
+  allEntries(state, league = null, comp = "league") {
     const out = [];
     state.clubs.forEach(c => {
       if (league && c.league !== league) return;
-      c.squad.forEach(p => {
+      (c.squad || []).forEach(p => {
         this.ensure(p);
         out.push({
           id: p.id, name: p.name, pos: p.pos,
           clubId: c.id, clubShort: c.short, league: c.league, mine: c.id === state.clubId,
-          stats: p.stats,
+          stats: this.readBucket(p, comp),
         });
       });
     });
     return out;
   },
 
-  // Ranked list for one stat. Returns the top `n`, plus — when none of the
-  // user's players made that cut — their single best performer with the
-  // league rank they actually sit at.
-  leaderboard(state, key, n = 5, pos = null, league = null) {
-    const ranked = this.allEntries(state, league)
+  // Ranked list for one stat in a competition. Returns the top `n`, plus — when
+  // none of the user's players made that cut — their single best performer.
+  leaderboard(state, key, n = 5, pos = null, league = null, comp = "league") {
+    const ranked = this.allEntries(state, league, comp)
       .filter(e => (!pos || e.pos === pos) && e.stats[key] > 0)
       .map(e => ({ id: e.id, name: e.name, pos: e.pos, clubShort: e.clubShort, mine: e.mine, value: e.stats[key] }));
     ranked.sort((a, b) => b.value - a.value || a.name.localeCompare(b.name));
@@ -157,9 +179,9 @@ const Stats = {
 
   // One bundle per award category, including the winner and the display board.
   // Scoped to a single league when one is given (each division has its own).
-  awards(state, league = null) {
+  awards(state, league = null, comp = "league") {
     return STAT_DEFS.map(def => {
-      const lb = this.leaderboard(state, def.key, 5, def.pos, league);
+      const lb = this.leaderboard(state, def.key, 5, def.pos, league, comp);
       return { def, winner: lb.all[0] || null, top: lb.top, yourBest: lb.yourBest };
     });
   },
@@ -239,6 +261,58 @@ const Stats = {
     return 0;
   },
 
+  // Contribution from an explicit stat bucket (per-competition version of
+  // `contribution`, which reads the league bucket p.stats).
+  contribInBucket(pos, b) {
+    switch (pos) {
+      case "FW": return b.goals * 1.0 + b.assists * 0.6;
+      case "MF": return b.goals * 0.7 + b.assists * 1.0;
+      case "DF": return b.cleanSheets * 0.8 + (b.goals + b.assists) * 0.5;
+      case "GK": return b.cleanSheets * 1.0 + b.saves * 0.04;
+    }
+    return 0;
+  },
+
+  // Team of the Season / Team of the Tournament for a competition, judged on
+  // performance RELATIVE TO THE PLAYER'S TEAM and how far that team went: a
+  // lower-rated club's standout who carried them counts for more (bigger
+  // `underdog` multiplier), and going deep means more appearances (which lifts
+  // the volume-based contribution) — so a fourth-tier hero of a cup run beats a
+  // superstar who barely featured or went out early. Returns a best XI, a
+  // handful of honourable-mention nominees, and a standout Player of the ...
+  // For a cup, leave `league` null (every division competes); for the league
+  // Team of the Season, scope to that division.
+  teamOf(state, comp, opts = {}) {
+    const league = opts.league || null;
+    const formation = opts.formation || { GK: 1, DF: 4, MF: 3, FW: 3 };
+    const minApps = opts.minApps != null ? opts.minApps : (comp === "league" ? 10 : 2);
+    const clubStr = {};
+    state.clubs.forEach(c => { clubStr[c.id] = this.clubStrength(c); });
+    const cand = [];
+    state.clubs.forEach(c => {
+      if (league && c.league !== league) return;
+      (c.squad || []).forEach(p => {
+        const b = this.readBucket(p, comp);
+        if (!b || b.apps < minApps) return;
+        const contrib = this.contribInBucket(p.pos, b);
+        if (contrib <= 0 && p.pos !== "GK" && p.pos !== "DF") return; // outfield needs an end product
+        const underdog = 1 + clamp((78 - (clubStr[c.id] || 70)) / 55, -0.28, 0.6);
+        const score = contrib * underdog + b.apps * 0.12;
+        cand.push({ id: p.id, name: p.name, pos: p.pos, clubShort: c.short, clubId: c.id, mine: c.id === state.clubId, apps: b.apps, stats: b, score: +score.toFixed(3) });
+      });
+    });
+    cand.sort((a, b) => b.score - a.score);
+    const xi = [], used = new Set();
+    ["GK", "DF", "MF", "FW"].forEach(pos => {
+      cand.filter(e => e.pos === pos && !used.has(e.id)).slice(0, formation[pos]).forEach(e => { xi.push(e); used.add(e.id); });
+    });
+    const order = { GK: 0, DF: 1, MF: 2, FW: 3 };
+    xi.sort((a, b) => order[a.pos] - order[b.pos] || b.score - a.score);
+    const nominees = cand.filter(e => !used.has(e.id)).slice(0, 6);
+    const potm = xi.slice().sort((a, b) => b.score - a.score)[0] || null;
+    return { comp, xi, nominees, potm, count: cand.length };
+  },
+
   // Average of a club's eleven best ratings — a smooth strength proxy used to
   // derive where each club was *expected* to finish within its own league.
   clubStrength(club) {
@@ -258,7 +332,13 @@ const Stats = {
   // potential/rating drift in Aging.advanceSeason, for both leagues.
   performanceIndex(state) {
     const index = {};
+    // Only the managed country has reliable, fully-credited league stats. Foreign
+    // leagues (even those with a few real-squad European keepers) are judged on a
+    // partial stat picture, so we leave their players to age on the age curve
+    // alone — a keeper player simply gets no index entry (treated as neutral).
+    const managedCountry = LEAGUE_COUNTRY[(state.clubs.find(c => c.id === state.clubId) || {}).league];
     LEAGUES.forEach(lg => {
+      if (managedCountry && LEAGUE_COUNTRY[lg] !== managedCountry) return;
       const clubs = state.clubs.filter(c => c.league === lg);
       if (!clubs.length) return;
       // Foreign (strength-only) leagues have no player-level data to judge.

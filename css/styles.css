@@ -835,6 +835,47 @@
    .rate-fill { display: block; height: 100%; border-radius: 999px; transition: width 0.4s ease, background 0.4s ease; }
    .rate-val { font-family: var(--font-mono, monospace); font-size: 0.86rem; font-weight: 800; text-align: right; }
 
+   /* ---------- Honours: awards & Teams of the Year ---------- */
+   .honours-tabs { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.7rem; }
+   .hon-tab { font-family: inherit; font-size: 0.76rem; font-weight: 700; padding: 0.35em 0.7em; color: var(--muted); background: var(--panel); border: 1px solid var(--glass-border); border-radius: 999px; cursor: pointer; transition: all 0.12s ease; }
+   .hon-tab:hover { color: var(--chalk); border-color: var(--accent); }
+   .hon-tab.active { background: color-mix(in srgb, var(--accent) 22%, var(--panel)); border-color: var(--accent); color: var(--chalk); }
+   .hon-section-title { font-family: var(--font-display, inherit); font-size: 1.05rem; font-weight: 800; margin-bottom: 0.5rem; }
+   .hon-potm { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; padding: 0.55rem 0.7rem; margin-bottom: 0.6rem; background: color-mix(in srgb, var(--accent) 12%, var(--panel-2)); border: 1px solid var(--accent); border-radius: var(--radius); }
+   .hon-potm-badge { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent); }
+   .hon-team { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 1rem; }
+   @media (max-width: 560px) { .hon-team { grid-template-columns: 1fr; } }
+   .hon-grp { display: flex; flex-direction: column; gap: 0.25rem; }
+   .hon-grp > .eyebrow { margin-bottom: 0.1rem; }
+   .hon-row { display: grid; grid-template-columns: 2.6em 1fr auto; align-items: center; gap: 0.4rem; padding: 0.3rem 0.4rem; background: var(--panel-2); border: 1px solid var(--glass-border); border-radius: var(--radius-xs); }
+   .hon-row.mine { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--panel-2)); }
+   .hon-name { font-size: 0.82rem; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+   .hon-club { grid-column: 2; font-size: 0.68rem; color: var(--muted); }
+   .hon-line { grid-column: 3; grid-row: 1 / span 2; font-size: 0.68rem; color: var(--muted); text-align: right; white-space: nowrap; }
+   .hon-noms { margin-top: 0.7rem; }
+   .hon-nom-list { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.3rem; }
+   .hon-nom { font-size: 0.74rem; padding: 0.25em 0.55em; background: var(--panel-2); border: 1px solid var(--glass-border); border-radius: 999px; }
+   .hon-nom.mine { border-color: var(--accent); }
+   .hon-awards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.6rem; }
+   .hon-award { background: var(--panel-2); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 0.5rem 0.6rem; }
+   .hon-award-head { font-size: 0.78rem; font-weight: 800; margin-bottom: 0.35rem; }
+   .hon-award-row { display: grid; grid-template-columns: 1.3em 1fr auto auto; align-items: center; gap: 0.35rem; font-size: 0.76rem; padding: 0.12rem 0; }
+   .hon-award-row.mine { color: var(--accent); font-weight: 700; }
+   .haw-rank { color: var(--muted); font-weight: 700; }
+   .haw-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+   .haw-club { font-size: 0.66rem; color: var(--muted); }
+   .haw-val { font-weight: 800; }
+
+   /* Energy penalty tag next to a rating: "55 (-3)" */
+   .rt-drop { font-size: 0.72em; font-weight: 700; color: #e88a7d; }
+   .role-occupant { font-size: 0.74rem; margin-bottom: 0.2rem; }
+
+   /* End-of-season Teams of the Year reveal */
+   .se-teams { display: flex; flex-direction: column; gap: 1.1rem; }
+   .se-team { border-top: 1px solid var(--glass-border); padding-top: 0.7rem; }
+   .se-team:first-child { border-top: none; padding-top: 0; }
+   .se-team-comp { font-family: var(--font-display, inherit); font-weight: 800; font-size: 0.9rem; color: var(--accent); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.3rem; }
+
    /* Pre-match opposition brief (their philosophy, nothing more) */
    .opp-brief { display: flex; align-items: center; justify-content: center; gap: 0.6rem; max-width: 640px; margin: 0.5rem auto 0; padding: 0.4rem 0.9rem; background: var(--panel-2); border: 1px solid var(--glass-border); border-radius: 999px; }
    .opp-brief .ob-eyebrow { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); font-weight: 800; }

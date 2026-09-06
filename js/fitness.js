@@ -157,4 +157,16 @@ const Fitness = {
     const f = p.fitness ?? 100;
     return f >= 85 ? "fresh" : f >= 65 ? "ok" : "tired";
   },
+
+  // Energy-adjusted rating: a tired player performs BELOW their base rating, but
+  // only mildly — fitness barely bites until the second half of the tank, then
+  // costs about a point per 10% below ~55%: 50%→-1, 40%→-2, 30%→-3, capped at -5.
+  // This same delta drives the match engine, so what you see is what you get.
+  energyDelta(p) {
+    const f = typeof p.fitness === "number" ? p.fitness : 100;
+    return -Math.round(clamp((55 - f) / 10, 0, 5));
+  },
+  effRating(p) { return Math.max(1, (p.rating || 1) + this.energyDelta(p)); },
+  // Plain-text "55 (-3)" for <option>s and anywhere HTML isn't wanted.
+  ratingText(p) { const d = this.energyDelta(p); return `${p.rating}${d < 0 ? ` (${d})` : ""}`; },
 };

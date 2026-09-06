@@ -68,23 +68,67 @@
      }
    }
    
+   // How many foreign clubs per top-flight KEEP real, persistent squads — the
+   // likely European qualifiers of each nation. Scaled by association strength so
+   // the powerhouses field real players in Europe: the top-5 leagues keep 7 each,
+   // the mid nations 4, the minnows 2. (The rest of the world stays strength-only.)
+   function euroKeepCountForCountry(country) {
+     const rank = (typeof Euro !== "undefined" && Euro.ASSOC_RANK) ? (Euro.ASSOC_RANK.indexOf(country) + 1) : 0;
+     if (rank >= 1 && rank <= 5) return 7;
+     if (rank >= 6 && rank <= 20) return 4;
+     return 2;
+   }
+   // A club's real-squad strength (mean of its best XI), or 0 if it has no roster.
+   function realSquadStrength(c) {
+     const sq = c.squad || [];
+     if (sq.length < 5) return sq.length ? sq.reduce((s, p) => s + p.rating, 0) / sq.length - 20 : 0;
+     const top = sq.map(p => p.rating).sort((a, b) => b - a).slice(0, 11);
+     return top.reduce((s, r) => s + r, 0) / top.length;
+   }
+   // The set of foreign club ids that keep real squads (for European awards).
+   function euroKeeperSet(managedCountry) {
+     const keep = new Set();
+     const topFlights = new Set();
+     if (typeof LEAGUE_CHAINS !== "undefined") Object.values(LEAGUE_CHAINS).forEach(ch => { if (ch && ch.length) topFlights.add(ch[0]); });
+     const byLeague = {};
+     CLUBS.forEach(c => {
+       if (!topFlights.has(c.league)) return;                          // top division only (Europe entrants)
+       if (LEAGUE_COUNTRY[c.league] === managedCountry) return;        // your own country keeps everything anyway
+       if (!c.squad || !c.squad.length) return;                        // must ship with some real players
+       (byLeague[c.league] = byLeague[c.league] || []).push(c);
+     });
+     Object.keys(byLeague).forEach(lg => {
+       const n = euroKeepCountForCountry(LEAGUE_COUNTRY[lg]);
+       byLeague[lg]
+         .map(c => ({ c, s: realSquadStrength(c) }))
+         .sort((a, b) => b.s - a.s || (b.c.squad.length - a.c.squad.length))
+         .slice(0, n)
+         .forEach(x => keep.add(x.c.id));
+     });
+     return keep;
+   }
+
    function freshClubsCopy(managedCountry) {
      // Deep-ish copy so a new career never mutates the shared template data.
-     // Only the country you manage in gets real player squads; every other
-     // country's clubs are strength-only (a single rating, no stored players),
-     // which is what keeps the whole continent inside the browser save budget.
+     // Your own country gets real squads; so do the designated European qualifiers
+     // of every other nation (euroKeeperSet). Everyone else is strength-only (a
+     // single rating, no stored players) to keep the whole continent inside the
+     // browser save budget.
+     const keepers = managedCountry ? euroKeeperSet(managedCountry) : new Set();
      const copy = CLUBS.map(c => {
-       if (managedCountry && LEAGUE_COUNTRY[c.league] !== managedCountry) {
+       const foreign = managedCountry && LEAGUE_COUNTRY[c.league] !== managedCountry;
+       if (foreign && !keepers.has(c.id)) {
          return { ...c, squad: [], strengthOnly: true, strength: baseStrengthForTier(c.tier) };
        }
        return {
          ...c,
+         euroKeeper: foreign || undefined, // a foreign club with a real squad, for Europe
          // Clone stats/bonus/career too — a shallow {...p} would otherwise share
          // those objects with the shared CLUBS template and leak across careers.
          squad: c.squad.map(p => ({ ...p, stats: Stats.blank(), bonus: Stats.blankBonus(), career: { ...p.career } })),
        };
      });
-     copy.forEach(ensureSquadDepth); // no-op for strength-only clubs
+     copy.forEach(ensureSquadDepth); // fills real squads to depth; no-op for strength-only
      return copy;
    }
    
@@ -364,8 +408,25 @@
      // dropping the stored players/coaches to keep the save small.
      const seed = state.clubs.find(c => c.id === state.clubId);
      const managedCountry = seed ? LEAGUE_COUNTRY[seed.league] : COUNTRIES[0];
+     const keepers = euroKeeperSet(managedCountry);
      state.clubs.forEach(c => {
-       if (LEAGUE_COUNTRY[c.league] === managedCountry || c.strengthOnly) return;
+       if (LEAGUE_COUNTRY[c.league] === managedCountry) return; // your own country keeps everything
+       if (keepers.has(c.id)) {
+         // A designated European qualifier keeps its real squad. If an older save
+         // stripped it to strength-only, re-inject the roster from the template so
+         // the feature lights up on load (it ages from the current date forward).
+         if (c.strengthOnly || !c.squad || !c.squad.length) {
+           const tmpl = CLUBS.find(t => t.id === c.id);
+           if (tmpl && tmpl.squad && tmpl.squad.length) {
+             c.squad = tmpl.squad.map(p => ({ ...p, stats: Stats.blank(), bonus: Stats.blankBonus(), career: { ...p.career }, club: c.id }));
+             c.strengthOnly = false; delete c.strength; c.lineup = null;
+             ensureSquadDepth(c);
+           }
+         }
+         c.euroKeeper = true;
+         return;
+       }
+       if (c.strengthOnly) return;
        c.strength = Math.round(Stats.clubStrength(c));
        c.strengthOnly = true;
        c.squad = [];

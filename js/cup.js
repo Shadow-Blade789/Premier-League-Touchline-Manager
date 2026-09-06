@@ -190,12 +190,17 @@ const Cup = {
     tie.played = true;
   },
 
-  simulateOtherTies(state, fc) {
+  simulateOtherTies(state, fc, comp) {
     fc.ties.forEach(t => {
       if (t.played || t.home === state.clubId || t.away === state.clubId) return;
       const home = this.clubByAnyId(state, t.home);
       const away = this.clubByAnyId(state, t.away);
       const { hg, ag } = MatchEngine.simulateQuick(home, away);
+      // Credit per-competition player stats for real-squad clubs (a domestic cup
+      // is all the user's own country, so both sides have real players).
+      if (comp && typeof Stats !== "undefined" && !home.strengthOnly && !away.strengthOnly && home.squad && away.squad) {
+        Stats.recordMatch(Lineup.starters(home), Lineup.starters(away), hg, ag, comp);
+      }
       this.applyScore(state, t, hg, ag);
     });
   },

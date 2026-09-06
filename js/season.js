@@ -470,6 +470,22 @@
         objectiveVerdict,
       };
 
+      // Snapshot the FINAL Teams of the Year now — before ageing shifts ratings,
+      // before pro/rel moves clubs, and before the stat reset — for the
+      // season-end reveal. (The Honours screen shows the live "so far" version.)
+      {
+        const uc = Game.myCountry();
+        const euroLbl = { ucl: "Champions League", uel: "Europa League", uecl: "Conference League" };
+        const toyList = [{ key: "league", label: LEAGUE_NAMES[userLeague] || "League", league: userLeague }];
+        Object.values(Cup.CUPS).forEach(cfg => { if (cfg.country === uc) toyList.push({ key: cfg.key, label: cfg.name }); });
+        ["ucl", "uel", "uecl"].forEach(k => { if (state.clubs.some(c => (c.squad || []).some(p => p.compStats && p.compStats[k] && p.compStats[k].apps))) toyList.push({ key: k, label: euroLbl[k] }); });
+        if (state.clubs.some(c => (c.squad || []).some(p => p.compStats && p.compStats.vertu && p.compStats.vertu.apps))) toyList.push({ key: "vertu", label: "Vertu Trophy" });
+        resultBase.teamsOfYear = toyList.map(cc => {
+          const t = Stats.teamOf(state, cc.key, cc.key === "league" ? { league: cc.league } : {});
+          return t.count ? { key: cc.key, label: cc.label, xi: t.xi, potm: t.potm, nominees: t.nominees } : null;
+        }).filter(Boolean);
+      }
+
       // Manager reputation + whether the board keep faith. A sacking no longer
       // ends the career — the world rolls on and a job market opens next season.
       const careerVerdict = Career.seasonUpdate(state, resultBase);

@@ -488,10 +488,10 @@
           <div class="profile-id">
             <div class="profile-name">${p.wonderkid ? "⭐ " : ""}${p.name} <span class="nat-tag">${p.nat || "ENG"}</span></div>
             <div class="muted">${p.age} yrs · ${Players.role(p)}${mine ? "" : (p.club ? " · " + clubShortLookup(p.club) : " · free agent")}</div>
-            ${typeof Positions !== "undefined" ? `<div class="muted can-play">Can play: ${Positions.canPlay(p).join(", ")}</div>` : ""}
+            ${typeof Positions !== "undefined" ? `<div class="muted can-play">Can play: ${Positions.canPlay(p).join(", ")}${this.learningLine(p)}</div>` : ""}
           </div>
           <div class="profile-ovr">
-            <div class="po-main">${p.rating}</div>
+            <div class="po-main">${p.rating}${this.energyTag(p)}</div>
             <div class="po-pot mono">pot ${p.potential ?? p.rating}</div>
           </div>
         </div>
@@ -558,7 +558,7 @@
             ${opts.careerLabel ? `<div class="career-sub mono">${opts.careerLabel}</div>` : ""}
           </div>
           <div class="mono col-num">${p.age}</div>
-          <div class="rating-pill">${p.rating}</div>
+          <div class="rating-pill">${p.rating}${this.energyTag(p)}</div>
           <div class="mono pot-cell col-num" title="Potential">${opts.potentialLabel ?? "—"}</div>
           <div class="mono col-num">${opts.priceLabel ?? this.money(p.value)}</div>
           <div class="row-actions">${actionHTML}</div>
@@ -701,7 +701,7 @@
           <div class="pos-chip ${p.pos}">${p.pos}</div>
           <div><div class="name">${p.name} <span class="nat-tag">${p.nat || "ENG"}</span></div>
             <div class="sub">${p.age} yrs · asks around <strong>${this.wage(wr.demand)}</strong> on a <strong>~${ideal}-yr</strong> deal</div></div>
-          <div class="rating-pill">${p.rating}</div>
+          <div class="rating-pill">${p.rating}${this.energyTag(p)}</div>
         </div>`;
       document.getElementById("contractTitle").textContent = isRenew ? "Contract Renewal" : "Contract Offer";
       const body = document.getElementById("contractBody");
@@ -925,7 +925,7 @@
             <div class="pos-chip ${p.pos}">${p.pos}</div>
             <div><div class="name">${p.name} <span class="nat-tag">${p.nat || "ENG"}</span></div>
               <div class="sub">Age ${p.age} · ${p.rating} ovr → ${p.potential} pot · graduates in ${yrs} yr${yrs === 1 ? "" : "s"}</div></div>
-            <div class="rating-pill">${p.rating}</div>
+            <div class="rating-pill">${p.rating}${this.energyTag(p)}</div>
             <button class="small danger" data-release="${p.id}">Release</button>
           </div>`;
         }).join("")
@@ -1045,12 +1045,22 @@
             <div class="pos-chip ${p.pos}">${p.pos}</div>
             <div><div class="name">${p.name} <span class="nat-tag">${p.nat || "ENG"}</span></div>
               <div class="sub">Out injured · back in ${p.injuryWeeks} week${p.injuryWeeks === 1 ? "" : "s"}</div></div>
-            <div class="rating-pill">${p.rating}</div>
+            <div class="rating-pill">${p.rating}${this.energyTag(p)}</div>
           </div>`).join("")
         : `<p class="muted" style="font-size:0.82rem;">No injuries — your squad is fully fit.</p>`;
     },
 
     // A compact fitness/injury chip for squad rows, plus a suspension flag.
+    // "(-3)" energy penalty shown next to a rating (nothing when fresh / untracked).
+    energyTag(p) { const d = typeof Fitness !== "undefined" ? Fitness.energyDelta(p) : 0; return d < 0 ? ` <span class="rt-drop">(${d})</span>` : ""; },
+    // Positions the player is actively learning (progress under way, not yet comfy).
+    learningLine(p) {
+      if (typeof Positions === "undefined" || !p.posProg) return "";
+      const learning = Object.keys(p.posProg)
+        .filter(dp => !Positions.isNative(p, dp) && Positions.familiarity(p, dp) < 0.82 && p.posProg[dp] > 0.02)
+        .map(dp => `${dp} ${Math.round(Positions.familiarity(p, dp) * 100)}%`);
+      return learning.length ? ` <span style="opacity:0.75;">· learning: ${learning.join(", ")}</span>` : "";
+    },
     fitnessBadge(p) {
       const susp = p.suspendedMatches > 0 ? `<span class="fit-tag injured" title="Suspended">🟥 ${p.suspendedMatches}</span>` : "";
       return `<span class="fit-tag ${Fitness.level(p)}" title="Match fitness">${Fitness.label(p)}</span>${susp}`;
@@ -1084,13 +1094,14 @@
         token.className = "token" + (p ? " tappable" : "");
         token.style.left = x + "%";
         token.style.top = y + "%";
-        if (p) token.dataset.roleplayer = p.id;
         const initials = p ? p.name.split(" ").slice(-1)[0] : "—";
         const slotPos = slotMap[id] || "";
+        if (p) token.dataset.roleplayer = p.id;
+        if (slotPos) token.dataset.roleslot = slotPos; // instructions belong to the SLOT
         // Flag a player fielded out of position (an amber ring + note).
-        const fit = p && slotPos && typeof Positions !== "undefined" ? Positions.fit(slotPos, Positions.dposOf(p)) : 1;
+        const fit = p && slotPos && typeof Positions !== "undefined" ? Positions.familiarity(p, slotPos) : 1;
         const ofp = fit < 0.8;
-        const hasInstr = p && typeof PlayerRoles !== "undefined" && PlayerRoles.isSet(p);
+        const hasInstr = slotPos && typeof PlayerRoles !== "undefined" && PlayerRoles.isSetPos(club, slotPos);
         const fitTitle = p ? `${p.name} · ${slotPos}${typeof Positions !== "undefined" && p ? " (nat " + Positions.dposOf(p) + ", " + Math.round(fit * 100) + "%)" : ""} · ${Math.round(p.fitness ?? 100)}% fit — tap to set role` : "";
         token.innerHTML = `<div class="dot${ofp ? " ofp" : ""}" title="${fitTitle}" style="background:${this.fitnessColor(p)};">${p ? p.rating : ""}${hasInstr ? '<span class="tok-instr" title="Has instructions">★</span>' : ""}</div><div class="lbl">${slotPos ? `<span class="tok-pos">${slotPos}</span> ` : ""}${initials}</div>`;
         pitch.appendChild(token);
@@ -1117,7 +1128,7 @@
           // their natural position and how effective they'd be here (100% = natural).
           const eligible = club.squad
             .filter(p => !p.injuryWeeks && !p.suspendedMatches && (!used.includes(p.id) || p.id === id))
-            .map(p => ({ p, fit: hasPos ? Positions.fit(slotPos, Positions.dposOf(p)) : 1 }))
+            .map(p => ({ p, fit: hasPos ? Positions.familiarity(p, slotPos) : 1 }))
             .sort((a, b) => b.fit - a.fit || b.p.rating - a.p.rating);
           const cur = id ? eligible.find(e => e.p.id === id) : null;
           const tag = cur ? `<span class="slot-fit ${cur.fit >= 0.999 ? "nat" : cur.fit >= 0.8 ? "ok" : cur.fit >= 0.6 ? "meh" : "bad"}">${Math.round(cur.fit * 100)}%</span>` : "";
@@ -1125,7 +1136,7 @@
             <span class="slot-pos">${slotPos}</span>
             <select data-pos="${pos}" data-idx="${idx}">
               <option value="">— Empty —</option>
-              ${eligible.map(e => `<option value="${e.p.id}" ${e.p.id === id ? "selected" : ""}>${e.p.name} (${e.p.rating}) · ${hasPos ? Positions.dposOf(e.p) : e.p.pos} ${Math.round(e.fit * 100)}%${e.p.fitness != null && e.p.fitness < 100 ? " · " + Math.round(e.p.fitness) + "% fit" : ""}</option>`).join("")}
+              ${eligible.map(e => `<option value="${e.p.id}" ${e.p.id === id ? "selected" : ""}>${e.p.name} (${typeof Fitness !== "undefined" ? Fitness.ratingText(e.p) : e.p.rating}) · ${hasPos ? Positions.dposOf(e.p) : e.p.pos} ${Math.round(e.fit * 100)}%${e.p.fitness != null && e.p.fitness < 100 ? " · " + Math.round(e.p.fitness) + "% fit" : ""}</option>`).join("")}
             </select>
             ${tag}
           </div>`;
@@ -1142,16 +1153,90 @@
         : `<span class="muted">No bench players.</span>`;
     },
 
-    // Player role & instructions panel — a coverage highlight + plain-English
-    // "style" dials and switches. Opened by tapping a player on the pitch.
-    renderRole(club, playerId) {
-      const p = club.squad.find(pl => pl.id === playerId);
-      if (!p) return;
-      const dpos = Positions.dposOf(p);
-      const instr = PlayerRoles.of(p);
+    // ---- Honours: per-competition awards + Teams of the Year ----------------
+    // The competitions the user's country contests, in display order.
+    honoursComps(state) {
+      const comps = [{ key: "league", label: (typeof LEAGUE_NAMES !== "undefined" && LEAGUE_NAMES[Game.myLeague()]) || "League", type: "league", league: Game.myLeague() }];
+      const country = Game.myCountry();
+      if (typeof Cup !== "undefined" && Cup.CUPS) Object.values(Cup.CUPS).forEach(cfg => { if (cfg.country === country) comps.push({ key: cfg.key, label: cfg.name, type: "cup" }); });
+      // European competitions with any credited stats (the user's own, plus the
+      // background UEL/UECL that now run real-club knockouts).
+      const euroLabels = { ucl: "Champions League", uel: "Europa League", uecl: "Conference League" };
+      ["ucl", "uel", "uecl"].forEach(ec => {
+        const anyEuro = state.clubs.some(c => (c.squad || []).some(p => p.compStats && p.compStats[ec] && p.compStats[ec].apps));
+        if (anyEuro) comps.push({ key: ec, label: euroLabels[ec], type: "euro" });
+      });
+      // Vertu Trophy (England lower-tier competition), when contested.
+      if (state.vertu && state.clubs.some(c => (c.squad || []).some(p => p.compStats && p.compStats.vertu && p.compStats.vertu.apps))) {
+        comps.push({ key: "vertu", label: "Vertu Trophy", type: "cup" });
+      }
+      return comps;
+    },
+    compStatLine(pos, b) {
+      if (pos === "GK") return `${b.saves} saves · ${b.cleanSheets} CS · ${b.apps} apps`;
+      if (pos === "DF") return `${b.cleanSheets} CS · ${b.goals}G ${b.assists}A · ${b.apps} apps`;
+      return `${b.goals} G · ${b.assists} A · ${b.apps} apps`;
+    },
+    renderHonours(state, activeKey) {
+      const comps = this.honoursComps(state);
+      const active = comps.find(c => c.key === activeKey) || comps[0];
+      document.getElementById("honoursTabs").innerHTML = comps.map(c =>
+        `<button type="button" class="hon-tab${c.key === active.key ? " active" : ""}" data-honcomp="${c.key}">${c.label}</button>`).join("");
+      const isLeague = active.type === "league";
+      const tot = Stats.teamOf(state, active.key, isLeague ? { league: active.league } : {});
+      const body = document.getElementById("honoursBody");
+      if (!tot.count) {
+        body.innerHTML = `<p class="muted" style="padding:0.5rem 0;">No ${active.label} matches have been played yet this season — check back once the competition is under way.</p>`;
+        return;
+      }
+      // Award leaderboards (Golden Boot, Playmaker, …) scoped to this competition.
+      const awards = Stats.awards(state, isLeague ? active.league : null, active.key).filter(a => a.winner);
+      const awardsHTML = awards.length ? `<div class="hon-awards">${awards.map(a => {
+        const top = a.top.slice(0, 3);
+        return `<div class="hon-award"><div class="hon-award-head">${a.def.icon} ${a.def.award}</div>${top.map((e, i) => `<div class="hon-award-row${e.mine ? " mine" : ""}"><span class="haw-rank">${i + 1}</span><span class="haw-name"><span class="pname" data-profile="${e.id}" role="button" tabindex="0">${e.name}</span></span><span class="haw-club">${e.clubShort}</span><span class="haw-val mono">${e.value}</span></div>`).join("")}</div>`;
+      }).join("")}</div>` : "";
+      body.innerHTML =
+        this.teamOfYearBlock(tot, isLeague, false) +
+        `<div class="hon-section-title" style="margin-top:1rem;">Leading the charts <span class="muted">— so far</span></div>` + awardsHTML;
+    },
+
+    // Renders one competition's Team of the Year (POTM + XI + honourable mentions).
+    // `final` switches the wording between the live "so far" view (Honours screen)
+    // and the locked end-of-season reveal.
+    teamOfYearBlock(tot, isLeague, final) {
+      const totLabel = (isLeague ? "Team of the Season" : "Team of the Tournament") + (final ? "" : " so far");
+      const potmLabel = isLeague ? "Player of the Season" : "Player of the Tournament";
+      const sub = final ? "rated on impact relative to their club" : "as it stands — updates as the season plays out";
+      const groups = [["GK", "Goalkeeper"], ["DF", "Defenders"], ["MF", "Midfielders"], ["FW", "Forwards"]];
+      const row = e => `<div class="hon-row${e.mine ? " mine" : ""}"><span class="pos-chip ${e.pos}">${e.pos}</span><span class="hon-name"><span class="pname" data-profile="${e.id}" role="button" tabindex="0">${e.name}</span></span><span class="hon-club">${e.clubShort}</span><span class="hon-line">${this.compStatLine(e.pos, e.stats)}</span></div>`;
+      const totHTML = groups.map(([pos, label]) => {
+        const rows = tot.xi.filter(e => e.pos === pos);
+        return rows.length ? `<div class="hon-grp"><span class="eyebrow">${label}</span>${rows.map(row).join("")}</div>` : "";
+      }).join("");
+      const potm = tot.potm ? `<div class="hon-potm"><span class="hon-potm-badge">⭐ ${potmLabel}</span><strong>${tot.potm.name}</strong> <span class="muted">(${tot.potm.clubShort}) — ${this.compStatLine(tot.potm.pos, tot.potm.stats)}</span></div>` : "";
+      const noms = (tot.nominees && tot.nominees.length) ? `<div class="hon-noms"><span class="eyebrow">Honourable mentions</span><div class="hon-nom-list">${tot.nominees.map(e => `<span class="hon-nom${e.mine ? " mine" : ""}"><span class="pname" data-profile="${e.id}" role="button" tabindex="0">${e.name}</span> <span class="muted">${e.clubShort} · ${this.compStatLine(e.pos, e.stats)}</span></span>`).join("")}</div></div>` : "";
+      return `<div class="hon-section-title">🏅 ${totLabel} <span class="muted">— ${sub}</span></div>` + potm + `<div class="hon-team">${totHTML}</div>` + noms;
+    },
+
+    // The end-of-season reveal: every competition's FINAL Team of the Year, from
+    // the snapshot taken before the stat reset.
+    renderSeasonEndTeams(teamsOfYear) {
+      if (!teamsOfYear || !teamsOfYear.length) return "";
+      return `<div class="se-teams">${teamsOfYear.map(t =>
+        `<div class="se-team"><div class="se-team-comp">${t.label}</div>${this.teamOfYearBlock({ xi: t.xi, potm: t.potm, nominees: t.nominees }, t.key === "league", true)}</div>`
+      ).join("")}</div>`;
+    },
+
+    // Position role & instructions panel — a coverage highlight + plain-English
+    // "style" dials and switches. Instructions belong to the POSITION (dpos), so
+    // whoever you field there plays them; the current occupant is shown for context.
+    renderRole(club, dpos, occupant) {
+      if (!dpos) return;
+      const instr = PlayerRoles.ofPos(club, dpos);
       const cov = PlayerRoles.coverage(dpos, instr);
       const base = PlayerRoles.BASE[dpos] || PlayerRoles.BASE.CM;
-      document.getElementById("roleTitle").textContent = `${p.name} — ${dpos}`;
+      const posName = ({ GK: "Goalkeeper", LB: "Left-Back", CB: "Centre-Back", RB: "Right-Back", CDM: "Defensive Mid", CM: "Central Mid", CAM: "Attacking Mid", LW: "Left Wing", RW: "Right Wing", ST: "Striker" })[dpos] || dpos;
+      document.getElementById("roleTitle").textContent = `${posName} Role (${dpos})`;
       const dials = PlayerRoles.dialsFor(dpos).map(d => {
         const cur = d.opts.find(o => o.k === instr[d.key]) || d.opts[1];
         return `<div class="role-dial">
@@ -1167,6 +1252,7 @@
           <span class="rt-txt"><span class="rt-lbl">${t.label}</span><span class="rt-desc">${t.desc}</span></span>
           <span class="rt-switch"></span>
         </button>`).join("") : `<p class="muted" style="font-size:0.76rem;">No special instructions for this position.</p>`;
+      const occLine = occupant ? `<div class="role-occupant muted">Currently: <strong>${occupant}</strong> — any player you field at ${dpos} plays this role.</div>` : "";
       document.getElementById("roleBody").innerHTML = `
         <div class="role-layout">
           <div class="role-pitch-wrap">
@@ -1177,13 +1263,14 @@
               <div class="role-base" style="left:${base[0]}%;top:${base[1]}%;">${dpos}</div>
               <div class="rp-goal-note top">Attack ↑</div>
             </div>
-            <div class="role-sum" id="roleSum">${PlayerRoles.summary(p)}</div>
+            <div class="role-sum" id="roleSum">${PlayerRoles.summaryPos(club, dpos)}</div>
           </div>
           <div class="role-controls">
+            ${occLine}
             ${dials}
             <div class="rd-label" style="margin-top:0.2rem;">Instructions</div>
             <div class="role-toggles">${toggles}</div>
-            <button type="button" class="ghost small role-reset" data-rreset="1">Reset to natural game</button>
+            <button type="button" class="ghost small role-reset" data-rreset="1">Reset ${dpos} to natural game</button>
           </div>
         </div>`;
     },

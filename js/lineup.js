@@ -37,7 +37,10 @@
           let best = null, bestScore = -Infinity;
           for (const p of pool) {
             if (used.has(p.id)) continue;
-            const score = p.rating * (typeof Positions !== "undefined" ? Positions.fit(slotPos, Positions.dposOf(p)) : 1);
+            // Score on the ENERGY-adjusted rating, so tired legs are rotated out
+            // for fresher players of similar quality, and by positional fit.
+            const base = typeof Fitness !== "undefined" && Fitness.effRating ? Fitness.effRating(p) : p.rating;
+            const score = base * (typeof Positions !== "undefined" ? Positions.familiarity(p, slotPos) : 1);
             if (score > bestScore) { bestScore = score; best = p; }
           }
           if (best) { lineup.slots[pos][i] = best.id; used.add(best.id); }
@@ -45,7 +48,8 @@
       });
 
       // Bench: best remaining players, up to 7, at least one spare keeper if possible.
-      const rest = club.squad.filter(p => !used.has(p.id) && available(p)).sort((a, b) => b.rating - a.rating);
+      const eff = p => typeof Fitness !== "undefined" && Fitness.effRating ? Fitness.effRating(p) : p.rating;
+      const rest = club.squad.filter(p => !used.has(p.id) && available(p)).sort((a, b) => eff(b) - eff(a));
       lineup.bench = rest.slice(0, 7).map(p => p.id);
   
       club.formation = formationKey;
