@@ -285,7 +285,13 @@ const Stats = {
   teamOf(state, comp, opts = {}) {
     const league = opts.league || null;
     const formation = opts.formation || { GK: 1, DF: 4, MF: 3, FW: 3 };
-    const minApps = opts.minApps != null ? opts.minApps : (comp === "league" ? 10 : 2);
+    // The apps threshold ADAPTS to how far the competition has run, so a "Team of
+    // the Season so far" appears from a couple of games in and tightens to
+    // regulars only by season's end (never asking for more than the cap below).
+    const cap = opts.minApps != null ? opts.minApps : (comp === "league" ? 10 : 2);
+    let maxApps = 0;
+    state.clubs.forEach(c => { if (league && c.league !== league) return; (c.squad || []).forEach(p => { const b = this.readBucket(p, comp); if (b && b.apps > maxApps) maxApps = b.apps; }); });
+    const minApps = Math.min(cap, Math.max(1, Math.round(maxApps * 0.55)));
     const clubStr = {};
     state.clubs.forEach(c => { clubStr[c.id] = this.clubStrength(c); });
     const cand = [];

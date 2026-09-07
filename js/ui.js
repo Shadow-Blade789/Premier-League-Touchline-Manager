@@ -553,7 +553,7 @@
         <div class="player-row ${opts.rowClass || ""}">
           <div class="pos-chip ${p.pos}">${typeof Positions !== "undefined" ? Positions.dposOf(p) : p.pos}</div>
           <div>
-            <div class="name">${p.wonderkid ? "⭐ " : ""}<span class="pname" data-profile="${p.id}" role="button" tabindex="0">${p.name}</span> <span class="nat-tag">${p.nat || "ENG"}</span>${opts.badge || ""}</div>
+            <div class="name">${p.wonderkid ? "⭐ " : ""}<span class="pname" data-profile="${p.id}" role="button" tabindex="0">${p.name}</span> <span class="nat-tag">${p.nat || "ENG"}</span>${this.posTag(p)}${opts.badge || ""}</div>
             <div class="sub">${opts.subLabel || (p.club ? clubShortLookup(p.club) : "Free agent")}</div>
             ${opts.careerLabel ? `<div class="career-sub mono">${opts.careerLabel}</div>` : ""}
           </div>
@@ -1053,6 +1053,9 @@
     // A compact fitness/injury chip for squad rows, plus a suspension flag.
     // "(-3)" energy penalty shown next to a rating (nothing when fresh / untracked).
     energyTag(p) { const d = typeof Fitness !== "undefined" ? Fitness.energyDelta(p) : 0; return d < 0 ? ` <span class="rt-drop">(${d})</span>` : ""; },
+    // "CM/CDM/CAM" multi-position tag — only shown for players who play more than
+    // one position (specialists just carry their pos-chip).
+    posTag(p) { if (typeof Positions === "undefined") return ""; const lbl = Positions.roleLabel(p); return lbl.includes("/") ? ` <span class="pos-tag">${lbl}</span>` : ""; },
     // Positions the player is actively learning (progress under way, not yet comfy).
     learningLine(p) {
       if (typeof Positions === "undefined" || !p.posProg) return "";
@@ -1159,15 +1162,18 @@
       const comps = [{ key: "league", label: (typeof LEAGUE_NAMES !== "undefined" && LEAGUE_NAMES[Game.myLeague()]) || "League", type: "league", league: Game.myLeague() }];
       const country = Game.myCountry();
       if (typeof Cup !== "undefined" && Cup.CUPS) Object.values(Cup.CUPS).forEach(cfg => { if (cfg.country === country) comps.push({ key: cfg.key, label: cfg.name, type: "cup" }); });
-      // European competitions with any credited stats (the user's own, plus the
-      // background UEL/UECL that now run real-club knockouts).
+      // Only competitions the manager is ACTUALLY in show live (so it tracks in
+      // real time). Background competitions the user isn't part of are settled up
+      // front — showing them here would present a finished team from week one — so
+      // they're held back for the end-of-season reveal instead.
       const euroLabels = { ucl: "Champions League", uel: "Europa League", uecl: "Conference League" };
-      ["ucl", "uel", "uecl"].forEach(ec => {
+      const ec = state.euro && state.euro.userComp;
+      if (ec) {
         const anyEuro = state.clubs.some(c => (c.squad || []).some(p => p.compStats && p.compStats[ec] && p.compStats[ec].apps));
         if (anyEuro) comps.push({ key: ec, label: euroLabels[ec], type: "euro" });
-      });
-      // Vertu Trophy (England lower-tier competition), when contested.
-      if (state.vertu && state.clubs.some(c => (c.squad || []).some(p => p.compStats && p.compStats.vertu && p.compStats.vertu.apps))) {
+      }
+      // Vertu Trophy — only if the user's club is actually competing in it.
+      if (state.vertu && state.vertu.userGroup != null && state.vertu.userGroup >= 0 && state.clubs.some(c => (c.squad || []).some(p => p.compStats && p.compStats.vertu && p.compStats.vertu.apps))) {
         comps.push({ key: "vertu", label: "Vertu Trophy", type: "cup" });
       }
       return comps;

@@ -116,6 +116,19 @@ const Positions = {
     return 0;
   },
 
+  // A compact "CM/CDM/CAM" or "CB/LB" style label of the positions a player is a
+  // genuine specialist in — their primary, a natural secondary, and any spot
+  // they've trained up to comfortable. Specialists show one; versatile players 2–3.
+  roleLabel(p) {
+    if (!p) return "";
+    const prim = this.dposOf(p);
+    const set = [prim];
+    const sec = this.nativeSecondary(p); if (sec && !set.includes(sec)) set.push(sec);
+    if (p.posProg) Object.keys(p.posProg).forEach(dp => { if (!set.includes(dp) && this.familiarity(p, dp) >= 0.82) set.push(dp); });
+    set.sort((a, b) => (a === prim ? -1 : b === prim ? 1 : this.familiarity(p, b) - this.familiarity(p, a)));
+    return set.slice(0, 4).join("/");
+  },
+
   // {playerId: slotDetailedPos} for a club's current XI — the map the match engine
   // reads to apply out-of-position penalties. Bench/unused players aren't included.
   slotMap(club) {

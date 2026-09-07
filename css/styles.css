@@ -868,6 +868,8 @@
 
    /* Energy penalty tag next to a rating: "55 (-3)" */
    .rt-drop { font-size: 0.72em; font-weight: 700; color: #e88a7d; }
+   /* Multi-position tag on a player's name line: "CM/CDM/CAM" */
+   .pos-tag { font-size: 0.66em; font-weight: 700; letter-spacing: 0.03em; color: var(--muted); background: var(--panel-3); border: 1px solid var(--glass-border); border-radius: var(--radius-xs); padding: 0.08em 0.35em; margin-left: 0.15em; white-space: nowrap; }
    .role-occupant { font-size: 0.74rem; margin-bottom: 0.2rem; }
 
    /* End-of-season Teams of the Year reveal */
