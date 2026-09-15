@@ -5,6 +5,7 @@ market, set your matchday XI on a tactics board, then watch the match play
 out minute-by-minute with live commentary. Built as a static site: plain
 HTML/CSS/JS, no build step, no server.
 
+
 ## Play it locally
 
 Just open `index.html` in a browser. Everything (career data, squads,
